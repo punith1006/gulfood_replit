@@ -5,6 +5,7 @@ import {
   companyAnalyses,
   meetings,
   chatConversations,
+  venueTraffic,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -12,7 +13,9 @@ import {
   type Meeting,
   type InsertMeeting,
   type ChatConversation,
-  type InsertChatConversation
+  type InsertChatConversation,
+  type VenueTraffic,
+  type InsertVenueTraffic
 } from "@shared/schema";
 
 export interface IStorage {
@@ -31,6 +34,9 @@ export interface IStorage {
   getChatConversation(sessionId: string): Promise<ChatConversation | undefined>;
   createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
   updateChatConversation(sessionId: string, messages: any): Promise<ChatConversation | undefined>;
+  
+  getVenueTraffic(origin: string, destination: string): Promise<VenueTraffic | undefined>;
+  createOrUpdateVenueTraffic(traffic: InsertVenueTraffic): Promise<VenueTraffic>;
   
   getAnalytics(): Promise<{
     totalRegistrations: number;
@@ -147,6 +153,35 @@ export class DatabaseStorage implements IStorage {
       .set({ messages, updatedAt: new Date() })
       .where(eq(chatConversations.sessionId, sessionId))
       .returning();
+    return result[0];
+  }
+
+  async getVenueTraffic(origin: string, destination: string): Promise<VenueTraffic | undefined> {
+    const result = await db
+      .select()
+      .from(venueTraffic)
+      .where(and(
+        eq(venueTraffic.origin, origin),
+        eq(venueTraffic.destination, destination)
+      ))
+      .orderBy(desc(venueTraffic.lastUpdated))
+      .limit(1);
+    return result[0];
+  }
+
+  async createOrUpdateVenueTraffic(traffic: InsertVenueTraffic): Promise<VenueTraffic> {
+    const existing = await this.getVenueTraffic(traffic.origin, traffic.destination);
+    
+    if (existing) {
+      const result = await db
+        .update(venueTraffic)
+        .set({ ...traffic, lastUpdated: new Date() })
+        .where(eq(venueTraffic.id, existing.id))
+        .returning();
+      return result[0];
+    }
+    
+    const result = await db.insert(venueTraffic).values(traffic).returning();
     return result[0];
   }
 

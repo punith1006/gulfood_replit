@@ -54,6 +54,20 @@ export const chatConversations = pgTable("chat_conversations", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+export const venueTraffic = pgTable("venue_traffic", {
+  id: serial("id").primaryKey(),
+  origin: text("origin").notNull(),
+  destination: text("destination").notNull(),
+  distanceMeters: integer("distance_meters").notNull(),
+  distanceText: text("distance_text").notNull(),
+  durationSeconds: integer("duration_seconds").notNull(),
+  durationText: text("duration_text").notNull(),
+  durationInTrafficSeconds: integer("duration_in_traffic_seconds"),
+  durationInTrafficText: text("duration_in_traffic_text"),
+  trafficCondition: text("traffic_condition"),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull()
+});
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
@@ -75,6 +89,11 @@ export const insertChatConversationSchema = createInsertSchema(chatConversations
   updatedAt: true
 });
 
+export const insertVenueTrafficSchema = createInsertSchema(venueTraffic).omit({
+  id: true,
+  lastUpdated: true
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -86,3 +105,6 @@ export type InsertMeeting = z.infer<typeof insertMeetingSchema>;
 
 export type ChatConversation = typeof chatConversations.$inferSelect;
 export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+
+export type VenueTraffic = typeof venueTraffic.$inferSelect;
+export type InsertVenueTraffic = z.infer<typeof insertVenueTrafficSchema>;

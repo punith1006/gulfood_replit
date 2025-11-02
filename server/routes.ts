@@ -396,6 +396,82 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  app.get("/api/venue-traffic", async (req, res) => {
+    try {
+      const { origin, destination } = req.query;
+      
+      if (!origin || !destination) {
+        return res.status(400).json({ error: "Origin and destination are required" });
+      }
+
+      const cachedData = await storage.getVenueTraffic(origin as string, destination as string);
+      
+      if (cachedData) {
+        const cacheAge = Date.now() - new Date(cachedData.lastUpdated).getTime();
+        if (cacheAge < 2 * 60 * 1000) {
+          return res.json(cachedData);
+        }
+      }
+
+      if (!process.env.GOOGLE_MAPS_API_KEY) {
+        return res.status(503).json({ 
+          error: "Google Maps API key not configured",
+          fallback: cachedData || null
+        });
+      }
+
+      const apiUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin as string)}&destinations=${encodeURIComponent(destination as string)}&departure_time=now&traffic_model=best_guess&key=${process.env.GOOGLE_MAPS_API_KEY}`;
+      
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      if (data.status !== "OK" || !data.rows?.[0]?.elements?.[0]) {
+        console.error("Google Maps API error:", data);
+        return res.status(500).json({ 
+          error: "Failed to fetch traffic data",
+          fallback: cachedData || null
+        });
+      }
+
+      const element = data.rows[0].elements[0];
+      
+      if (element.status !== "OK") {
+        return res.status(500).json({ 
+          error: "Route not found",
+          fallback: cachedData || null
+        });
+      }
+
+      const durationInTraffic = element.duration_in_traffic || element.duration;
+      const normalDuration = element.duration;
+      
+      let trafficCondition = "light";
+      if (durationInTraffic.value > normalDuration.value * 1.5) {
+        trafficCondition = "heavy";
+      } else if (durationInTraffic.value > normalDuration.value * 1.2) {
+        trafficCondition = "moderate";
+      }
+
+      const trafficData = {
+        origin: origin as string,
+        destination: destination as string,
+        distanceMeters: element.distance.value,
+        distanceText: element.distance.text,
+        durationSeconds: normalDuration.value,
+        durationText: normalDuration.text,
+        durationInTrafficSeconds: durationInTraffic.value,
+        durationInTrafficText: durationInTraffic.text,
+        trafficCondition
+      };
+
+      const savedData = await storage.createOrUpdateVenueTraffic(trafficData);
+      res.json(savedData);
+    } catch (error) {
+      console.error("Error fetching venue traffic:", error);
+      res.status(500).json({ error: "Failed to fetch venue traffic data" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
