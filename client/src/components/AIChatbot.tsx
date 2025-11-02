@@ -74,8 +74,15 @@ export default function AIChatbot() {
   }, [hasAutoOpened]);
 
   const chatMutation = useMutation({
-    mutationFn: async (message: string) => {
-      const res = await apiRequest("POST", "/api/chat", { sessionId, message });
+    mutationFn: async ({ message, role }: { message: string; role: string | null }) => {
+      const capitalizedRole = role 
+        ? role.charAt(0).toUpperCase() + role.slice(1)
+        : null;
+      const res = await apiRequest("POST", "/api/chat", { 
+        sessionId, 
+        message,
+        userRole: capitalizedRole
+      });
       return await res.json();
     },
     onSuccess: (data) => {
@@ -94,7 +101,7 @@ export default function AIChatbot() {
 
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
-    chatMutation.mutate(input);
+    chatMutation.mutate({ message: input, role: userRole });
     setInput("");
   };
 
@@ -103,7 +110,7 @@ export default function AIChatbot() {
     
     const userMessage: Message = { role: "user", content: action };
     setMessages(prev => [...prev, userMessage]);
-    chatMutation.mutate(action);
+    chatMutation.mutate({ message: action, role: userRole });
   };
 
   if (!isOpen) {

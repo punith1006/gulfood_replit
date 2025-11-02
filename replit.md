@@ -67,15 +67,22 @@ The application follows a premium trade show aesthetic inspired by Gulfood.com a
 - All pages freely accessible to everyone
 
 **Proactive AI Chatbot "Faris":**
-- Named "Faris" (Arabic for "Knight" and "insightful person") - culturally relevant for Dubai event
+- Named "Faris" (فارس - Arabic for "Knight" and "insightful person") - culturally relevant for Dubai event
 - Auto-opens 2 seconds after first homepage visit with welcoming introduction
 - Session-based tracking (won't auto-open on repeat visits)
 - Simple greeting: "Ask me anything....."
-- **Role-Based Experience**: Users select their role (Visitor, Exhibitor, or Organizer) to receive personalized assistance
-  - **Visitor**: Quick actions for exhibitor discovery, travel planning, route mapping, meeting booking, venue navigation, hotel recommendations
-  - **Exhibitor**: Quick actions for connecting with buyers, competitor analysis, booth location tips, marketing strategies, networking, logistics
-  - **Organizer**: Quick actions for registration trends, engagement metrics, revenue analytics, demographics, performance insights
+- **Role-Based Intelligence**: Users select their role (Visitor, Exhibitor, or Organizer) to receive personalized, context-aware assistance
+  - **Visitor Role**: AI focuses on exhibitor discovery, travel planning, event schedules, meeting booking, venue navigation, hotel recommendations
+  - **Exhibitor Role**: AI emphasizes buyer connections, competitor analysis, booth strategies, marketing tactics, networking, event logistics
+  - **Organizer Role**: AI provides registration analytics, engagement metrics, revenue insights, demographics, performance tracking, strategic recommendations
+- **Multilingual Support**: Faris understands and responds fluently in:
+  - English (default)
+  - Arabic (العربية) - for regional participants
+  - Simplified Chinese (简体中文) - for Asian visitors
+  - Hindi (हिन्दी) - for South Asian attendees
+  - Automatically detects input language and responds in the same language
 - Role can be changed anytime via "Change role" button
+- Conversation history persists throughout session
 - Floating button with visual pulse indicator when closed
 - Helpful tooltip prompt: "Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
 
