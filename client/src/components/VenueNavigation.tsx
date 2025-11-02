@@ -1,35 +1,54 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Navigation, Train, Car, Clock, Building2, Plane } from "lucide-react";
+import { MapPin, Train, Car, Clock, ArrowRight, TrendingUp, ExternalLink, Plane } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getNextMetroTimings } from "@/lib/metroSchedule";
+import type { VenueTraffic } from "@shared/schema";
+import { useEffect, useState } from "react";
 
 export default function VenueNavigation() {
-  const transportOptions = [
-    { 
-      mode: "Dubai Metro (Red Line)", 
-      icon: Train,
-      from: "DWTC Station",
-      to: "Expo City Station", 
-      duration: "15 min",
-      color: "bg-red-500"
+  const [metroTimings, setMetroTimings] = useState(getNextMetroTimings());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMetroTimings(getNextMetroTimings());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const { data: trafficData, isLoading } = useQuery<VenueTraffic>({
+    queryKey: ['/api/venue-traffic'],
+    queryFn: async () => {
+      const res = await fetch('/api/venue-traffic?origin=Dubai World Trade Centre, Dubai&destination=Expo City Dubai, Dubai');
+      if (!res.ok) {
+        const errorData = await res.json();
+        if (errorData.fallback) return errorData.fallback;
+        throw new Error('Failed to fetch traffic data');
+      }
+      return res.json();
     },
-    { 
-      mode: "Taxi / Private Car", 
-      icon: Car,
-      from: "DWTC",
-      to: "Expo City", 
-      duration: "20 min",
-      color: "bg-yellow-500"
-    },
-    { 
-      mode: "From Airport", 
-      icon: Plane,
-      from: "DXB Airport",
-      to: "DWTC", 
-      duration: "15 min",
-      color: "bg-blue-500"
+    refetchInterval: 2 * 60 * 1000,
+    staleTime: 2 * 60 * 1000
+  });
+
+  const getTrafficColor = (condition?: string) => {
+    switch (condition) {
+      case 'light': return 'text-green-600 dark:text-green-400';
+      case 'moderate': return 'text-yellow-600 dark:text-yellow-400';
+      case 'heavy': return 'text-red-600 dark:text-red-400';
+      default: return 'text-muted-foreground';
     }
-  ];
+  };
+
+  const getTrafficBadgeColor = (condition?: string) => {
+    switch (condition) {
+      case 'light': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      case 'moderate': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
+      case 'heavy': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
 
   return (
     <section className="py-20 bg-muted/30">
@@ -43,192 +62,182 @@ export default function VenueNavigation() {
             Navigate With Ease
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Gulfood 2026 spans two world-class venues connected by Dubai Metro. Plan your journey between exhibition halls seamlessly.
+            Real-time traffic updates and metro schedules between Dubai World Trade Centre and Expo City Dubai
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Interactive Venue Map */}
-          <div className="lg:col-span-2">
-            <Card className="overflow-hidden p-8 bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/30">
-              <div className="relative h-[500px]">
-                {/* SVG Route Map */}
-                <svg viewBox="0 0 800 400" className="w-full h-full">
-                  {/* Background elements - Dubai landmarks */}
-                  <g opacity="0.3">
-                    {/* Palm Jumeirah icon (left) */}
-                    <circle cx="80" cy="100" r="30" fill="currentColor" className="text-emerald-400" />
-                    <text x="80" y="150" textAnchor="middle" className="text-xs fill-current">Palm Jumeirah</text>
-                    
-                    {/* Burj Al Arab icon */}
-                    <polygon points="180,80 200,120 160,120" fill="currentColor" className="text-blue-400" />
-                    <text x="180" y="140" textAnchor="middle" className="text-xs fill-current">Burj Al Arab</text>
-                    
-                    {/* Dubai International Airport (right) */}
-                    <circle cx="720" cy="100" r="25" fill="currentColor" className="text-blue-600" />
-                    <path d="M 710 100 L 730 100 M 720 90 L 720 110" stroke="white" strokeWidth="3"/>
-                    <text x="720" y="140" textAnchor="middle" className="text-xs fill-current font-semibold">Dubai Airport</text>
-                    <text x="720" y="155" textAnchor="middle" className="text-xs fill-current">(DXB)</text>
-                  </g>
-
-                  {/* Metro Line (Red/Pink) */}
-                  <defs>
-                    <linearGradient id="metroGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#EF4444" />
-                      <stop offset="100%" stopColor="#EC4899" />
-                    </linearGradient>
-                  </defs>
-                  <line 
-                    x1="280" y1="250" 
-                    x2="520" y2="250" 
-                    stroke="url(#metroGradient)" 
-                    strokeWidth="8" 
-                    strokeDasharray="0"
-                  />
-                  
-                  {/* Metro label */}
-                  <rect x="360" y="235" width="80" height="20" fill="white" rx="10" opacity="0.95"/>
-                  <text x="400" y="248" textAnchor="middle" className="text-xs font-bold fill-red-600">
-                    Dubai Metro
-                  </text>
-
-                  {/* Dubai World Trade Centre (DWTC) */}
-                  <g>
-                    <rect x="220" y="200" width="120" height="100" rx="8" fill="currentColor" className="text-red-600" opacity="0.9"/>
-                    <rect x="240" y="220" width="25" height="35" fill="white" opacity="0.3"/>
-                    <rect x="275" y="220" width="25" height="35" fill="white" opacity="0.3"/>
-                    <rect x="310" y="220" width="25" height="35" fill="white" opacity="0.3"/>
-                    
-                    {/* DWTC Label */}
-                    <rect x="220" y="310" width="120" height="40" fill="white" rx="4"/>
-                    <text x="280" y="328" textAnchor="middle" className="text-sm font-bold fill-current">
-                      DUBAI WORLD
-                    </text>
-                    <text x="280" y="343" textAnchor="middle" className="text-sm font-bold fill-current">
-                      TRADE CENTRE
-                    </text>
-                  </g>
-
-                  {/* Expo City Dubai */}
-                  <g>
-                    <rect x="460" y="200" width="120" height="100" rx="8" fill="currentColor" className="text-blue-600" opacity="0.9"/>
-                    <circle cx="490" cy="235" r="15" fill="white" opacity="0.3"/>
-                    <circle cx="520" cy="235" r="15" fill="white" opacity="0.3"/>
-                    <circle cx="550" cy="235" r="15" fill="white" opacity="0.3"/>
-                    <rect x="475" y="260" width="70" height="25" fill="white" opacity="0.3"/>
-                    
-                    {/* Expo City Label */}
-                    <rect x="460" y="310" width="120" height="40" fill="white" rx="4"/>
-                    <text x="520" y="328" textAnchor="middle" className="text-sm font-bold fill-current">
-                      EXPO CITY
-                    </text>
-                    <text x="520" y="343" textAnchor="middle" className="text-sm font-bold fill-current">
-                      DUBAI
-                    </text>
-                  </g>
-
-                  {/* Direction indicators */}
-                  <g opacity="0.6">
-                    <text x="220" y="380" className="text-xs fill-current">← E11 South from Abu Dhabi</text>
-                    <text x="580" y="380" textAnchor="end" className="text-xs fill-current">E11 North from Sharjah →</text>
-                  </g>
-
-                  {/* Distance/Time indicator */}
-                  <g>
-                    <rect x="340" y="190" width="120" height="30" fill="currentColor" className="text-primary" rx="15" opacity="0.95"/>
-                    <text x="400" y="210" textAnchor="middle" className="text-sm font-bold fill-primary-foreground">
-                      15 min | 14 km
-                    </text>
-                  </g>
-                </svg>
-              </div>
-            </Card>
-          </div>
-
-          {/* Transportation Options */}
-          <div className="space-y-4">
-            <Card className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Navigation className="w-5 h-5 text-primary" />
+        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          <Card className="p-6 bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/20 dark:to-sky-950/20 border-blue-200/50 dark:border-blue-800/50">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center">
+                  <Train className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="font-bold text-lg">Getting Around</h3>
+                <div>
+                  <h3 className="font-bold text-lg">Dubai Metro (Red Line)</h3>
+                  <p className="text-sm text-muted-foreground">Direct connection</p>
+                </div>
               </div>
-              <div className="space-y-4">
-                {transportOptions.map((option, idx) => (
-                  <div key={idx} className="p-4 rounded-lg bg-muted/50 hover-elevate" data-testid={`transport-option-${idx}`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`w-8 h-8 rounded-full ${option.color} flex items-center justify-center flex-shrink-0`}>
-                        <option.icon className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-sm mb-1">{option.mode}</div>
-                        <div className="text-xs text-muted-foreground mb-2">
-                          {option.from} → {option.to}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-primary" />
-                          <span className="text-xs font-medium text-primary">{option.duration}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+              <Badge className={metroTimings.isPeakHour ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'}>
+                {metroTimings.isPeakHour ? 'Peak Hours' : 'Off-Peak'}
+              </Badge>
+            </div>
 
-            <Card className="p-6 bg-primary/5 border-primary/20">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-5 h-5 text-primary" />
-                <h4 className="font-bold">Venue Highlights</h4>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground mb-1">From</div>
+                <div className="font-semibold">DWTC Station</div>
+                <div className="text-xs text-muted-foreground mt-1">World Trade Centre</div>
               </div>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold">DWTC</div>
-                    <div className="text-xs text-muted-foreground">8 Halls • Main Exhibitions</div>
+              <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground mb-1">To</div>
+                <div className="font-semibold">Expo City Station</div>
+                <div className="text-xs text-muted-foreground mt-1">UAE Pavilion</div>
+              </div>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Next Train</span>
+                </div>
+                <span className="font-bold text-primary" data-testid="text-next-train">{metroTimings.nextTrain}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Following Train</span>
+                </div>
+                <span className="font-semibold text-muted-foreground" data-testid="text-following-train">{metroTimings.followingTrain}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Frequency</span>
+                </div>
+                <span className="font-semibold text-muted-foreground" data-testid="text-frequency">{metroTimings.frequency}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div>
+                <div className="text-2xl font-bold text-primary">15 min</div>
+                <div className="text-xs text-muted-foreground">Journey time</div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-2" data-testid="button-shail-app">
+                <ExternalLink className="w-4 h-4" />
+                S'hail App
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 border-amber-200/50 dark:border-amber-800/50">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-yellow-500 flex items-center justify-center">
+                  <Car className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Taxi / Private Car</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {isLoading ? 'Checking traffic...' : 'Real-time traffic'}
+                  </p>
+                </div>
+              </div>
+              {trafficData?.trafficCondition && (
+                <Badge className={getTrafficBadgeColor(trafficData.trafficCondition)} data-testid="badge-traffic-condition">
+                  {trafficData.trafficCondition.charAt(0).toUpperCase() + trafficData.trafficCondition.slice(1)} Traffic
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm text-muted-foreground">Distance</div>
+                  <div className="font-bold text-lg" data-testid="text-distance">
+                    {trafficData?.distanceText || '14 km'}
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold">Expo City</div>
-                    <div className="text-xs text-muted-foreground">Innovation Pavilions • Food Tech</div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm text-muted-foreground">Normal Duration</div>
+                  <div className="font-semibold text-muted-foreground" data-testid="text-normal-duration">
+                    {trafficData?.durationText || '18 mins'}
                   </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold">Free Shuttle</div>
-                    <div className="text-xs text-muted-foreground">Every 20 min between venues</div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">With Current Traffic</div>
+                  <div className={`font-bold text-lg ${getTrafficColor(trafficData?.trafficCondition)}`} data-testid="text-traffic-duration">
+                    {trafficData?.durationInTrafficText || trafficData?.durationText || '20 mins'}
                   </div>
                 </div>
               </div>
-            </Card>
 
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-primary/5">
-              <h4 className="font-bold mb-3 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" />
-                Quick Tips
-              </h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Metro runs every 7 minutes during event hours</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Free parking at both venues</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary font-bold">•</span>
-                  <span>Download mobile app for live navigation</span>
-                </li>
-              </ul>
-            </Card>
-          </div>
+              <div className="bg-white dark:bg-gray-900/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground mb-2">Route</div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">DWTC</span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Sheikh Zayed Road</span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">Expo City</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="text-xs text-muted-foreground">
+                Updated {trafficData ? 'just now' : 'recently'}
+              </div>
+              <Button variant="outline" size="sm" className="gap-2" data-testid="button-google-maps">
+                <ExternalLink className="w-4 h-4" />
+                Google Maps
+              </Button>
+            </div>
+          </Card>
         </div>
+
+        <Card className="p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Plane className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">From Dubai International Airport (DXB)</h3>
+              <p className="text-sm text-muted-foreground">Direct metro connection to both venues</p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Train className="w-4 h-4 text-red-500" />
+                <span className="font-semibold text-sm">To DWTC</span>
+              </div>
+              <div className="text-2xl font-bold text-primary mb-1">15 min</div>
+              <div className="text-xs text-muted-foreground">Red Line from Terminal 1 & 3</div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Train className="w-4 h-4 text-red-500" />
+                <span className="font-semibold text-sm">To Expo City</span>
+              </div>
+              <div className="text-2xl font-bold text-primary mb-1">30 min</div>
+              <div className="text-xs text-muted-foreground">Red Line + connection</div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <Car className="w-4 h-4 text-yellow-500" />
+                <span className="font-semibold text-sm">By Taxi</span>
+              </div>
+              <div className="text-2xl font-bold text-primary mb-1">20-25 min</div>
+              <div className="text-xs text-muted-foreground">Direct to any venue</div>
+            </div>
+          </div>
+        </Card>
       </div>
     </section>
   );
