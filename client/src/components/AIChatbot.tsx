@@ -101,6 +101,7 @@ export default function AIChatbot() {
           size="icon"
           onClick={() => setIsOpen(false)}
           data-testid="button-close-chatbot"
+          aria-label="Close chatbot"
         >
           <X className="w-4 h-4" />
         </Button>
