@@ -4,10 +4,29 @@
 
 Gulfood 2026 AI Event Assistant is a web application designed to enhance the visitor and exhibitor experience at the Gulfood 2026 trade show in Dubai. The platform provides AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. Built as a full-stack TypeScript application, it serves as a comprehensive digital companion for one of the world's largest food and beverage exhibitions.
 
+**Key Feature**: The application is **freely accessible without any registration or authentication**. Users can explore all features, interact with the AI assistant, schedule meetings, and browse exhibitors without signing up.
+
 The application targets three primary user groups:
 - **Visitors**: Individuals seeking personalized exhibitor recommendations and event planning
 - **Exhibitors**: Companies looking to connect with potential partners and manage their presence
 - **Event Organizers**: DWTC staff monitoring registration metrics and engagement analytics
+
+## Access Model
+
+### No Registration Required
+The platform operates on an open-access model designed to maximize engagement:
+
+**Pre-Event Access (No Registration):**
+- **Visitors**: Can use AI bot to learn about the event, discover exhibitors, get recommendations, and explore features
+- **Exhibitors**: Can view event information and connect with DWTC sales team without signup
+
+**Post-Event Registration:**
+- **Visitors**: After event registration, continue using AI features for meeting schedules, exhibit guidance, and event navigation
+- **Exhibitors**: After exhibitor registration, access AI bot for event insights, competitor analysis, and market intelligence
+
+**Organizer Dashboard:**
+- Analytics dashboard currently open to all users
+- May implement exclusive access controls in future for DWTC staff (contains sensitive analytical data)
 
 ## User Preferences
 
@@ -35,9 +54,14 @@ The application follows a premium trade show aesthetic inspired by Gulfood.com a
 
 **Component Structure:**
 - Page-level components (`/pages`): Home, NotFound
-- Feature components (`/components`): Hero, Navigation, Footer, CompanyAnalyzer, ExhibitorDirectory, AnalyticsDashboard, AIChatbot
+- Feature components (`/components`): Hero, Navigation, Footer, CompanyAnalyzer, ExhibitorDirectory, AnalyticsDashboard, AIChatbot, VenueNavigation
 - UI primitives (`/components/ui`): 40+ shadcn/ui components for consistent interface patterns
 - Shared utilities (`/lib`): Query client, utility functions
+
+**Navigation:**
+- Simplified navigation labels: "VISITORS", "EXHIBITORS", "Analytics"
+- No authentication buttons (no "Sign In" or "Register Now")
+- All pages freely accessible to everyone
 
 **State Management Approach:**
 Server state is managed through React Query with custom query functions, implementing:
@@ -136,7 +160,10 @@ Shared schema definitions using Drizzle Zod for:
 - Custom generated images stored in `attached_assets/generated_images/`:
   - Hero imagery (Gulfood exhibition hall)
   - Feature illustrations (AI analysis, event planning)
-  - Booth displays
+  - Sector-specific booth displays (Dairy, Beverages, Organic, Meat & Poultry, Gourmet)
+  - Meeting scheduler banner
+  - Venue navigation map
+  - Analytics dashboard visualization
 
 ### Environment Requirements
 - `DATABASE_URL`: PostgreSQL connection string (required)
