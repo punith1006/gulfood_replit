@@ -137,28 +137,33 @@ export default function AIChatbot() {
 
   return (
     <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col" data-testid="card-chatbot">
-      <div className="flex items-center justify-between p-4 border-b border-border bg-primary/5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <div className="font-bold">Faris</div>
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
-              Your AI Guide
+      <div className="p-4 border-b border-border bg-primary/5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <div className="font-bold">Faris</div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
+                Your AI Guide
+              </div>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            data-testid="button-close-chatbot"
+            aria-label="Close chatbot"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsOpen(false)}
-          data-testid="button-close-chatbot"
-          aria-label="Close chatbot"
-        >
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="text-xs text-muted-foreground text-center py-1 px-2 bg-muted/50 rounded">
+          🌍 English | العربية | 中文 | हिन्दी
+        </div>
       </div>
 
       <ScrollArea className="flex-1 p-4">
