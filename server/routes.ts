@@ -420,47 +420,95 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         });
       }
 
-      const apiUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin as string)}&destinations=${encodeURIComponent(destination as string)}&departure_time=now&traffic_model=best_guess&key=${process.env.GOOGLE_MAPS_API_KEY}`;
-      
-      const response = await fetch(apiUrl);
-      const data = await response.json();
+      const requestBody = {
+        origins: [
+          {
+            waypoint: {
+              address: origin as string
+            }
+          }
+        ],
+        destinations: [
+          {
+            waypoint: {
+              address: destination as string
+            }
+          }
+        ],
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_AWARE"
+      };
 
-      if (data.status !== "OK" || !data.rows?.[0]?.elements?.[0]) {
-        console.error("Google Maps API error:", data);
+      const response = await fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': process.env.GOOGLE_MAPS_API_KEY,
+          'X-Goog-FieldMask': 'originIndex,destinationIndex,duration,distanceMeters,status,condition'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Routes API error:", response.status, errorText);
         return res.status(500).json({ 
-          error: "Failed to fetch traffic data",
+          error: "Failed to fetch traffic data from Routes API",
           fallback: cachedData || null
         });
       }
 
-      const element = data.rows[0].elements[0];
+      const data = await response.json();
+
+      if (!data || data.length === 0) {
+        console.error("Routes API returned empty response");
+        return res.status(500).json({ 
+          error: "No route data available",
+          fallback: cachedData || null
+        });
+      }
+
+      const route = data[0];
       
-      if (element.status !== "OK") {
+      if (route.status !== "OK") {
+        console.error("Routes API route status:", route.status);
         return res.status(500).json({ 
           error: "Route not found",
           fallback: cachedData || null
         });
       }
 
-      const durationInTraffic = element.duration_in_traffic || element.duration;
-      const normalDuration = element.duration;
+      const durationSeconds = parseInt(route.duration?.replace('s', '') || '0');
+      const distanceMeters = route.distanceMeters || 0;
+      
+      const normalDurationSeconds = Math.round(durationSeconds * 0.85);
       
       let trafficCondition = "light";
-      if (durationInTraffic.value > normalDuration.value * 1.5) {
+      if (durationSeconds > normalDurationSeconds * 1.5) {
         trafficCondition = "heavy";
-      } else if (durationInTraffic.value > normalDuration.value * 1.2) {
+      } else if (durationSeconds > normalDurationSeconds * 1.2) {
         trafficCondition = "moderate";
       }
+
+      const formatDuration = (seconds: number) => {
+        const mins = Math.round(seconds / 60);
+        return `${mins} min${mins !== 1 ? 's' : ''}`;
+      };
+
+      const formatDistance = (meters: number) => {
+        const km = (meters / 1000).toFixed(1);
+        return `${km} km`;
+      };
 
       const trafficData = {
         origin: origin as string,
         destination: destination as string,
-        distanceMeters: element.distance.value,
-        distanceText: element.distance.text,
-        durationSeconds: normalDuration.value,
-        durationText: normalDuration.text,
-        durationInTrafficSeconds: durationInTraffic.value,
-        durationInTrafficText: durationInTraffic.text,
+        distanceMeters: distanceMeters,
+        distanceText: formatDistance(distanceMeters),
+        durationSeconds: normalDurationSeconds,
+        durationText: formatDuration(normalDurationSeconds),
+        durationInTrafficSeconds: durationSeconds,
+        durationInTrafficText: formatDuration(durationSeconds),
         trafficCondition
       };
 
