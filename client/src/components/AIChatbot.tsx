@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
-//todo: remove mock functionality
 const quickActions = [
   "How do I register?",
   "Show me dairy exhibitors",
@@ -21,6 +22,7 @@ interface Message {
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -28,34 +30,45 @@ export default function AIChatbot() {
     }
   ]);
   const [input, setInput] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const chatMutation = useMutation({
+    mutationFn: async (message: string) => {
+      return await apiRequest<{ message: string }>("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({ sessionId, message }),
+        headers: { "Content-Type": "application/json" }
+      });
+    },
+    onSuccess: (data) => {
+      setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
+    },
+    onError: () => {
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "I'm sorry, I'm having trouble processing that right now. Please try again."
+      }]);
+    }
+  });
 
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || chatMutation.isPending) return;
 
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
-
-    //todo: remove mock functionality
-    setTimeout(() => {
-      const responses = [
-        "I can help you with that! Let me find the best dairy exhibitors for your profile.",
-        "The registration process is simple. I'll guide you through each step.",
-        "I've created a personalized schedule for you based on your interests in the dairy sector.",
-        "Meeting rooms are available at both DWTC and Expo City venues. Would you like to book one?"
-      ];
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: responses[Math.floor(Math.random() * responses.length)]
-      };
-      setMessages(prev => [...prev, assistantMessage]);
-    }, 1000);
-
+    chatMutation.mutate(input);
     setInput("");
   };
 
   const handleQuickAction = (action: string) => {
     setInput(action);
-    handleSend();
+    setTimeout(() => handleSend(), 0);
   };
 
   if (!isOpen) {
@@ -115,6 +128,15 @@ export default function AIChatbot() {
               </div>
             </div>
           ))}
+          {chatMutation.isPending && (
+            <div className="flex justify-start">
+              <div className="bg-muted text-foreground rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Thinking...
+              </div>
+            </div>
+          )}
+          <div ref={scrollRef} />
         </div>
       </ScrollArea>
 
@@ -138,9 +160,15 @@ export default function AIChatbot() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            disabled={chatMutation.isPending}
             data-testid="input-chat-message"
           />
-          <Button size="icon" onClick={handleSend} data-testid="button-send-message">
+          <Button 
+            size="icon" 
+            onClick={handleSend}
+            disabled={chatMutation.isPending || !input.trim()}
+            data-testid="button-send-message"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>

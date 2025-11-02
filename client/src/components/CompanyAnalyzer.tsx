@@ -6,31 +6,44 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Search, Sparkles, TrendingUp, Target, Award } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { CompanyAnalysis } from "@shared/schema";
 
 export default function CompanyAnalyzer() {
   const [companyUrl, setCompanyUrl] = useState("");
-  const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CompanyAnalysis | null>(null);
+  const { toast } = useToast();
+
+  const analyzeMutation = useMutation({
+    mutationFn: async (companyIdentifier: string) => {
+      return await apiRequest<CompanyAnalysis>("/api/analyze-company", {
+        method: "POST",
+        body: JSON.stringify({ companyIdentifier }),
+        headers: { "Content-Type": "application/json" }
+      });
+    },
+    onSuccess: (data) => {
+      setResult(data);
+      toast({
+        title: "Analysis Complete",
+        description: "Your company profile has been analyzed successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Analysis Failed",
+        description: "Unable to analyze company. Please try again.",
+        variant: "destructive"
+      });
+      console.error("Analysis error:", error);
+    }
+  });
 
   const handleAnalyze = () => {
-    setAnalyzing(true);
-    //todo: remove mock functionality
-    setTimeout(() => {
-      setResult({
-        companyName: "Al Rawabi Dairy Company",
-        relevanceScore: 94,
-        summary: "Al Rawabi Dairy is a leading dairy producer in the UAE specializing in fresh milk, laban, yogurt, and cheese products. With state-of-the-art production facilities and a commitment to quality, the company serves the GCC region with premium dairy solutions.",
-        sectors: ["Dairy", "Beverages"],
-        benefits: [
-          "Connect with 200+ international dairy equipment suppliers",
-          "Access to $2.5B+ in potential business opportunities",
-          "Network with buyers from 120+ countries",
-          "Discover latest innovations in dairy processing technology"
-        ],
-        matchedExhibitors: 47
-      });
-      setAnalyzing(false);
-    }, 2000);
+    if (!companyUrl.trim()) return;
+    analyzeMutation.mutate(companyUrl);
   };
 
   return (
@@ -65,14 +78,15 @@ export default function CompanyAnalyzer() {
                     onChange={(e) => setCompanyUrl(e.target.value)}
                     className="flex-1"
                     data-testid="input-company-url"
+                    onKeyPress={(e) => e.key === "Enter" && handleAnalyze()}
                   />
                   <Button
                     onClick={handleAnalyze}
-                    disabled={analyzing || !companyUrl}
+                    disabled={analyzeMutation.isPending || !companyUrl}
                     className="gap-2"
                     data-testid="button-analyze"
                   >
-                    {analyzing ? (
+                    {analyzeMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
                         Analyzing
@@ -90,7 +104,7 @@ export default function CompanyAnalyzer() {
                 </p>
               </div>
 
-              {analyzing && (
+              {analyzeMutation.isPending && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -107,9 +121,10 @@ export default function CompanyAnalyzer() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-2xl font-bold mb-2" data-testid="text-company-name">{result.companyName}</h3>
-                  <div className="flex items-center gap-3 mb-4">
-                    <Badge variant="secondary">{result.sectors[0]}</Badge>
-                    <Badge variant="secondary">{result.sectors[1]}</Badge>
+                  <div className="flex items-center gap-3 mb-4 flex-wrap">
+                    {result.sector.map((s, idx) => (
+                      <Badge key={idx} variant="secondary">{s}</Badge>
+                    ))}
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-company-summary">
                     {result.summary}
@@ -125,7 +140,7 @@ export default function CompanyAnalyzer() {
                   </div>
                   <Progress value={result.relevanceScore} className="h-3" />
                   <p className="text-xs text-muted-foreground mt-2">
-                    Excellent match for Gulfood 2026
+                    {result.relevanceScore >= 80 ? "Excellent" : result.relevanceScore >= 60 ? "Good" : "Fair"} match for Gulfood 2026
                   </p>
                 </div>
 
@@ -135,7 +150,7 @@ export default function CompanyAnalyzer() {
                     Why Gulfood 2026 is Perfect for You
                   </div>
                   <ul className="space-y-2">
-                    {result.benefits.map((benefit: string, idx: number) => (
+                    {result.benefits.map((benefit, idx) => (
                       <li key={idx} className="flex gap-2 text-sm text-muted-foreground">
                         <TrendingUp className="w-4 h-4 text-chart-3 flex-shrink-0 mt-0.5" />
                         <span>{benefit}</span>
@@ -151,7 +166,7 @@ export default function CompanyAnalyzer() {
                       Matched Exhibitors
                     </span>
                     <span className="text-lg font-bold text-primary" data-testid="text-matched-exhibitors">
-                      {result.matchedExhibitors}
+                      {result.matchedExhibitorsCount}
                     </span>
                   </div>
                   <Button className="w-full" data-testid="button-view-recommendations">

@@ -2,46 +2,15 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
-//todo: remove mock functionality
-const stats = [
-  {
-    label: "Total Registrations",
-    value: "12,847",
-    change: "+23%",
-    trend: "up",
-    icon: Users,
-    color: "text-chart-1",
-    bgColor: "bg-chart-1/10"
-  },
-  {
-    label: "Exhibitor Signups",
-    value: "8,523",
-    change: "+18%",
-    trend: "up",
-    icon: Building2,
-    color: "text-chart-2",
-    bgColor: "bg-chart-2/10"
-  },
-  {
-    label: "AI Interactions",
-    value: "45,392",
-    change: "+156%",
-    trend: "up",
-    icon: MessageSquare,
-    color: "text-chart-3",
-    bgColor: "bg-chart-3/10"
-  },
-  {
-    label: "Meeting Requests",
-    value: "3,284",
-    change: "-5%",
-    trend: "down",
-    icon: TrendingUp,
-    color: "text-chart-4",
-    bgColor: "bg-chart-4/10"
-  }
-];
+interface Analytics {
+  totalRegistrations: number;
+  exhibitorSignups: number;
+  aiInteractions: number;
+  meetingRequests: number;
+}
 
 const sectorData = [
   { name: "Dairy", percentage: 85, count: 1247 },
@@ -51,6 +20,50 @@ const sectorData = [
 ];
 
 export default function AnalyticsDashboard() {
+  const { data: analytics, isLoading } = useQuery<Analytics>({
+    queryKey: ["/api/analytics"],
+    refetchInterval: 10000
+  });
+
+  const stats = [
+    {
+      label: "Total Registrations",
+      value: analytics?.totalRegistrations?.toString() || "0",
+      change: "+23%",
+      trend: "up",
+      icon: Users,
+      color: "text-chart-1",
+      bgColor: "bg-chart-1/10"
+    },
+    {
+      label: "Exhibitor Signups",
+      value: analytics?.exhibitorSignups?.toString() || "0",
+      change: "+18%",
+      trend: "up",
+      icon: Building2,
+      color: "text-chart-2",
+      bgColor: "bg-chart-2/10"
+    },
+    {
+      label: "AI Interactions",
+      value: analytics?.aiInteractions?.toString() || "0",
+      change: "+156%",
+      trend: "up",
+      icon: MessageSquare,
+      color: "text-chart-3",
+      bgColor: "bg-chart-3/10"
+    },
+    {
+      label: "Meeting Requests",
+      value: analytics?.meetingRequests?.toString() || "0",
+      change: "+12%",
+      trend: "up",
+      icon: TrendingUp,
+      color: "text-chart-4",
+      bgColor: "bg-chart-4/10"
+    }
+  ];
+
   return (
     <section className="py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -71,20 +84,30 @@ export default function AnalyticsDashboard() {
             const Icon = stat.icon;
             return (
               <Card key={idx} className="p-6" data-testid={`card-stat-${idx}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                {isLoading ? (
+                  <div className="space-y-4 animate-pulse">
+                    <div className="h-12 bg-muted rounded" />
+                    <div className="h-8 bg-muted rounded" />
+                    <div className="h-4 bg-muted rounded" />
                   </div>
-                  <Badge
-                    variant={stat.trend === "up" ? "default" : "secondary"}
-                    className={stat.trend === "up" ? "bg-chart-3/20 text-chart-3" : ""}
-                  >
-                    {stat.trend === "up" ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                    {stat.change}
-                  </Badge>
-                </div>
-                <div className="text-3xl font-bold mb-1" data-testid={`text-stat-value-${idx}`}>{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
+                        <Icon className={`w-6 h-6 ${stat.color}`} />
+                      </div>
+                      <Badge
+                        variant={stat.trend === "up" ? "default" : "secondary"}
+                        className={stat.trend === "up" ? "bg-chart-3/20 text-chart-3" : ""}
+                      >
+                        {stat.trend === "up" ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
+                        {stat.change}
+                      </Badge>
+                    </div>
+                    <div className="text-3xl font-bold mb-1" data-testid={`text-stat-value-${idx}`}>{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </>
+                )}
               </Card>
             );
           })}

@@ -18,13 +18,15 @@ export default function Navigation() {
     <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2" data-testid="link-home">
-            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-lg leading-none tracking-tight">Gulfood 2026</span>
-              <span className="text-xs text-muted-foreground">AI Assistant</span>
+          <Link href="/">
+            <div className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2 cursor-pointer" data-testid="link-home">
+              <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-primary-foreground" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-lg leading-none tracking-tight">Gulfood 2026</span>
+                <span className="text-xs text-muted-foreground">AI Assistant</span>
+              </div>
             </div>
           </Link>
 
@@ -33,15 +35,15 @@ export default function Navigation() {
               <Link
                 key={item.path}
                 href={item.path}
-                data-testid={`link-${item.label.toLowerCase().replace(" ", "-")}`}
               >
-                <a
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                <span
+                  className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
                     location === item.path ? "text-primary" : "text-foreground"
                   }`}
+                  data-testid={`link-${item.label.toLowerCase().replace(" ", "-")}`}
                 >
                   {item.label}
-                </a>
+                </span>
               </Link>
             ))}
           </div>
@@ -72,14 +74,14 @@ export default function Navigation() {
           <div className="px-4 py-3 space-y-3">
             {navItems.map((item) => (
               <Link key={item.path} href={item.path}>
-                <a
-                  className={`block py-2 text-sm font-medium ${
+                <span
+                  className={`block py-2 text-sm font-medium cursor-pointer ${
                     location === item.path ? "text-primary" : "text-foreground"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.label}
-                </a>
+                </span>
               </Link>
             ))}
             <div className="pt-3 space-y-2 border-t border-border">
