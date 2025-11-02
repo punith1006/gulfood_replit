@@ -46,12 +46,7 @@ export default function AIChatbot() {
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const { userRole, setUserRole } = useRole();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Ask me anything....."
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
