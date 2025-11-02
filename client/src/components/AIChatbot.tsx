@@ -9,10 +9,12 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 const quickActions = [
-  "How do I register?",
-  "Show me dairy exhibitors",
-  "Create my event schedule",
-  "Find meeting rooms"
+  "Find exhibitors for me",
+  "Show travel & route options",
+  "Plan my event schedule",
+  "Book meetings",
+  "Navigate the venue",
+  "Hotel recommendations"
 ];
 
 interface Message {
@@ -22,11 +24,12 @@ interface Message {
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Welcome to Gulfood 2026! I'm your AI assistant. How can I help you today?"
+      content: "👋 Welcome to Gulfood 2026!\n\nI'm your personal AI assistant, here to make your event experience seamless!\n\n✨ I can help you with:\n• Finding the perfect exhibitors\n• Planning travel & routes to Dubai\n• Creating your event schedule\n• Booking meetings with exhibitors\n• Venue navigation & directions\n• Hotel & accommodation tips\n• Restaurant recommendations\n• And much more!\n\nHow can I assist you today?"
     }
   ]);
   const [input, setInput] = useState("");
@@ -37,6 +40,18 @@ export default function AIChatbot() {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
+
+  useEffect(() => {
+    const hasVisited = sessionStorage.getItem('gulfood_chatbot_seen');
+    if (!hasVisited && !hasAutoOpened) {
+      const timer = setTimeout(() => {
+        setIsOpen(true);
+        setHasAutoOpened(true);
+        sessionStorage.setItem('gulfood_chatbot_seen', 'true');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasAutoOpened]);
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
@@ -64,20 +79,32 @@ export default function AIChatbot() {
   };
 
   const handleQuickAction = (action: string) => {
-    setInput(action);
-    setTimeout(() => handleSend(), 0);
+    if (chatMutation.isPending) return;
+    
+    const userMessage: Message = { role: "user", content: action };
+    setMessages(prev => [...prev, userMessage]);
+    chatMutation.mutate(action);
   };
 
   if (!isOpen) {
     return (
-      <Button
-        size="lg"
-        className="fixed bottom-6 right-6 rounded-full w-14 h-14 shadow-2xl z-50 group"
-        onClick={() => setIsOpen(true)}
-        data-testid="button-open-chatbot"
-      >
-        <Bot className="w-6 h-6 group-hover:scale-110 transition-transform" />
-      </Button>
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {!hasAutoOpened && (
+          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl max-w-xs animate-in slide-in-from-bottom-5 duration-500">
+            <p className="text-sm font-medium">👋 Need help? I'm here for you!</p>
+            <p className="text-xs mt-1 opacity-90">Ask me about exhibitors, travel, schedules, and more!</p>
+          </div>
+        )}
+        <Button
+          size="lg"
+          className="rounded-full w-16 h-16 shadow-2xl group relative"
+          onClick={() => setIsOpen(true)}
+          data-testid="button-open-chatbot"
+        >
+          <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-chart-3 rounded-full animate-pulse" />
+        </Button>
+      </div>
     );
   }
 
@@ -139,12 +166,13 @@ export default function AIChatbot() {
       </ScrollArea>
 
       <div className="p-4 border-t border-border space-y-3">
+        <div className="text-xs text-muted-foreground mb-2">Quick actions:</div>
         <div className="flex flex-wrap gap-2">
           {quickActions.map((action, idx) => (
             <Badge
               key={idx}
               variant="secondary"
-              className="cursor-pointer hover-elevate"
+              className="cursor-pointer hover-elevate text-xs"
               onClick={() => handleQuickAction(action)}
               data-testid={`badge-quick-action-${idx}`}
             >
