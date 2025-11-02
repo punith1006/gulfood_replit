@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Sparkles, TrendingUp, Target, Award } from "lucide-react";
+import { Loader2, Search, Sparkles, TrendingUp, Target, Award, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -61,6 +61,10 @@ export default function CompanyAnalyzer() {
   const handleAnalyze = () => {
     if (!companyUrl.trim()) return;
     analyzeMutation.mutate(companyUrl);
+  };
+
+  const handleClearResults = () => {
+    setResult(null);
   };
 
   return (
@@ -134,10 +138,19 @@ export default function CompanyAnalyzer() {
           </Card>
 
           {result && (
-            <Card className="p-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <Card className="p-8 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4"
+                onClick={handleClearResults}
+                data-testid="button-close-results"
+              >
+                <X className="w-4 h-4" />
+              </Button>
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-2xl font-bold mb-2" data-testid="text-company-name">{result.companyName}</h3>
+                  <h3 className="text-2xl font-bold mb-2 pr-8" data-testid="text-company-name">{result.companyName}</h3>
                   <div className="flex items-center gap-3 mb-4 flex-wrap">
                     {result.sector.map((s, idx) => (
                       <Badge key={idx} variant="secondary">{s}</Badge>
