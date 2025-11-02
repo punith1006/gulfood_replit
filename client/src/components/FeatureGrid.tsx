@@ -3,6 +3,10 @@ import { Badge } from "@/components/ui/badge";
 import { Bot, Calendar, Users, BarChart3, MapPin, Target } from "lucide-react";
 import aiImage from "@assets/generated_images/AI_analysis_interface_visualization_ba2621ab.png";
 import eventImage from "@assets/generated_images/Interactive_event_planning_technology_8bddd5ec.png";
+import matchingImage from "@assets/generated_images/Exhibitor_matching_technology_e4cb23f0.png";
+import schedulerImage from "@assets/generated_images/Meeting_scheduler_system_12a84b15.png";
+import analyticsImage from "@assets/generated_images/Analytics_dashboard_display_a2817ddc.png";
+import navigationImage from "@assets/generated_images/Venue_navigation_interface_3cd2cce1.png";
 
 const features = [
   {
@@ -26,28 +30,32 @@ const features = [
     title: "Exhibitor Matching",
     description: "Connect with the right exhibitors from 8,500+ participants across 12 sectors",
     color: "text-chart-3",
-    bgColor: "bg-chart-3/10"
+    bgColor: "bg-chart-3/10",
+    image: matchingImage
   },
   {
     icon: Target,
     title: "Meeting Scheduler",
     description: "Seamlessly schedule B2B meetings with exhibitors and DWTC sales team",
     color: "text-chart-4",
-    bgColor: "bg-chart-4/10"
+    bgColor: "bg-chart-4/10",
+    image: schedulerImage
   },
   {
     icon: BarChart3,
     title: "Analytics Dashboard",
     description: "Real-time insights on registrations, engagement metrics, and visitor trends",
     color: "text-chart-5",
-    bgColor: "bg-chart-5/10"
+    bgColor: "bg-chart-5/10",
+    image: analyticsImage
   },
   {
     icon: MapPin,
     title: "Venue Navigation",
     description: "Interactive maps and shuttle schedules for dual-venue experience",
     color: "text-primary",
-    bgColor: "bg-primary/10"
+    bgColor: "bg-primary/10",
+    image: navigationImage
   }
 ];
 
