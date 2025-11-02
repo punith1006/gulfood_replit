@@ -73,9 +73,11 @@ Provide a JSON response with:
 1. companyName: The company name (infer from identifier if needed)
 2. sector: Array of relevant food/beverage sectors (e.g., ["Dairy", "Beverages"])
 3. relevanceScore: Number 0-100 indicating how relevant Gulfood 2026 is for this company
-4. summary: Brief 2-3 sentence company description
-5. benefits: Array of 4 specific benefits of attending Gulfood 2026 for this company
-6. matchedExhibitorsCount: Estimate number of relevant exhibitors from 8,500+ total
+4. scoreReasoning: 2-3 sentences explaining WHY this relevance score was given (include specific factors: company's industry alignment, potential networking opportunities, market expansion possibilities, supplier connections, etc.)
+5. summary: Brief 2-3 sentence company description
+6. benefits: Array of 4 specific benefits of attending Gulfood 2026 for this company
+7. matchedExhibitorsCount: Estimate number of relevant exhibitors from 8,500+ total
+8. recommendations: Array of 3 specific personalized recommendations with logic (format: "Recommendation: [action] - Logic: [why this helps]")
 
 Format as valid JSON only, no markdown.`;
 
@@ -99,9 +101,11 @@ Format as valid JSON only, no markdown.`;
         companyName: z.string().min(1),
         sector: z.array(z.string()).min(1).default(["General"]),
         relevanceScore: z.number().min(0).max(100).default(50),
+        scoreReasoning: z.string().min(1).default("Score based on general industry alignment with Gulfood 2026 exhibitors and event focus areas."),
         summary: z.string().min(1),
         benefits: z.array(z.string()).min(1).default(["Connect with industry professionals", "Explore new market opportunities"]),
-        matchedExhibitorsCount: z.number().min(0).default(100)
+        matchedExhibitorsCount: z.number().min(0).default(100),
+        recommendations: z.array(z.string()).min(1).default(["Connect with relevant exhibitors in your sector", "Attend sector-specific networking events", "Schedule meetings with potential partners"])
       });
 
       let validated;
@@ -117,6 +121,7 @@ Format as valid JSON only, no markdown.`;
           companyName: analysisData.companyName || companyIdentifier,
           sector: Array.isArray(analysisData.sector) && analysisData.sector.length > 0 ? analysisData.sector : ["General"],
           relevanceScore: Math.max(fallbackRelevance, 10),
+          scoreReasoning: analysisData.scoreReasoning || "This score reflects the company's alignment with Gulfood 2026's food and beverage industry focus, potential networking opportunities with global exhibitors, and opportunities for market expansion in the region.",
           summary: analysisData.summary || `Analysis for ${companyIdentifier}. Gulfood 2026 offers opportunities to connect with global food and beverage industry leaders.`,
           benefits: Array.isArray(analysisData.benefits) && analysisData.benefits.length > 0 
             ? analysisData.benefits 
@@ -126,7 +131,14 @@ Format as valid JSON only, no markdown.`;
                 "Showcase your products to potential buyers",
                 "Learn from industry experts and thought leaders"
               ],
-          matchedExhibitorsCount: Math.max(fallbackMatched, 100)
+          matchedExhibitorsCount: Math.max(fallbackMatched, 100),
+          recommendations: Array.isArray(analysisData.recommendations) && analysisData.recommendations.length > 0
+            ? analysisData.recommendations
+            : [
+                "Visit pavilions matching your industry sector to identify key suppliers and partners",
+                "Attend networking sessions and seminars specific to your business focus area",
+                "Schedule pre-event meetings with exhibitors to maximize on-site efficiency"
+              ]
         };
         
         console.log("Using fallback analysis data:", validated);
@@ -146,10 +158,12 @@ Format as valid JSON only, no markdown.`;
         companyName: validated.companyName,
         sector: validated.sector,
         relevanceScore: validated.relevanceScore,
+        scoreReasoning: validated.scoreReasoning,
         summary: validated.summary,
         benefits: validated.benefits,
         matchedExhibitorsCount: validated.matchedExhibitorsCount,
         matchedExhibitorIds,
+        recommendations: validated.recommendations,
         analysisData: validated
       });
 
@@ -256,24 +270,30 @@ Format as valid JSON only, no markdown.`;
 
       const systemPrompt = `You are Faris (فارس), an AI assistant for Gulfood 2026, the world's largest food & beverage exhibition in Dubai (January 26-30, 2026).
 
-IMPORTANT: You are MULTILINGUAL and can understand and respond in:
-- English
-- Arabic (العربية)
-- Simplified Chinese (简体中文)
-- Hindi (हिन्दी)
+IMPORTANT FORMATTING RULES:
+- ALWAYS format your responses using bullet points (•) or numbered lists
+- Break down information into clear, scannable sections
+- Use short, digestible paragraphs (maximum 2-3 sentences)
+- Make responses easy to read and follow
+- NEVER provide long, single-paragraph responses
 
-Detect the language of the user's message and respond in the SAME language. If they ask in Arabic, respond in Arabic. If they ask in Chinese, respond in Chinese. If they ask in Hindi, respond in Hindi.
+LANGUAGE RULES:
+- You understand English, Arabic (العربية), Simplified Chinese (简体中文), and Hindi (हिन्दी)
+- DEFAULT to English unless the user explicitly writes in another language
+- Once you detect a non-English language in the user's message, respond in that language
+- MAINTAIN the same language throughout the conversation unless the user switches
+- Do NOT automatically switch languages mid-conversation
 
 Key Event Information:
-- Venue: Dubai World Trade Centre & Expo City Dubai
-- Dates: January 26-30, 2026
-- 8,500+ exhibitors across 12 sectors
-- 100,000+ expected visitors from 120+ countries
-- Sectors: Dairy, Beverages, Meat & Poultry, Plant-Based, Fresh Produce, Snacks, Gourmet, Organic Foods, Confectionery, Bakery, Seafood, Health & Wellness
+• Venue: Dubai World Trade Centre & Expo City Dubai
+• Dates: January 26-30, 2026
+• 8,500+ exhibitors across 12 sectors
+• 100,000+ expected visitors from 120+ countries
+• Sectors: Dairy, Beverages, Meat & Poultry, Plant-Based, Fresh Produce, Snacks, Gourmet, Organic Foods, Confectionery, Bakery, Seafood, Health & Wellness
 
 ${roleContext}
 
-Be helpful, concise, professional, and culturally aware. Always respond in the user's language.`;
+Be helpful, concise, professional, and culturally aware. Remember: ALWAYS use bullet points or numbered lists to format your responses.`;
 
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",

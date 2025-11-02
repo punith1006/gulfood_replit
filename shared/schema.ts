@@ -23,10 +23,12 @@ export const companyAnalyses = pgTable("company_analyses", {
   companyName: text("company_name").notNull(),
   sector: text("sector").array().notNull(),
   relevanceScore: integer("relevance_score").notNull(),
+  scoreReasoning: text("score_reasoning"),
   summary: text("summary").notNull(),
   benefits: text("benefits").array().notNull(),
   matchedExhibitorsCount: integer("matched_exhibitors_count").notNull(),
   matchedExhibitorIds: integer("matched_exhibitor_ids").array(),
+  recommendations: text("recommendations").array(),
   analysisData: jsonb("analysis_data"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });

@@ -682,6 +682,94 @@ const sampleExhibitors = [
     products: ["Cooking Oil", "Margarine", "Ghee", "Shortening"],
     contactEmail: "info@iffco.com",
     contactPhone: "+971 6 528 4444"
+  },
+  {
+    name: "Amul",
+    sector: "Dairy",
+    country: "India",
+    booth: "Hall 1 - D201",
+    description: "India's largest dairy cooperative with a wide range of milk and dairy products",
+    website: "https://www.amul.com",
+    products: ["Milk", "Butter", "Cheese", "Ice Cream", "Ghee"],
+    contactEmail: "info@amul.coop",
+    contactPhone: "+91 2692 258506"
+  },
+  {
+    name: "Mother Dairy",
+    sector: "Dairy",
+    country: "India",
+    booth: "Hall 1 - D202",
+    description: "Leading dairy brand in India offering fresh milk and dairy products",
+    website: "https://www.motherdairy.com",
+    products: ["Fresh Milk", "Curd", "Paneer", "Ghee", "Butter"],
+    contactEmail: "customer@motherdairy.com",
+    contactPhone: "+91 11 2681 2001"
+  },
+  {
+    name: "Britannia Industries",
+    sector: "Snacks",
+    country: "India",
+    booth: "Hall 5 - J101",
+    description: "India's leading food company with biscuits, bread, and dairy products",
+    website: "https://www.britannia.co.in",
+    products: ["Biscuits", "Bread", "Cakes", "Dairy Products"],
+    contactEmail: "info@britannia.co.in",
+    contactPhone: "+91 33 2466 1950"
+  },
+  {
+    name: "Parle Products",
+    sector: "Snacks",
+    country: "India",
+    booth: "Hall 5 - J102",
+    description: "Iconic Indian biscuit and confectionery manufacturer",
+    website: "https://www.parleproducts.com",
+    products: ["Biscuits", "Candies", "Snacks", "Wafers"],
+    contactEmail: "info@parleproducts.com",
+    contactPhone: "+91 22 2857 2823"
+  },
+  {
+    name: "Haldiram's",
+    sector: "Snacks",
+    country: "India",
+    booth: "Hall 5 - J103",
+    description: "Premium Indian snacks and sweets manufacturer with global presence",
+    website: "https://www.haldirams.com",
+    products: ["Namkeen", "Sweets", "Ready-to-Eat", "Frozen Foods"],
+    contactEmail: "info@haldirams.com",
+    contactPhone: "+91 11 4079 4079"
+  },
+  {
+    name: "ITC Foods",
+    sector: "Snacks",
+    country: "India",
+    booth: "Hall 5 - J104",
+    description: "Diversified food company with brands across multiple categories",
+    website: "https://www.itcportal.com",
+    products: ["Biscuits", "Noodles", "Snacks", "Ready-to-Cook"],
+    contactEmail: "foods@itc.in",
+    contactPhone: "+91 33 2288 9371"
+  },
+  {
+    name: "Dabur India",
+    sector: "Beverages",
+    country: "India",
+    booth: "Hall 2 - L101",
+    description: "Leading FMCG company with juices, health drinks, and food products",
+    website: "https://www.dabur.com",
+    products: ["Juices", "Honey", "Culinary Pastes", "Health Drinks"],
+    contactEmail: "info@dabur.com",
+    contactPhone: "+91 11 2371 7940"
+  },
+  {
+    name: "Adani Wilmar",
+    sector: "Fats & Oils",
+    country: "India",
+    booth: "Hall 6 - F678",
+    description: "Leading edible oil company with Fortune brand",
+    website: "https://www.adaniwilmar.com",
+    products: ["Edible Oils", "Wheat Flour", "Rice", "Pulses"],
+    contactEmail: "info@adaniwilmar.com",
+    contactPhone: "+91 79 2656 3555"
   }
 ];
 

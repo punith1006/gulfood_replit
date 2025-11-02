@@ -159,6 +159,14 @@ export default function CompanyAnalyzer() {
                   <p className="text-xs text-muted-foreground mt-2">
                     {result.relevanceScore >= 80 ? "Excellent" : result.relevanceScore >= 60 ? "Good" : "Fair"} match for Gulfood 2026
                   </p>
+                  {result.scoreReasoning && (
+                    <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                      <p className="text-sm font-medium mb-1 text-foreground">Why this score?</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-score-reasoning">
+                        {result.scoreReasoning}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">
@@ -175,6 +183,24 @@ export default function CompanyAnalyzer() {
                     ))}
                   </ul>
                 </div>
+
+                {result.recommendations && result.recommendations.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <Target className="w-4 h-4 text-primary" />
+                      Personalized Recommendations
+                    </div>
+                    <ul className="space-y-3">
+                      {result.recommendations.map((rec, idx) => (
+                        <li key={idx} className="p-3 bg-primary/5 rounded-lg">
+                          <p className="text-sm text-foreground leading-relaxed" data-testid={`text-recommendation-${idx}`}>
+                            {rec}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div className="pt-4 border-t border-border">
                   <div className="flex items-center justify-between mb-3">

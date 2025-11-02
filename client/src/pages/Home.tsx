@@ -17,7 +17,9 @@ export default function Home() {
       <Hero />
       <CompanyAnalyzer />
       <FeatureGrid />
-      <ExhibitorDirectory />
+      <div id="exhibitors-directory">
+        <ExhibitorDirectory />
+      </div>
       <VenueNavigation />
       {userRole === "organizer" ? (
         <AnalyticsDashboard />

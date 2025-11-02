@@ -1,9 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Calendar, MapPin, Users } from "lucide-react";
+import { useChatbot } from "@/contexts/ChatbotContext";
 import heroImage from "@assets/generated_images/Gulfood_exhibition_hall_hero_e5151e19.png";
 
 export default function Hero() {
+  const { openChatbot } = useChatbot();
+  
+  const handleExploreExhibitors = () => {
+    const exhibitorsSection = document.getElementById('exhibitors-directory');
+    if (exhibitorsSection) {
+      exhibitorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0">
@@ -32,7 +42,12 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-12">
-            <Button size="lg" className="text-base gap-2" data-testid="button-get-started">
+            <Button 
+              size="lg" 
+              className="text-base gap-2" 
+              data-testid="button-get-started"
+              onClick={openChatbot}
+            >
               Get Started with AI
               <ArrowRight className="w-4 h-4" />
             </Button>
@@ -41,6 +56,7 @@ export default function Hero() {
               variant="outline"
               className="text-base backdrop-blur-sm bg-background/50"
               data-testid="button-explore-exhibitors"
+              onClick={handleExploreExhibitors}
             >
               Explore Exhibitors
             </Button>

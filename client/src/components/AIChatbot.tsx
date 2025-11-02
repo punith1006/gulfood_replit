@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useRole, type UserRole } from "@/contexts/RoleContext";
+import { useChatbot } from "@/contexts/ChatbotContext";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
@@ -42,7 +43,7 @@ interface Message {
 }
 
 export default function AIChatbot() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, openChatbot, closeChatbot } = useChatbot();
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const { userRole, setUserRole } = useRole();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -67,13 +68,13 @@ export default function AIChatbot() {
     
     if (!hasVisited && !hasAutoOpened && !isMobile) {
       const timer = setTimeout(() => {
-        setIsOpen(true);
+        openChatbot();
         setHasAutoOpened(true);
         sessionStorage.setItem('gulfood_chatbot_seen', 'true');
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [hasAutoOpened]);
+  }, [hasAutoOpened, openChatbot]);
 
   const chatMutation = useMutation({
     mutationFn: async ({ message, role }: { message: string; role: string | null }) => {
@@ -127,7 +128,7 @@ export default function AIChatbot() {
         <Button
           size="lg"
           className="rounded-full w-16 h-16 shadow-2xl group relative"
-          onClick={() => setIsOpen(true)}
+          onClick={openChatbot}
           data-testid="button-open-chatbot"
         >
           <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
@@ -156,7 +157,7 @@ export default function AIChatbot() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsOpen(false)}
+            onClick={closeChatbot}
             data-testid="button-close-chatbot"
             aria-label="Close chatbot"
             className="hover-elevate"
