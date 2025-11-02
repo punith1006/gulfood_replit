@@ -29,7 +29,7 @@ export default function AIChatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "👋 Welcome to Gulfood 2026!\n\nI'm your personal AI assistant, here to make your event experience seamless!\n\n✨ I can help you with:\n• Finding the perfect exhibitors\n• Planning travel & routes to Dubai\n• Creating your event schedule\n• Booking meetings with exhibitors\n• Venue navigation & directions\n• Hotel & accommodation tips\n• Restaurant recommendations\n• And much more!\n\nHow can I assist you today?"
+      content: "Ask me anything....."
     }
   ]);
   const [input, setInput] = useState("");
