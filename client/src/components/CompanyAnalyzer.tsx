@@ -54,17 +54,22 @@ export default function CompanyAnalyzer() {
       if (error.message) {
         if (error.message.includes("503")) {
           errorMessage = "AI analysis is currently unavailable. Please try again later.";
+        } else if (error.message.includes("valid company name or website")) {
+          // Extract the full validation error message from backend
+          const match = error.message.match(/doesn't appear to be a valid[^.]+\./);
+          errorMessage = match ? match[0] + " Please enter a real company name or website URL (e.g., 'Almarai' or 'nestlé.com')." : error.message;
         } else if (error.message.includes("400")) {
           errorMessage = "Please enter a valid company name or website.";
         } else if (error.message.includes("parse") || error.message.includes("invalid")) {
           errorMessage = "Received invalid response from AI. Please try again.";
         } else {
+          // Clean up the error message
           errorMessage = error.message.replace(/^\d+:\s*/, '').replace(/^{?"error"?:?"?/, '').replace(/"}?$/, '');
         }
       }
       
       toast({
-        title: "Analysis Failed",
+        title: "Invalid Input",
         description: errorMessage,
         variant: "destructive"
       });
