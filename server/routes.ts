@@ -6,9 +6,9 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
 
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-});
+}) : null;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await seedDatabase();
@@ -54,6 +54,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existing = await storage.getCompanyAnalysis(companyIdentifier);
       if (existing) {
         return res.json(existing);
+      }
+
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "AI analysis is currently unavailable. Please configure OPENAI_API_KEY to enable this feature." 
+        });
       }
 
       const exhibitors = await storage.getExhibitors();
@@ -181,6 +187,12 @@ Format as valid JSON only, no markdown.`;
       
       if (!sessionId || !message) {
         return res.status(400).json({ error: "Session ID and message are required" });
+      }
+
+      if (!openai) {
+        return res.json({ 
+          message: "I'm currently offline as the AI service needs to be configured. However, I'd be happy to help you with information about Gulfood 2026 once the system is fully set up! In the meantime, you can explore the exhibitor directory and schedule meetings." 
+        });
       }
 
       let conversation = await storage.getChatConversation(sessionId);

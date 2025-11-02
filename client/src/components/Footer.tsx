@@ -43,22 +43,22 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/visitors">
-                  <a className="hover:text-primary transition-colors">Company Analysis</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Company Analysis</span>
                 </Link>
               </li>
               <li>
                 <Link href="/visitors">
-                  <a className="hover:text-primary transition-colors">Event Planner</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Event Planner</span>
                 </Link>
               </li>
               <li>
                 <Link href="/visitors">
-                  <a className="hover:text-primary transition-colors">Exhibitor Directory</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Exhibitor Directory</span>
                 </Link>
               </li>
               <li>
                 <Link href="/visitors">
-                  <a className="hover:text-primary transition-colors">Meeting Scheduler</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Meeting Scheduler</span>
                 </Link>
               </li>
             </ul>
@@ -69,22 +69,22 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link href="/exhibitors">
-                  <a className="hover:text-primary transition-colors">Relevance Assessment</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Relevance Assessment</span>
                 </Link>
               </li>
               <li>
                 <Link href="/exhibitors">
-                  <a className="hover:text-primary transition-colors">Competitive Analysis</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Competitive Analysis</span>
                 </Link>
               </li>
               <li>
                 <Link href="/exhibitors">
-                  <a className="hover:text-primary transition-colors">Contact Sales</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Contact Sales</span>
                 </Link>
               </li>
               <li>
                 <Link href="/exhibitors">
-                  <a className="hover:text-primary transition-colors">Booth Booking</a>
+                  <span className="hover:text-primary transition-colors cursor-pointer">Booth Booking</span>
                 </Link>
               </li>
             </ul>
