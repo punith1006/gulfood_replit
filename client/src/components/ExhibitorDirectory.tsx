@@ -100,7 +100,7 @@ export default function ExhibitorDirectory() {
       visitorName: meetingForm.visitorName,
       visitorEmail: meetingForm.visitorEmail,
       visitorCompany: meetingForm.visitorCompany,
-      meetingDate: meetingForm.meetingDate,
+      meetingDate: new Date(meetingForm.meetingDate),
       duration: meetingForm.duration,
       notes: meetingForm.notes,
       exhibitorId: meetingDialog.exhibitor.id,
