@@ -4,12 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Search, Sparkles, TrendingUp, Target, Award, X } from "lucide-react";
+import { Loader2, Search, Sparkles, TrendingUp, Target, Award, X, Lightbulb, ArrowRight } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { CompanyAnalysis } from "@shared/schema";
+
+// Helper function to parse recommendation format
+const parseRecommendation = (rec: string) => {
+  // Format: "Recommendation: [action] - Logic: [why this helps]"
+  const parts = rec.split(" - Logic: ");
+  if (parts.length === 2) {
+    const action = parts[0].replace("Recommendation: ", "").trim();
+    const logic = parts[1].trim();
+    return { action, logic };
+  }
+  // Fallback if format doesn't match
+  return { action: rec, logic: null };
+};
 
 export default function CompanyAnalyzer() {
   const [companyUrl, setCompanyUrl] = useState("");
@@ -200,17 +213,35 @@ export default function CompanyAnalyzer() {
                 {result.recommendations && result.recommendations.length > 0 && (
                   <div className="space-y-3 pt-4 border-t border-border">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <Target className="w-4 h-4 text-primary" />
+                      <Lightbulb className="w-4 h-4 text-primary" />
                       Personalized Recommendations
                     </div>
                     <ul className="space-y-3">
-                      {result.recommendations.map((rec, idx) => (
-                        <li key={idx} className="p-3 bg-primary/5 rounded-lg">
-                          <p className="text-sm text-foreground leading-relaxed" data-testid={`text-recommendation-${idx}`}>
-                            {rec}
-                          </p>
-                        </li>
-                      ))}
+                      {result.recommendations.map((rec, idx) => {
+                        const { action, logic } = parseRecommendation(rec);
+                        return (
+                          <li key={idx} className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                            <div className="flex items-start gap-3">
+                              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <ArrowRight className="w-3.5 h-3.5 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-foreground mb-1.5" data-testid={`text-recommendation-${idx}`}>
+                                  {action}
+                                </p>
+                                {logic && (
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-xs font-medium text-primary/80 flex-shrink-0 mt-0.5">Why:</span>
+                                    <p className="text-xs text-muted-foreground leading-relaxed" data-testid={`text-recommendation-logic-${idx}`}>
+                                      {logic}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}
