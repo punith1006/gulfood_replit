@@ -4,6 +4,7 @@ import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown } from 
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import analyticsImage from "@assets/generated_images/Analytics_dashboard_visualization_c400d7e3.png";
 
 interface Analytics {
   totalRegistrations: number;
@@ -74,9 +75,16 @@ export default function AnalyticsDashboard() {
           <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
             Real-Time Event Intelligence
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl">
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8">
             Comprehensive analytics and insights to make data-driven decisions for Gulfood 2026
           </p>
+          <div className="rounded-xl overflow-hidden shadow-lg mb-8">
+            <img 
+              src={analyticsImage} 
+              alt="Advanced analytics dashboard visualization" 
+              className="w-full h-64 object-cover"
+            />
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

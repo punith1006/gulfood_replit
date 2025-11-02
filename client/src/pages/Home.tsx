@@ -2,6 +2,7 @@ import Hero from "@/components/Hero";
 import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import FeatureGrid from "@/components/FeatureGrid";
 import ExhibitorDirectory from "@/components/ExhibitorDirectory";
+import VenueNavigation from "@/components/VenueNavigation";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
       <CompanyAnalyzer />
       <FeatureGrid />
       <ExhibitorDirectory />
+      <VenueNavigation />
       <AnalyticsDashboard />
     </div>
   );

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import boothImage from "@assets/generated_images/Premium_exhibitor_booth_display_ce2758d3.png";
+import meetingImage from "@assets/generated_images/Business_meeting_at_exhibition_4cc21be9.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -207,7 +208,14 @@ export default function ExhibitorDirectory() {
         )}
 
         <Dialog open={meetingDialog.open} onOpenChange={(open) => setMeetingDialog({ open, exhibitor: meetingDialog.exhibitor })}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
+            <div className="rounded-lg overflow-hidden mb-4 -mt-6 -mx-6">
+              <img 
+                src={meetingImage} 
+                alt="Business meeting" 
+                className="w-full h-32 object-cover"
+              />
+            </div>
             <DialogHeader>
               <DialogTitle>Schedule Meeting</DialogTitle>
               <DialogDescription>
