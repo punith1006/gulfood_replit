@@ -2,16 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Menu, X, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useRole } from "@/contexts/RoleContext";
 
 export default function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { userRole } = useRole();
 
   const navItems = [
     { label: "Home", path: "/" },
     { label: "Visitors", path: "/visitors" },
     { label: "Exhibitors", path: "/exhibitors" },
-    { label: "Analytics", path: "/analytics" },
+    ...(userRole === "organizer" ? [{ label: "Analytics", path: "/analytics" }] : []),
   ];
 
   return (

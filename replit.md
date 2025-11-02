@@ -24,9 +24,12 @@ The platform operates on an open-access model designed to maximize engagement:
 - **Visitors**: After event registration, continue using AI features for meeting schedules, exhibit guidance, and event navigation
 - **Exhibitors**: After exhibitor registration, access AI bot for event insights, competitor analysis, and market intelligence
 
-**Organizer Dashboard:**
-- Analytics dashboard currently open to all users
-- May implement exclusive access controls in future for DWTC staff (contains sensitive analytical data)
+**Role-Based Dashboard Access:**
+- **Analytics Dashboard** is exclusively available to users who select "Organizer" role in Faris
+- Non-organizers see locked state with prompt to select organizer role
+- Navigation bar shows "Analytics" link only for organizers
+- Role selection persists throughout session and can be changed anytime
+- Provides DWTC staff exclusive access to sensitive registration metrics and engagement analytics
 
 ## User Preferences
 
@@ -68,8 +71,11 @@ The application follows a premium trade show aesthetic inspired by Gulfood.com a
 - Auto-opens 2 seconds after first homepage visit with welcoming introduction
 - Session-based tracking (won't auto-open on repeat visits)
 - Simple greeting: "Ask me anything....."
-- Comprehensive quick actions for: exhibitor discovery, travel planning, route mapping, meeting booking, venue navigation, hotel recommendations
-- Encourages users to utilize AI for all event-related needs
+- **Role-Based Experience**: Users select their role (Visitor, Exhibitor, or Organizer) to receive personalized assistance
+  - **Visitor**: Quick actions for exhibitor discovery, travel planning, route mapping, meeting booking, venue navigation, hotel recommendations
+  - **Exhibitor**: Quick actions for connecting with buyers, competitor analysis, booth location tips, marketing strategies, networking, logistics
+  - **Organizer**: Quick actions for registration trends, engagement metrics, revenue analytics, demographics, performance insights
+- Role can be changed anytime via "Change role" button
 - Floating button with visual pulse indicator when closed
 - Helpful tooltip prompt: "Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
 

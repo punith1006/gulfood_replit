@@ -3,19 +3,38 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useRole, type UserRole } from "@/contexts/RoleContext";
 
-const quickActions = [
-  "Find exhibitors for me",
-  "Show travel & route options",
-  "Plan my event schedule",
-  "Book meetings",
-  "Navigate the venue",
-  "Hotel recommendations"
-];
+const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
+  visitor: [
+    "Find exhibitors for me",
+    "Show travel & route options",
+    "Plan my event schedule",
+    "Book meetings",
+    "Navigate the venue",
+    "Hotel recommendations"
+  ],
+  exhibitor: [
+    "Connect with potential buyers",
+    "Competitor analysis",
+    "Booth location tips",
+    "Marketing strategies",
+    "Networking opportunities",
+    "Event logistics"
+  ],
+  organizer: [
+    "View registration trends",
+    "Exhibitor engagement metrics",
+    "Revenue analytics",
+    "Attendee demographics",
+    "Event performance",
+    "Real-time insights"
+  ]
+};
 
 interface Message {
   role: "user" | "assistant";
@@ -25,6 +44,7 @@ interface Message {
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
+  const { userRole, setUserRole } = useRole();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -166,20 +186,68 @@ export default function AIChatbot() {
       </ScrollArea>
 
       <div className="p-4 border-t border-border space-y-3">
-        <div className="text-xs text-muted-foreground mb-2">Quick actions:</div>
-        <div className="flex flex-wrap gap-2">
-          {quickActions.map((action, idx) => (
-            <Badge
-              key={idx}
-              variant="secondary"
-              className="cursor-pointer hover-elevate text-xs"
-              onClick={() => handleQuickAction(action)}
-              data-testid={`badge-quick-action-${idx}`}
-            >
-              {action}
-            </Badge>
-          ))}
-        </div>
+        {!userRole ? (
+          <div className="space-y-3">
+            <div className="text-sm font-semibold text-center mb-2">I am a...</div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant="outline"
+                className="flex-col h-auto py-3 hover-elevate"
+                onClick={() => setUserRole("visitor")}
+                data-testid="button-role-visitor"
+              >
+                <Users className="w-5 h-5 mb-1" />
+                <span className="text-xs">Visitor</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-col h-auto py-3 hover-elevate"
+                onClick={() => setUserRole("exhibitor")}
+                data-testid="button-role-exhibitor"
+              >
+                <Building2 className="w-5 h-5 mb-1" />
+                <span className="text-xs">Exhibitor</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-col h-auto py-3 hover-elevate"
+                onClick={() => setUserRole("organizer")}
+                data-testid="button-role-organizer"
+              >
+                <BarChart3 className="w-5 h-5 mb-1" />
+                <span className="text-xs">Organizer</span>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-muted-foreground">Quick actions:</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-auto py-1"
+                onClick={() => setUserRole(null)}
+                data-testid="button-change-role"
+              >
+                Change role
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {roleQuickActions[userRole].map((action, idx) => (
+                <Badge
+                  key={idx}
+                  variant="secondary"
+                  className="cursor-pointer hover-elevate text-xs"
+                  onClick={() => handleQuickAction(action)}
+                  data-testid={`badge-quick-action-${idx}`}
+                >
+                  {action}
+                </Badge>
+              ))}
+            </div>
+          </>
+        )}
         <div className="flex gap-2">
           <Input
             placeholder="Ask me anything..."

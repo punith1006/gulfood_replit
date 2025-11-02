@@ -19,6 +19,10 @@ export default function CompanyAnalyzer() {
   const analyzeMutation = useMutation({
     mutationFn: async (companyIdentifier: string) => {
       const res = await apiRequest("POST", "/api/analyze-company", { companyIdentifier });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || "Failed to analyze company");
+      }
       return await res.json();
     },
     onSuccess: (data) => {
@@ -28,10 +32,11 @@ export default function CompanyAnalyzer() {
         description: "Your company profile has been analyzed successfully."
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      const errorMessage = error.message || "Unable to analyze company. Please try again.";
       toast({
         title: "Analysis Failed",
-        description: "Unable to analyze company. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
       console.error("Analysis error:", error);
