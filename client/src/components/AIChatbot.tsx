@@ -9,6 +9,8 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useRole, type UserRole } from "@/contexts/RoleContext";
 import { useChatbot } from "@/contexts/ChatbotContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
@@ -178,14 +180,47 @@ export default function AIChatbot() {
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-foreground"
                 }`}
                 data-testid={`message-${idx}`}
               >
-                {message.content}
+                <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table: ({ node, ...props }) => (
+                      <table className="w-full border-collapse my-2 text-xs" {...props} />
+                    ),
+                    thead: ({ node, ...props }) => (
+                      <thead className="border-b border-border" {...props} />
+                    ),
+                    th: ({ node, ...props }) => (
+                      <th className="text-left py-1.5 px-2 font-semibold" {...props} />
+                    ),
+                    td: ({ node, ...props }) => (
+                      <td className="py-1.5 px-2 border-t border-border/50" {...props} />
+                    ),
+                    tr: ({ node, ...props }) => (
+                      <tr className="hover-elevate" {...props} />
+                    ),
+                    ul: ({ node, ...props }) => (
+                      <ul className="list-disc list-inside space-y-1 my-2" {...props} />
+                    ),
+                    ol: ({ node, ...props }) => (
+                      <ol className="list-decimal list-inside space-y-1 my-2" {...props} />
+                    ),
+                    li: ({ node, ...props }) => (
+                      <li className="leading-relaxed" {...props} />
+                    ),
+                    p: ({ node, ...props }) => (
+                      <p className="my-1" {...props} />
+                    )
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
               </div>
             </div>
           ))}
