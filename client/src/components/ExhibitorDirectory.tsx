@@ -97,10 +97,14 @@ export default function ExhibitorDirectory() {
     if (!meetingDialog.exhibitor) return;
     
     scheduleMeetingMutation.mutate({
-      ...meetingForm,
+      visitorName: meetingForm.visitorName,
+      visitorEmail: meetingForm.visitorEmail,
+      visitorCompany: meetingForm.visitorCompany,
+      meetingDate: meetingForm.meetingDate,
+      duration: meetingForm.duration,
+      notes: meetingForm.notes,
       exhibitorId: meetingDialog.exhibitor.id,
-      meetingDate: new Date(meetingForm.meetingDate),
-      status: "pending"
+      status: "pending" as const
     });
   };
 
@@ -207,13 +211,18 @@ export default function ExhibitorDirectory() {
           </div>
         )}
 
-        <Dialog open={meetingDialog.open} onOpenChange={(open) => setMeetingDialog({ open, exhibitor: meetingDialog.exhibitor })}>
-          <DialogContent className="max-w-2xl">
-            <div className="rounded-lg overflow-hidden mb-4 -mt-6 -mx-6">
+        <Dialog open={meetingDialog.open} onOpenChange={(open) => {
+          if (!open) {
+            setMeetingDialog({ open: false, exhibitor: null });
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="rounded-lg overflow-hidden -mx-6 -mt-6 mb-6">
               <img 
                 src={meetingImage} 
-                alt="Business meeting" 
-                className="w-full h-32 object-cover"
+                alt="Business meeting at exhibition" 
+                className="w-full h-40 object-cover"
+                data-testid="img-meeting-banner"
               />
             </div>
             <DialogHeader>

@@ -137,8 +137,11 @@ Format as valid JSON only, no markdown.`;
 
   app.post("/api/meetings", async (req, res) => {
     try {
-      const meetingData = insertMeetingSchema.parse(req.body);
-      const meeting = await storage.createMeeting(meetingData);
+      const parsedData = insertMeetingSchema.parse({
+        ...req.body,
+        meetingDate: new Date(req.body.meetingDate)
+      });
+      const meeting = await storage.createMeeting(parsedData);
       res.json(meeting);
     } catch (error) {
       console.error("Error creating meeting:", error);
