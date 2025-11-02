@@ -186,6 +186,7 @@ export default function ExhibitorDirectory() {
               <SelectItem value="Lebanon">Lebanon</SelectItem>
               <SelectItem value="Italy">Italy</SelectItem>
               <SelectItem value="Germany">Germany</SelectItem>
+              <SelectItem value="India">India</SelectItem>
               <SelectItem value="Israel">Israel</SelectItem>
               <SelectItem value="Austria">Austria</SelectItem>
               <SelectItem value="UK">UK</SelectItem>
