@@ -32,7 +32,7 @@ export default function VenueNavigation() {
     staleTime: 2 * 60 * 1000
   });
 
-  const getTrafficColor = (condition?: string) => {
+  const getTrafficColor = (condition?: string | null) => {
     switch (condition) {
       case 'light': return 'text-green-600 dark:text-green-400';
       case 'moderate': return 'text-yellow-600 dark:text-yellow-400';

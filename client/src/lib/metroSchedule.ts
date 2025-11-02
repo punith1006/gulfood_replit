@@ -17,11 +17,11 @@ export function getNextMetroTimings(): MetroTiming {
   const frequencyMinutes = isPeakHour ? 4 : 7;
   
   const nextTrainMinutes = Math.ceil((minute + 1) / frequencyMinutes) * frequencyMinutes;
-  const nextTrainHour = hour + Math.floor(nextTrainMinutes / 60);
+  const nextTrainHour = (hour + Math.floor(nextTrainMinutes / 60)) % 24;
   const nextTrainMin = nextTrainMinutes % 60;
   
   const followingTrainMin = (nextTrainMin + frequencyMinutes) % 60;
-  const followingTrainHour = nextTrainHour + Math.floor((nextTrainMin + frequencyMinutes) / 60);
+  const followingTrainHour = (nextTrainHour + Math.floor((nextTrainMin + frequencyMinutes) / 60)) % 24;
   
   const formatTime = (h: number, m: number) => {
     const period = h >= 12 ? 'PM' : 'AM';
