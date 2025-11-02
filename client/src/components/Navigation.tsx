@@ -9,8 +9,8 @@ export default function Navigation() {
 
   const navItems = [
     { label: "Home", path: "/" },
-    { label: "For Visitors", path: "/visitors" },
-    { label: "For Exhibitors", path: "/exhibitors" },
+    { label: "VISITORS", path: "/visitors" },
+    { label: "EXHIBITORS", path: "/exhibitors" },
     { label: "Analytics", path: "/analytics" },
   ];
 
@@ -48,11 +48,6 @@ export default function Navigation() {
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
-            <Button variant="outline" size="sm" data-testid="button-sign-in">
-              Sign In
-            </Button>
-          </div>
 
           <Button
             variant="ghost"
@@ -81,11 +76,6 @@ export default function Navigation() {
                 </span>
               </Link>
             ))}
-            <div className="pt-3 border-t border-border">
-              <Button variant="outline" className="w-full" size="sm">
-                Sign In
-              </Button>
-            </div>
           </div>
         </div>
       )}
