@@ -15,10 +15,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/exhibitors", async (req, res) => {
     try {
-      const { search, sector } = req.query;
+      const { search, sector, country } = req.query;
       const exhibitors = await storage.getExhibitors(
         search as string | undefined,
-        sector as string | undefined
+        sector as string | undefined,
+        country as string | undefined
       );
       res.json(exhibitors);
     } catch (error) {

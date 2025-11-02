@@ -45,6 +45,7 @@ const getBoothImageForSector = (sector: string): string => {
 export default function ExhibitorDirectory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSector, setSelectedSector] = useState("all");
+  const [selectedCountry, setSelectedCountry] = useState("all");
   const [meetingDialog, setMeetingDialog] = useState<{ open: boolean; exhibitor: Exhibitor | null }>({
     open: false,
     exhibitor: null
@@ -62,11 +63,12 @@ export default function ExhibitorDirectory() {
   const queryClient = useQueryClient();
 
   const { data: exhibitors = [], isLoading } = useQuery<Exhibitor[]>({
-    queryKey: ["/api/exhibitors", searchTerm, selectedSector],
+    queryKey: ["/api/exhibitors", searchTerm, selectedSector, selectedCountry],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append("search", searchTerm);
       if (selectedSector !== "all") params.append("sector", selectedSector);
+      if (selectedCountry !== "all") params.append("country", selectedCountry);
       
       const res = await fetch(`/api/exhibitors?${params}`);
       if (!res.ok) throw new Error("Failed to fetch exhibitors");
@@ -156,6 +158,37 @@ export default function ExhibitorDirectory() {
               <SelectItem value="Beverages">Beverages</SelectItem>
               <SelectItem value="Meat & Poultry">Meat & Poultry</SelectItem>
               <SelectItem value="Plant-Based">Plant-Based</SelectItem>
+              <SelectItem value="Snacks">Snacks</SelectItem>
+              <SelectItem value="Fats & Oils">Fats & Oils</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+            <SelectTrigger className="sm:w-[200px]" data-testid="select-country">
+              <SelectValue placeholder="All Countries" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Countries</SelectItem>
+              <SelectItem value="UAE">UAE</SelectItem>
+              <SelectItem value="USA">USA</SelectItem>
+              <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
+              <SelectItem value="France">France</SelectItem>
+              <SelectItem value="Brazil">Brazil</SelectItem>
+              <SelectItem value="Switzerland">Switzerland</SelectItem>
+              <SelectItem value="Spain">Spain</SelectItem>
+              <SelectItem value="Sweden">Sweden</SelectItem>
+              <SelectItem value="Netherlands">Netherlands</SelectItem>
+              <SelectItem value="Denmark">Denmark</SelectItem>
+              <SelectItem value="New Zealand">New Zealand</SelectItem>
+              <SelectItem value="Egypt">Egypt</SelectItem>
+              <SelectItem value="Qatar">Qatar</SelectItem>
+              <SelectItem value="Turkey">Turkey</SelectItem>
+              <SelectItem value="Jordan">Jordan</SelectItem>
+              <SelectItem value="Lebanon">Lebanon</SelectItem>
+              <SelectItem value="Italy">Italy</SelectItem>
+              <SelectItem value="Germany">Germany</SelectItem>
+              <SelectItem value="Israel">Israel</SelectItem>
+              <SelectItem value="Austria">Austria</SelectItem>
+              <SelectItem value="UK">UK</SelectItem>
             </SelectContent>
           </Select>
         </div>

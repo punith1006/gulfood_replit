@@ -16,7 +16,7 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  getExhibitors(search?: string, sector?: string): Promise<Exhibitor[]>;
+  getExhibitors(search?: string, sector?: string, country?: string): Promise<Exhibitor[]>;
   getExhibitor(id: number): Promise<Exhibitor | undefined>;
   createExhibitor(exhibitor: InsertExhibitor): Promise<Exhibitor>;
   
@@ -41,16 +41,25 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getExhibitors(search?: string, sector?: string): Promise<Exhibitor[]> {
-    let query = db.select().from(exhibitors);
-    
+  async getExhibitors(search?: string, sector?: string, country?: string): Promise<Exhibitor[]> {
     const conditions = [];
     
     if (search) {
+      const normalizedSearch = search.toLowerCase().replace(/[^a-z0-9]/g, '');
       conditions.push(
         or(
-          ilike(exhibitors.name, `%${search}%`),
-          ilike(exhibitors.description, `%${search}%`)
+          sql`REGEXP_REPLACE(
+            LOWER(TRANSLATE(${exhibitors.name}, 
+              'ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿÑñÇç', 
+              'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOOooooooUUUUuuuuYyyNnCc')),
+            '[^a-z0-9]', '', 'g'
+          ) LIKE ${`%${normalizedSearch}%`}`,
+          sql`REGEXP_REPLACE(
+            LOWER(TRANSLATE(${exhibitors.description}, 
+              'ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖØòóôõöøÙÚÛÜùúûüÝýÿÑñÇç', 
+              'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOOooooooUUUUuuuuYyyNnCc')),
+            '[^a-z0-9]', '', 'g'
+          ) LIKE ${`%${normalizedSearch}%`}`
         )
       );
     }
@@ -59,11 +68,15 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(exhibitors.sector, sector));
     }
     
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+    if (country && country !== "all") {
+      conditions.push(eq(exhibitors.country, country));
     }
     
-    return await query;
+    if (conditions.length > 0) {
+      return await db.select().from(exhibitors).where(and(...conditions));
+    }
+    
+    return await db.select().from(exhibitors);
   }
 
   async getExhibitor(id: number): Promise<Exhibitor | undefined> {

@@ -113,10 +113,22 @@ RESTful endpoints organized by resource:
 
 **Data Layer:**
 Database schema uses PostgreSQL with the following core tables:
-- `exhibitors`: Company profiles, booth locations, contact information
+- `exhibitors`: Company profiles, booth locations, contact information (61 realistic exhibitors across 6 sectors from 21 countries)
+  - Dairy: 15 exhibitors (Lactalis, Danone, Almarai, Nestlé Professional, etc.)
+  - Beverages: 15 exhibitors (Coca-Cola, PepsiCo, Red Bull, Evian, etc.)
+  - Meat & Poultry: 10 exhibitors (Tyson Foods, JBS, Perdue, etc.)
+  - Plant-Based: 6 exhibitors (Beyond Meat, Impossible Foods, etc.)
+  - Snacks: 10 exhibitors (Mondelez, Mars, Ferrero, etc.)
+  - Fats & Oils: 5 exhibitors (Savola, Bunge, IFFCO, etc.)
 - `company_analyses`: AI-generated relevance scores and recommendations
 - `meetings`: B2B meeting requests and scheduling
 - `chat_conversations`: Persistent chat session storage
+
+**Advanced Search Features:**
+- Accent-insensitive search using PostgreSQL TRANSLATE function (e.g., "Nestle" matches "Nestlé")
+- Punctuation-insensitive search using REGEXP_REPLACE (e.g., "coca cola" matches "Coca-Cola Middle East")
+- Case-insensitive partial matching across company names and descriptions
+- Multi-filter support: simultaneous search, sector, and country filtering
 
 **AI Integration Strategy:**
 OpenAI API integration for two primary use cases:
