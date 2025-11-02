@@ -63,7 +63,9 @@ export default function AIChatbot() {
 
   useEffect(() => {
     const hasVisited = sessionStorage.getItem('gulfood_chatbot_seen');
-    if (!hasVisited && !hasAutoOpened) {
+    const isMobile = window.innerWidth < 640;
+    
+    if (!hasVisited && !hasAutoOpened && !isMobile) {
       const timer = setTimeout(() => {
         setIsOpen(true);
         setHasAutoOpened(true);
@@ -136,15 +138,15 @@ export default function AIChatbot() {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col" data-testid="card-chatbot">
-      <div className="p-4 border-b border-border bg-primary/5">
+    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-96 h-[85vh] sm:h-[500px] md:h-[600px] max-h-screen shadow-2xl z-50 flex flex-col sm:rounded-lg" data-testid="card-chatbot">
+      <div className="p-3 sm:p-4 border-b border-border bg-primary/5">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
             </div>
             <div>
-              <div className="font-bold">Faris</div>
+              <div className="font-bold text-sm sm:text-base">Faris</div>
               <div className="text-xs text-muted-foreground flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
                 Your AI Guide
@@ -157,8 +159,9 @@ export default function AIChatbot() {
             onClick={() => setIsOpen(false)}
             data-testid="button-close-chatbot"
             aria-label="Close chatbot"
+            className="hover-elevate"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5 sm:w-4 sm:h-4" />
           </Button>
         </div>
         <div className="text-xs text-muted-foreground text-center py-1 px-2 bg-muted/50 rounded">
