@@ -63,13 +63,15 @@ The application follows a premium trade show aesthetic inspired by Gulfood.com a
 - No authentication buttons (no "Sign In" or "Register Now")
 - All pages freely accessible to everyone
 
-**Proactive AI Chatbot:**
-- Auto-opens 2 seconds after first homepage visit
+**Proactive AI Chatbot "Faris":**
+- Named "Faris" (Arabic for "Knight" and "insightful person") - culturally relevant for Dubai event
+- Auto-opens 2 seconds after first homepage visit with welcoming introduction
 - Session-based tracking (won't auto-open on repeat visits)
+- Simple greeting: "Ask me anything....."
 - Comprehensive quick actions for: exhibitor discovery, travel planning, route mapping, meeting booking, venue navigation, hotel recommendations
 - Encourages users to utilize AI for all event-related needs
 - Floating button with visual pulse indicator when closed
-- Helpful tooltip prompt before auto-opening
+- Helpful tooltip prompt: "Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
 
 **State Management Approach:**
 Server state is managed through React Query with custom query functions, implementing:

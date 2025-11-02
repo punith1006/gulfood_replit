@@ -91,8 +91,8 @@ export default function AIChatbot() {
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
         {!hasAutoOpened && (
           <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl max-w-xs animate-in slide-in-from-bottom-5 duration-500">
-            <p className="text-sm font-medium">👋 Need help? I'm here for you!</p>
-            <p className="text-xs mt-1 opacity-90">Ask me about exhibitors, travel, schedules, and more!</p>
+            <p className="text-sm font-medium">👋 Hi, I'm Faris!</p>
+            <p className="text-xs mt-1 opacity-90">Your AI guide for Gulfood 2026. Ask me anything!</p>
           </div>
         )}
         <Button
@@ -116,10 +116,10 @@ export default function AIChatbot() {
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <div className="font-bold">Gulfood AI Assistant</div>
+            <div className="font-bold">Faris</div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
-              Online
+              Your AI Guide
             </div>
           </div>
         </div>
