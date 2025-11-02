@@ -65,19 +65,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const exhibitors = await storage.getExhibitors();
       
-      const prompt = `Analyze this company/website: "${companyIdentifier}" for Gulfood 2026, the world's largest food & beverage exhibition in Dubai.
+      const prompt = `Analyze this company/website: "${companyIdentifier}" for Gulfood 2026, the world's largest FOOD & BEVERAGE exhibition in Dubai.
 
-Available exhibitor sectors: Dairy, Beverages, Meat & Poultry, Plant-Based, Fresh Produce, etc.
+CRITICAL: Gulfood 2026 is EXCLUSIVELY for the food and beverage industry. Be REALISTIC and STRICT with relevance scoring.
+
+Available exhibitor sectors: Dairy, Beverages, Meat & Poultry, Plant-Based, Fresh Produce, Snacks, Gourmet, Organic Foods, Confectionery, Bakery, Seafood, Health & Wellness, Fats & Oils
+
+RELEVANCE SCORING GUIDELINES (BE STRICT):
+- 80-100%: Direct food/beverage manufacturers, suppliers, or distributors (e.g., dairy companies, beverage makers, food producers)
+- 50-79%: Food packaging, food technology, food logistics, restaurant equipment, food safety companies
+- 20-49%: Tangentially related (e.g., agricultural tech, hospitality, retail chains selling food)
+- 0-19%: NOT related to food/beverage industry (e.g., IT firms, fashion, automotive, real estate, general consulting)
+
+IMPORTANT: If the company is NOT in food/beverage or food-related industries, score should be 0-15% maximum.
 
 Provide a JSON response with:
 1. companyName: The company name (infer from identifier if needed)
-2. sector: Array of relevant food/beverage sectors (e.g., ["Dairy", "Beverages"])
-3. relevanceScore: Number 0-100 indicating how relevant Gulfood 2026 is for this company
-4. scoreReasoning: 2-3 sentences explaining WHY this relevance score was given (include specific factors: company's industry alignment, potential networking opportunities, market expansion possibilities, supplier connections, etc.)
-5. summary: Brief 2-3 sentence company description
-6. benefits: Array of 4 specific benefits of attending Gulfood 2026 for this company
-7. matchedExhibitorsCount: Estimate number of relevant exhibitors from 8,500+ total
-8. recommendations: Array of 3 specific personalized recommendations with logic (format: "Recommendation: [action] - Logic: [why this helps]")
+2. sector: Array of relevant food/beverage sectors. Use ["General"] if not food-related
+3. relevanceScore: Number 0-100. BE REALISTIC - most non-food companies should be 0-15%
+4. scoreReasoning: 2-3 sentences explaining WHY this relevance score was given. For low scores, clearly state the company is not in the food/beverage industry
+5. summary: Brief 2-3 sentence company description focusing on their actual business
+6. benefits: Array of 4 benefits. For non-food companies, be honest about limited relevance (e.g., "Limited direct relevance to core business")
+7. matchedExhibitorsCount: Realistic number. Non-food companies should have 0-50 matched exhibitors
+8. recommendations: Array of 3 recommendations. For non-food companies, acknowledge limited relevance (e.g., "Recommendation: Consider alternative industry events - Logic: Gulfood focuses on food/beverage which is outside your core business")
 
 Format as valid JSON only, no markdown.`;
 
