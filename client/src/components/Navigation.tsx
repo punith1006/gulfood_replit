@@ -1,0 +1,98 @@
+import { Button } from "@/components/ui/button";
+import { Link, useLocation } from "wouter";
+import { Menu, X, Sparkles } from "lucide-react";
+import { useState } from "react";
+
+export default function Navigation() {
+  const [location] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { label: "Home", path: "/" },
+    { label: "For Visitors", path: "/visitors" },
+    { label: "For Exhibitors", path: "/exhibitors" },
+    { label: "Analytics", path: "/analytics" },
+  ];
+
+  return (
+    <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2" data-testid="link-home">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-lg leading-none tracking-tight">Gulfood 2026</span>
+              <span className="text-xs text-muted-foreground">AI Assistant</span>
+            </div>
+          </Link>
+
+          <div className="hidden md:flex items-center gap-6">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                href={item.path}
+                data-testid={`link-${item.label.toLowerCase().replace(" ", "-")}`}
+              >
+                <a
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location === item.path ? "text-primary" : "text-foreground"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              </Link>
+            ))}
+          </div>
+
+          <div className="hidden md:flex items-center gap-3">
+            <Button variant="outline" size="sm" data-testid="button-sign-in">
+              Sign In
+            </Button>
+            <Button size="sm" data-testid="button-register">
+              Register Now
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            data-testid="button-mobile-menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background">
+          <div className="px-4 py-3 space-y-3">
+            {navItems.map((item) => (
+              <Link key={item.path} href={item.path}>
+                <a
+                  className={`block py-2 text-sm font-medium ${
+                    location === item.path ? "text-primary" : "text-foreground"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </a>
+              </Link>
+            ))}
+            <div className="pt-3 space-y-2 border-t border-border">
+              <Button variant="outline" className="w-full" size="sm">
+                Sign In
+              </Button>
+              <Button className="w-full" size="sm">
+                Register Now
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}

@@ -1,0 +1,133 @@
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+
+//todo: remove mock functionality
+const stats = [
+  {
+    label: "Total Registrations",
+    value: "12,847",
+    change: "+23%",
+    trend: "up",
+    icon: Users,
+    color: "text-chart-1",
+    bgColor: "bg-chart-1/10"
+  },
+  {
+    label: "Exhibitor Signups",
+    value: "8,523",
+    change: "+18%",
+    trend: "up",
+    icon: Building2,
+    color: "text-chart-2",
+    bgColor: "bg-chart-2/10"
+  },
+  {
+    label: "AI Interactions",
+    value: "45,392",
+    change: "+156%",
+    trend: "up",
+    icon: MessageSquare,
+    color: "text-chart-3",
+    bgColor: "bg-chart-3/10"
+  },
+  {
+    label: "Meeting Requests",
+    value: "3,284",
+    change: "-5%",
+    trend: "down",
+    icon: TrendingUp,
+    color: "text-chart-4",
+    bgColor: "bg-chart-4/10"
+  }
+];
+
+const sectorData = [
+  { name: "Dairy", percentage: 85, count: 1247 },
+  { name: "Beverages", percentage: 78, count: 1089 },
+  { name: "Meat & Poultry", percentage: 72, count: 934 },
+  { name: "Fresh Produce", percentage: 65, count: 812 }
+];
+
+export default function AnalyticsDashboard() {
+  return (
+    <section className="py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-12">
+          <Badge className="mb-4" variant="secondary" data-testid="badge-organizer">
+            Organizer Dashboard
+          </Badge>
+          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
+            Real-Time Event Intelligence
+          </h2>
+          <p className="text-lg text-muted-foreground max-w-2xl">
+            Comprehensive analytics and insights to make data-driven decisions for Gulfood 2026
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat, idx) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={idx} className="p-6" data-testid={`card-stat-${idx}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`w-12 h-12 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
+                    <Icon className={`w-6 h-6 ${stat.color}`} />
+                  </div>
+                  <Badge
+                    variant={stat.trend === "up" ? "default" : "secondary"}
+                    className={stat.trend === "up" ? "bg-chart-3/20 text-chart-3" : ""}
+                  >
+                    {stat.trend === "up" ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
+                    {stat.change}
+                  </Badge>
+                </div>
+                <div className="text-3xl font-bold mb-1" data-testid={`text-stat-value-${idx}`}>{stat.value}</div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <h3 className="text-xl font-bold mb-6">Sector Engagement</h3>
+            <div className="space-y-6">
+              {sectorData.map((sector, idx) => (
+                <div key={idx}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-sm">{sector.name}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{sector.count} registrations</span>
+                      <span className="text-sm font-bold">{sector.percentage}%</span>
+                    </div>
+                  </div>
+                  <Progress value={sector.percentage} className="h-2" />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="text-xl font-bold mb-6">Top AI Queries</h3>
+            <div className="space-y-4">
+              {[
+                { query: "How to schedule meetings with exhibitors?", count: 1247 },
+                { query: "Best dairy exhibitors recommendations", count: 1089 },
+                { query: "Shuttle schedule between venues", count: 934 },
+                { query: "Recommended sessions for beverage industry", count: 812 },
+                { query: "Registration process and requirements", count: 756 }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                  <span className="text-sm flex-1">{item.query}</span>
+                  <Badge variant="secondary" className="ml-4">{item.count}</Badge>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </section>
+  );
+}
