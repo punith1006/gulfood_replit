@@ -297,7 +297,13 @@ export default function ExhibitorDirectory() {
               <Button 
                 className="w-full" 
                 onClick={submitMeeting}
-                disabled={scheduleMeetingMutation.isPending || !meetingForm.visitorName || !meetingForm.visitorEmail || !meetingForm.meetingDate}
+                disabled={
+                  scheduleMeetingMutation.isPending || 
+                  !meetingForm.visitorName || 
+                  !meetingForm.visitorEmail || 
+                  !meetingForm.visitorCompany ||
+                  !meetingForm.meetingDate
+                }
                 data-testid="button-submit-meeting"
               >
                 {scheduleMeetingMutation.isPending ? "Scheduling..." : "Submit Request"}
