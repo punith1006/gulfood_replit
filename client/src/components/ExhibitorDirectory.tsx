@@ -11,7 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import boothImage from "@assets/generated_images/Premium_exhibitor_booth_display_ce2758d3.png";
+import defaultBoothImage from "@assets/generated_images/Premium_exhibitor_booth_display_ce2758d3.png";
+import dairyBoothImage from "@assets/generated_images/Dairy_products_booth_829c48df.png";
+import beverageBoothImage from "@assets/generated_images/Beverages_booth_display_d23c0063.png";
+import organicBoothImage from "@assets/generated_images/Organic_foods_booth_b43532d6.png";
+import meatBoothImage from "@assets/generated_images/Meat_and_poultry_booth_3805ced3.png";
+import gourmetBoothImage from "@assets/generated_images/Gourmet_specialty_foods_booth_49ea8d22.png";
 import meetingImage from "@assets/generated_images/Business_meeting_at_exhibition_4cc21be9.png";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -26,6 +31,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+
+const getBoothImageForSector = (sector: string): string => {
+  const sectorLower = sector.toLowerCase();
+  if (sectorLower.includes("dairy")) return dairyBoothImage;
+  if (sectorLower.includes("beverage")) return beverageBoothImage;
+  if (sectorLower.includes("organic") || sectorLower.includes("plant-based")) return organicBoothImage;
+  if (sectorLower.includes("meat") || sectorLower.includes("poultry")) return meatBoothImage;
+  if (sectorLower.includes("gourmet") || sectorLower.includes("specialty")) return gourmetBoothImage;
+  return defaultBoothImage;
+};
 
 export default function ExhibitorDirectory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -162,8 +177,8 @@ export default function ExhibitorDirectory() {
               <Card key={exhibitor.id} className="overflow-hidden group hover-elevate" data-testid={`card-exhibitor-${exhibitor.id}`}>
                 <div className="h-40 bg-muted overflow-hidden">
                   <img
-                    src={boothImage}
-                    alt={exhibitor.name}
+                    src={getBoothImageForSector(exhibitor.sector)}
+                    alt={`${exhibitor.sector} booth at ${exhibitor.name}`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>

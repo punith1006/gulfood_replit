@@ -52,9 +52,6 @@ export default function Navigation() {
             <Button variant="outline" size="sm" data-testid="button-sign-in">
               Sign In
             </Button>
-            <Button size="sm" data-testid="button-register">
-              Register Now
-            </Button>
           </div>
 
           <Button
@@ -84,12 +81,9 @@ export default function Navigation() {
                 </span>
               </Link>
             ))}
-            <div className="pt-3 space-y-2 border-t border-border">
+            <div className="pt-3 border-t border-border">
               <Button variant="outline" className="w-full" size="sm">
                 Sign In
-              </Button>
-              <Button className="w-full" size="sm">
-                Register Now
               </Button>
             </div>
           </div>
