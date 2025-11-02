@@ -46,7 +46,12 @@ export default function AIChatbot() {
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const { userRole, setUserRole } = useRole();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      content: "Ask me anything....."
+    }
+  ]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +119,7 @@ export default function AIChatbot() {
         {!hasAutoOpened && (
           <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl max-w-xs animate-in slide-in-from-bottom-5 duration-500">
             <p className="text-sm font-medium">👋 Hi, I'm Faris!</p>
-            <p className="text-xs mt-1 opacity-90">Your AI guide for Gulfood 2026. Ask me anything!</p>
+            <p className="text-xs mt-1 opacity-90">Your AI guide for Gulfood 2026.</p>
           </div>
         )}
         <Button
