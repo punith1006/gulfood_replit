@@ -40,11 +40,8 @@ export default function AIChatbot() {
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
-      return await apiRequest<{ message: string }>("/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ sessionId, message }),
-        headers: { "Content-Type": "application/json" }
-      });
+      const res = await apiRequest("POST", "/api/chat", { sessionId, message });
+      return await res.json();
     },
     onSuccess: (data) => {
       setMessages(prev => [...prev, { role: "assistant", content: data.message }]);

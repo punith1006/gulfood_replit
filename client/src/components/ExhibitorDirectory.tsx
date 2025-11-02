@@ -52,17 +52,16 @@ export default function ExhibitorDirectory() {
       if (searchTerm) params.append("search", searchTerm);
       if (selectedSector !== "all") params.append("sector", selectedSector);
       
-      return await apiRequest<Exhibitor[]>(`/api/exhibitors?${params}`);
+      const res = await fetch(`/api/exhibitors?${params}`);
+      if (!res.ok) throw new Error("Failed to fetch exhibitors");
+      return await res.json();
     }
   });
 
   const scheduleMeetingMutation = useMutation({
     mutationFn: async (meetingData: InsertMeeting) => {
-      return await apiRequest("/api/meetings", {
-        method: "POST",
-        body: JSON.stringify(meetingData),
-        headers: { "Content-Type": "application/json" }
-      });
+      const res = await apiRequest("POST", "/api/meetings", meetingData);
+      return await res.json();
     },
     onSuccess: () => {
       toast({

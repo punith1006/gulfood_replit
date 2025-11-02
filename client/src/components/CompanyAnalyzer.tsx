@@ -18,11 +18,8 @@ export default function CompanyAnalyzer() {
 
   const analyzeMutation = useMutation({
     mutationFn: async (companyIdentifier: string) => {
-      return await apiRequest<CompanyAnalysis>("/api/analyze-company", {
-        method: "POST",
-        body: JSON.stringify({ companyIdentifier }),
-        headers: { "Content-Type": "application/json" }
-      });
+      const res = await apiRequest("POST", "/api/analyze-company", { companyIdentifier });
+      return await res.json();
     },
     onSuccess: (data) => {
       setResult(data);
