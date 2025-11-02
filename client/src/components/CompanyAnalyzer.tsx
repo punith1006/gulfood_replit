@@ -18,12 +18,14 @@ export default function CompanyAnalyzer() {
 
   const analyzeMutation = useMutation({
     mutationFn: async (companyIdentifier: string) => {
-      const res = await apiRequest("POST", "/api/analyze-company", { companyIdentifier });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.error || "Failed to analyze company");
+      try {
+        const res = await apiRequest("POST", "/api/analyze-company", { companyIdentifier });
+        const data = await res.json();
+        return data;
+      } catch (error) {
+        console.error("Analysis request failed:", error);
+        throw error;
       }
-      return await res.json();
     },
     onSuccess: (data) => {
       setResult(data);
@@ -33,7 +35,20 @@ export default function CompanyAnalyzer() {
       });
     },
     onError: (error: Error) => {
-      const errorMessage = error.message || "Unable to analyze company. Please try again.";
+      let errorMessage = "Unable to analyze company. Please try again.";
+      
+      if (error.message) {
+        if (error.message.includes("503")) {
+          errorMessage = "AI analysis is currently unavailable. Please try again later.";
+        } else if (error.message.includes("400")) {
+          errorMessage = "Please enter a valid company name or website.";
+        } else if (error.message.includes("parse") || error.message.includes("invalid")) {
+          errorMessage = "Received invalid response from AI. Please try again.";
+        } else {
+          errorMessage = error.message.replace(/^\d+:\s*/, '').replace(/^{?"error"?:?"?/, '').replace(/"}?$/, '');
+        }
+      }
+      
       toast({
         title: "Analysis Failed",
         description: errorMessage,
