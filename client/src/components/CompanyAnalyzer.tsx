@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ const parseRecommendation = (rec: string) => {
 export default function CompanyAnalyzer() {
   const [companyUrl, setCompanyUrl] = useState("");
   const [result, setResult] = useState<CompanyAnalysis | null>(null);
+  const recommendationsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const analyzeMutation = useMutation({
@@ -78,6 +79,20 @@ export default function CompanyAnalyzer() {
 
   const handleClearResults = () => {
     setResult(null);
+  };
+
+  const handleViewRecommendations = () => {
+    if (recommendationsRef.current) {
+      recommendationsRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'nearest' 
+      });
+      // Add a brief highlight effect
+      recommendationsRef.current.classList.add('animate-pulse');
+      setTimeout(() => {
+        recommendationsRef.current?.classList.remove('animate-pulse');
+      }, 2000);
+    }
   };
 
   return (
@@ -211,7 +226,7 @@ export default function CompanyAnalyzer() {
                 </div>
 
                 {result.recommendations && result.recommendations.length > 0 && (
-                  <div className="space-y-3 pt-4 border-t border-border">
+                  <div ref={recommendationsRef} className="space-y-3 pt-4 border-t border-border">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <Lightbulb className="w-4 h-4 text-primary" />
                       Personalized Recommendations
@@ -256,7 +271,11 @@ export default function CompanyAnalyzer() {
                       {result.matchedExhibitorsCount}
                     </span>
                   </div>
-                  <Button className="w-full" data-testid="button-view-recommendations">
+                  <Button 
+                    className="w-full" 
+                    data-testid="button-view-recommendations"
+                    onClick={handleViewRecommendations}
+                  >
                     View Personalized Recommendations
                   </Button>
                 </div>
