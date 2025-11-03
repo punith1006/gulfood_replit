@@ -470,8 +470,8 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
 
       const route = data[0];
       
-      if (route.status !== "OK") {
-        console.error("Routes API route status:", route.status);
+      if (route.condition !== "ROUTE_EXISTS") {
+        console.error("Routes API route condition:", route.condition);
         return res.status(500).json({ 
           error: "Route not found",
           fallback: cachedData || null
@@ -481,7 +481,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       const durationSeconds = parseInt(route.duration?.replace('s', '') || '0');
       const distanceMeters = route.distanceMeters || 0;
       
-      const normalDurationSeconds = Math.round(durationSeconds * 0.85);
+      const normalDurationSeconds = Math.round(distanceMeters / 1000 * 90);
       
       let trafficCondition = "light";
       if (durationSeconds > normalDurationSeconds * 1.5) {

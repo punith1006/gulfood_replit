@@ -110,6 +110,7 @@ RESTful endpoints organized by resource:
 - `/api/meetings` - Meeting request management
 - `/api/chat` - AI chatbot conversations
 - `/api/analytics` - Dashboard metrics
+- `/api/venue-traffic` - Real-time traffic data between DWTC and Expo City Dubai
 
 **Data Layer:**
 Database schema uses PostgreSQL with the following core tables:
@@ -123,6 +124,7 @@ Database schema uses PostgreSQL with the following core tables:
 - `company_analyses`: AI-generated relevance scores and recommendations
 - `meetings`: B2B meeting requests and scheduling
 - `chat_conversations`: Persistent chat session storage
+- `venue_traffic`: Real-time traffic data cache between DWTC and Expo City Dubai
 
 **Advanced Search Features:**
 - Accent-insensitive search using PostgreSQL TRANSLATE function (e.g., "Nestle" matches "Nestlé")
@@ -134,6 +136,40 @@ Database schema uses PostgreSQL with the following core tables:
 OpenAI API integration for two primary use cases:
 1. **Company Analysis**: Analyzes visitor company profiles against exhibitor database to generate relevance scores and personalized recommendations
 2. **Chatbot Assistant**: Context-aware conversational interface for event information, exhibitor discovery, and navigation assistance
+
+**Venue Navigation System:**
+Real-time transportation guidance between Dubai World Trade Centre and Expo City Dubai using Google Routes API and client-side metro schedule calculations:
+
+**Google Routes API Integration:**
+- Endpoint: `POST https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix`
+- Authentication: `X-Goog-Api-Key` header with `GOOGLE_MAPS_API_KEY`
+- Field mask: `originIndex,destinationIndex,duration,distanceMeters,status,condition`
+- Provides real-time traffic-aware routing with:
+  - Distance in meters and formatted text (e.g., "40.8 km")
+  - Current travel duration with traffic (e.g., "37 mins")
+  - Normal travel duration without traffic (e.g., "61 mins")
+  - Route condition status (ROUTE_EXISTS)
+- Data cached for 2 minutes to reduce API costs and improve response times
+- Traffic condition calculated by comparing current vs. normal duration:
+  - Light: Current < 1.2× normal
+  - Moderate: Current between 1.2× and 1.5× normal
+  - Heavy: Current > 1.5× normal
+
+**Dubai Metro Real-Time Schedule:**
+- Client-side calculation using `getNextMetroTimings()` from `@/lib/metroSchedule`
+- Operating hours: 5:00 AM - 12:00 AM (midnight)
+- Peak hours (6-9 AM, 4-8 PM): Trains every 3-4 minutes
+- Off-peak hours: Trains every 6-7 minutes
+- Route: Red Line from DWTC Station to Expo City Station (~15 minutes journey)
+- Updates every minute via `setInterval` for real-time accuracy
+- Handles midnight rollover correctly for times after 12:00 AM
+
+**Frontend Implementation:**
+- Modern card-based layout with color-coded gradients (blue for metro, amber for taxi)
+- Two main transportation cards plus airport information card
+- Real-time data updates: Metro (every 60 seconds), Traffic (every 2 minutes)
+- Loading states and error handling with fallback data
+- Responsive design with mobile-first approach
 
 **Storage Layer:**
 Implements a storage abstraction (`IStorage` interface) with PostgreSQL implementation for:
@@ -203,4 +239,5 @@ Shared schema definitions using Drizzle Zod for:
 ### Environment Requirements
 - `DATABASE_URL`: PostgreSQL connection string (required)
 - `OPENAI_API_KEY`: OpenAI API authentication (required)
+- `GOOGLE_MAPS_API_KEY`: Google Routes API key for real-time traffic data (required)
 - `NODE_ENV`: Environment flag (development/production)
