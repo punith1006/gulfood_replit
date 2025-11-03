@@ -6,7 +6,15 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 ## Recent Changes
 
 ### November 3, 2025
-- **Enhanced "Plan my Journey" Feature**: Renamed "Plan my event schedule" to "Plan my Journey" to better reflect the comprehensive journey planning across both event venues (Dubai World Trade Centre & Expo City Dubai). Faris now asks visitors how many days they plan to attend (1-5 days, Jan 26-30, 2026) and creates personalized day-by-day itineraries considering travel time between venues (~20-30 mins), sector interests (Dairy, Meat, Beverages, etc.), recommended exhibitor visits, networking sessions, and breaks.
+- **Enhanced "Plan my Journey" Feature**: Renamed "Plan my event schedule" to "Plan my Journey" with intelligent distance-aware planning. Faris now creates optimized itineraries that:
+  - Asks visitors how many days they plan to attend (1-5 days, Jan 26-30, 2026) and sector interests
+  - Considers actual distance between venues (12 km / 7.5 miles)
+  - Factors in travel time (20-30 mins by car/taxi) and includes 45-min buffer for venue changes
+  - Minimizes back-and-forth travel by grouping exhibitors by venue location
+  - Dedicates specific days to specific venues (e.g., Day 1-2: DWTC, Day 3: Expo City Dubai)
+  - Creates day-by-day schedules with specific times, activities, venues, and sector-based exhibitor visits
+  - Provides table-formatted itineraries with morning sessions, lunch breaks, afternoon sessions, and networking time
+  - Optimizes routes based on user's selected sectors (Dairy, Meat, Beverages, etc.)
 - **Fixed Analytics Data Consistency**: Sector Engagement now displays real-time data from the exhibitor database instead of hardcoded values. Counts and percentages are calculated dynamically, ensuring Total Registrations and Sector Engagement statistics are consistent. Changed label from "registrations" to "exhibitors" for clarity.
 - **Contact Sales Feature**: Added dedicated "Contact Sales" button for exhibitors at the end of their journey in the chatbot. Features orange gradient styling, comprehensive form with company details, email validation, and auto-close dialog after successful submission. Sales inquiries are stored in database with pending status for follow-up.
 - **Fixed URL validation bug**: Company Analyzer now accepts URLs with `https://` protocol. Previously rejected valid URLs because "https" contains 5 consecutive consonants which triggered gibberish filter.
