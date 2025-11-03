@@ -6,6 +6,7 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 ## Recent Changes
 
 ### November 3, 2025
+- **Fixed Analytics Data Consistency**: Sector Engagement now displays real-time data from the exhibitor database instead of hardcoded values. Counts and percentages are calculated dynamically, ensuring Total Registrations and Sector Engagement statistics are consistent. Changed label from "registrations" to "exhibitors" for clarity.
 - **Contact Sales Feature**: Added dedicated "Contact Sales" button for exhibitors at the end of their journey in the chatbot. Features orange gradient styling, comprehensive form with company details, email validation, and auto-close dialog after successful submission. Sales inquiries are stored in database with pending status for follow-up.
 - **Fixed URL validation bug**: Company Analyzer now accepts URLs with `https://` protocol. Previously rejected valid URLs because "https" contains 5 consecutive consonants which triggered gibberish filter.
 - **Direct Organizer role access**: Added "Select Organizer Role" button on Analytics page for instant access without navigating through Faris chatbot.
