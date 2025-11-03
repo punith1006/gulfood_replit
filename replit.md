@@ -5,32 +5,33 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 
 ## Recent Changes
 
-### November 3, 2025 - Client Demo Follow-up Enhancements
-- **Stall Location Navigation**: Enhanced exhibitor database with venue-specific location data:
-  - Added venue field (Dubai World Trade Centre / Expo City Dubai)
-  - Added hall and booth coordinate fields (boothX, boothY) for precise location mapping
-  - Foundation for future floor plan integration and venue navigation
+### November 3, 2025 - UI and PDF Improvements
+- **Faris Chatbot Width Optimization**: Adjusted chatbot dimensions for better UX:
+  - Reduced width from 600px/700px to 480px/520px (sm/md breakpoints)
+  - Prevents chatbot from covering left-side navigation and content
+  - Maintains full-width on mobile devices for optimal mobile experience
+  - Fixed positioning at bottom-right with proper spacing (bottom-4, right-4)
+- **Professional PDF Report Branding**: Enhanced all PDF reports with structured layouts and Gulfood 2026 branding:
+  - **Gradient Headers**: Color-coded headers for each report type:
+    - Organizer Analytics: Blue gradient (#2563eb to #1d4ed8)
+    - Visitor Journey: Green gradient (#16a34a to #15803d)
+    - Journey Plan: Orange gradient (#f97316 to #ea580c)
+  - **Structured Content**: Professional layouts with:
+    - "GULFOOD 2026" title in large bold white text
+    - Event dates and location subtitle
+    - Clear section headers and organized content
+    - Proper spacing and typography using Helvetica font
+  - **Smart Report Selection**: Backend automatically chooses between journey plan PDF (for itineraries with tables/days) and regular journey PDF (for general conversations) based on message content analysis
 - **AI Response Accuracy Tracking**: Implemented comprehensive feedback system for AI chatbot:
   - Thumbs up/down buttons on every AI response (except welcome message)
   - Feedback data stored in database for analytics and improvement
   - Real-time accuracy percentage displayed on Analytics Dashboard
   - Shows total feedback count and calculated accuracy rate
   - Fixed bug: Feedback state now properly resets when users change roles
-- **Chatbot Interaction Metrics**: Enhanced analytics to show:
-  - Total AI chatbot interactions prominently displayed
-  - Feedback response count shown as subtitle under AI interactions stat
-  - AI response accuracy as new metric card (95% default, updates based on real feedback)
 - **PDF Report Generation**: Professional PDF reports for both organizers and visitors:
-  - **Organizers**: Comprehensive analytics PDF with:
-    - Key metrics (AI Accuracy, Interactions, Exhibitors, Meeting Requests, Registrations)
-    - Sector engagement table with counts and percentages
-    - Event information and branding
-    - Professional formatting with Helvetica font
-  - **Visitors**: Journey report PDF with:
-    - Session details and conversation history
-    - Interaction and feedback counts
-    - Formatted chat transcript with role indicators
-    - Event information
+  - **Organizers**: Comprehensive analytics PDF with key metrics, sector engagement table, and event branding
+  - **Visitors**: Journey report PDF with session details, conversation history, and formatted chat transcript
+  - **Journey Plans**: Dedicated PDF for itineraries with parsed markdown tables and formatted schedules
   - Download buttons trigger instant PDF generation and download
   - PDFs stored in database as base64 for record-keeping
   - Proper Content-Type headers (application/pdf) for browser downloads
