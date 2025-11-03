@@ -12,11 +12,23 @@ type Analytics = {
 };
 
 const fonts = {
-  Roboto: {
-    normal: 'node_modules/pdfmake/build/vfs_fonts.js',
-    bold: 'node_modules/pdfmake/build/vfs_fonts.js',
-    italics: 'node_modules/pdfmake/build/vfs_fonts.js',
-    bolditalics: 'node_modules/pdfmake/build/vfs_fonts.js'
+  Courier: {
+    normal: 'Courier',
+    bold: 'Courier-Bold',
+    italics: 'Courier-Oblique',
+    bolditalics: 'Courier-BoldOblique'
+  },
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique'
+  },
+  Times: {
+    normal: 'Times-Roman',
+    bold: 'Times-Bold',
+    italics: 'Times-Italic',
+    bolditalics: 'Times-BoldItalic'
   }
 };
 
@@ -90,11 +102,29 @@ export async function generateOrganizerAnalyticsPDF(analytics: Analytics): Promi
             {
               width: '*',
               stack: [
+                { text: 'Meeting Requests', style: 'metricLabel' },
+                { text: analytics.meetingRequests.toString(), style: 'metricValue', color: '#ea580c' },
+                { text: 'Scheduled meetings', style: 'metricSubtext' }
+              ],
+              margin: [0, 0, 10, 15]
+            }
+          ]
+        },
+
+        {
+          columns: [
+            {
+              width: '*',
+              stack: [
                 { text: 'Total Registrations', style: 'metricLabel' },
                 { text: analytics.totalRegistrations.toString(), style: 'metricValue', color: '#dc2626' },
                 { text: 'Event registrations', style: 'metricSubtext' }
               ],
               margin: [0, 0, 10, 15]
+            },
+            {
+              width: '*',
+              text: ''
             }
           ]
         },
@@ -192,6 +222,7 @@ export async function generateOrganizerAnalyticsPDF(analytics: Analytics): Promi
         }
       },
       defaultStyle: {
+        font: 'Helvetica',
         fontSize: 10,
         color: '#374151'
       }
@@ -375,6 +406,7 @@ export async function generateVisitorJourneyPDF(reportData: {
         }
       },
       defaultStyle: {
+        font: 'Helvetica',
         fontSize: 10,
         color: '#374151'
       }
