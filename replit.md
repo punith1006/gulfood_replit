@@ -15,16 +15,26 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
   - Feedback data stored in database for analytics and improvement
   - Real-time accuracy percentage displayed on Analytics Dashboard
   - Shows total feedback count and calculated accuracy rate
+  - Fixed bug: Feedback state now properly resets when users change roles
 - **Chatbot Interaction Metrics**: Enhanced analytics to show:
   - Total AI chatbot interactions prominently displayed
   - Feedback response count shown as subtitle under AI interactions stat
   - AI response accuracy as new metric card (95% default, updates based on real feedback)
-- **Offline Report Generation**: Downloadable reports for both organizers and visitors:
-  - **Organizers**: JSON reports with complete analytics, exhibitor counts, meeting data, and event metrics
-  - **Visitors**: Journey reports with conversation history, session data, and engagement analytics
-  - Download button in Analytics Dashboard for organizers
-  - Download Journey Report button in chatbot for visitors (appears after 2+ messages)
-  - Reports accessible via `/api/reports` endpoint with downloadable JSON format
+- **PDF Report Generation**: Professional PDF reports for both organizers and visitors:
+  - **Organizers**: Comprehensive analytics PDF with:
+    - Key metrics (AI Accuracy, Interactions, Exhibitors, Meeting Requests, Registrations)
+    - Sector engagement table with counts and percentages
+    - Event information and branding
+    - Professional formatting with Helvetica font
+  - **Visitors**: Journey report PDF with:
+    - Session details and conversation history
+    - Interaction and feedback counts
+    - Formatted chat transcript with role indicators
+    - Event information
+  - Download buttons trigger instant PDF generation and download
+  - PDFs stored in database as base64 for record-keeping
+  - Proper Content-Type headers (application/pdf) for browser downloads
+  - Reports accessible via `/api/reports/:id/download` endpoint
 - **Analytics Dashboard Enhancements**:
   - Replaced "Meeting Requests" stat with "AI Response Accuracy" metric
   - Shows AI accuracy percentage with trend indicator
