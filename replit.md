@@ -61,6 +61,11 @@ The application follows a premium trade show aesthetic inspired by Gulfood.com a
 - UI primitives (`/components/ui`): 40+ shadcn/ui components for consistent interface patterns
 - Shared utilities (`/lib`): Query client, utility functions
 
+**Performance Optimizations:**
+- Exhibitor Directory uses lazy loading: only fetches data when search criteria is entered
+- Initial page load shows empty state prompt, preventing unnecessary API calls for all 138+ exhibitors
+- Query enabled/disabled based on `hasSearchCriteria` check (searchTerm, sector, or country filters)
+
 **Navigation:**
 - Simplified navigation labels: "Visitors", "Exhibitors", "Analytics" (title case)
 - No authentication buttons (no "Sign In" or "Register Now")

@@ -62,6 +62,9 @@ export default function ExhibitorDirectory() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Only fetch exhibitors when user has entered search term or selected filters
+  const hasSearchCriteria = searchTerm.trim() !== "" || selectedSector !== "all" || selectedCountry !== "all";
+  
   const { data: exhibitors = [], isLoading } = useQuery<Exhibitor[]>({
     queryKey: ["/api/exhibitors", searchTerm, selectedSector, selectedCountry],
     queryFn: async () => {
@@ -73,7 +76,8 @@ export default function ExhibitorDirectory() {
       const res = await fetch(`/api/exhibitors?${params}`);
       if (!res.ok) throw new Error("Failed to fetch exhibitors");
       return await res.json();
-    }
+    },
+    enabled: hasSearchCriteria // Only fetch when search criteria is provided
   });
 
   const scheduleMeetingMutation = useMutation({
@@ -256,7 +260,16 @@ export default function ExhibitorDirectory() {
         {!isLoading && exhibitors.length === 0 && (
           <div className="text-center py-12">
             <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No exhibitors found matching your criteria</p>
+            {!hasSearchCriteria ? (
+              <div>
+                <p className="text-lg font-semibold mb-2">Start Your Search</p>
+                <p className="text-muted-foreground">
+                  Enter a company name, select a sector, or choose a country to discover exhibitors
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No exhibitors found matching your criteria</p>
+            )}
           </div>
         )}
 
