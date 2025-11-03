@@ -153,14 +153,16 @@ export default function AIChatbot() {
         title: "Request Submitted!",
         description: "Our sales team will contact you within 24 hours.",
       });
-      setShowContactSales(false);
-      setContactForm({
-        companyName: "",
-        contactName: "",
-        email: "",
-        phone: "",
-        inquiry: ""
-      });
+      setTimeout(() => {
+        setShowContactSales(false);
+        setContactForm({
+          companyName: "",
+          contactName: "",
+          email: "",
+          phone: "",
+          inquiry: ""
+        });
+      }, 300);
     },
     onError: () => {
       toast({
