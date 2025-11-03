@@ -548,8 +548,21 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           pdfData: null
         };
 
-        const { generateVisitorJourneyPDF } = await import('./pdfGenerator.js');
-        pdfBuffer = await generateVisitorJourneyPDF(reportData);
+        const hasJourneyPlan = conversation?.messages.some(msg => 
+          msg.role === 'assistant' && (
+            msg.content.includes('|') || 
+            msg.content.toLowerCase().includes('day 1') ||
+            msg.content.toLowerCase().includes('itinerary')
+          )
+        );
+
+        if (hasJourneyPlan) {
+          const { generateJourneyPlanPDF } = await import('./pdfGenerator.js');
+          pdfBuffer = await generateJourneyPlanPDF(reportData);
+        } else {
+          const { generateVisitorJourneyPDF } = await import('./pdfGenerator.js');
+          pdfBuffer = await generateVisitorJourneyPDF(reportData);
+        }
       } else {
         return res.status(400).json({ error: "Invalid report type or user role combination" });
       }
