@@ -136,6 +136,9 @@ Database schema uses PostgreSQL with the following core tables:
 **AI Integration Strategy:**
 OpenAI API integration for two primary use cases:
 1. **Company Analysis**: Analyzes visitor company profiles against exhibitor database to generate relevance scores and personalized recommendations
+   - Returns matched exhibitor details (name, sector, booth) in API response
+   - Displays scrollable list of up to 50 matched exhibitors with full details
+   - Removed "View Personalized Recommendations" button from analysis results
 2. **Chatbot Assistant**: Context-aware conversational interface for event information, exhibitor discovery, and navigation assistance
 
 **Venue Navigation System:**

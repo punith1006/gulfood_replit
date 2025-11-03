@@ -89,6 +89,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const existing = await storage.getCompanyAnalysis(companyIdentifier);
       if (existing) {
+        // Populate matched exhibitor details
+        if (existing.matchedExhibitorIds && existing.matchedExhibitorIds.length > 0) {
+          const matchedExhibitors = [];
+          for (const id of existing.matchedExhibitorIds) {
+            const exhibitor = await storage.getExhibitor(id);
+            if (exhibitor) {
+              matchedExhibitors.push({
+                id: exhibitor.id,
+                name: exhibitor.name,
+                sector: exhibitor.sector,
+                booth: exhibitor.booth
+              });
+            }
+          }
+          return res.json({ ...existing, matchedExhibitors });
+        }
         return res.json(existing);
       }
 
@@ -212,7 +228,21 @@ Format as valid JSON only, no markdown.`;
         analysisData: validated
       });
 
-      res.json(analysis);
+      // Populate matched exhibitor details for response
+      const matchedExhibitors = [];
+      for (const id of matchedExhibitorIds) {
+        const exhibitor = await storage.getExhibitor(id);
+        if (exhibitor) {
+          matchedExhibitors.push({
+            id: exhibitor.id,
+            name: exhibitor.name,
+            sector: exhibitor.sector,
+            booth: exhibitor.booth
+          });
+        }
+      }
+
+      res.json({ ...analysis, matchedExhibitors });
     } catch (error) {
       console.error("Error analyzing company:", error);
       res.status(500).json({ error: "Failed to analyze company. Please try again." });

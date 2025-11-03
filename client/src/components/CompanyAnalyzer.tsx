@@ -11,6 +11,16 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { CompanyAnalysis } from "@shared/schema";
 
+// Extended type to include matched exhibitor details from API
+type CompanyAnalysisWithExhibitors = CompanyAnalysis & {
+  matchedExhibitors?: Array<{
+    id: number;
+    name: string;
+    sector: string;
+    booth: string;
+  }>;
+};
+
 // Helper function to parse recommendation format
 const parseRecommendation = (rec: string) => {
   // Format: "Recommendation: [action] - Logic: [why this helps]"
@@ -26,7 +36,7 @@ const parseRecommendation = (rec: string) => {
 
 export default function CompanyAnalyzer() {
   const [companyUrl, setCompanyUrl] = useState("");
-  const [result, setResult] = useState<CompanyAnalysis | null>(null);
+  const [result, setResult] = useState<CompanyAnalysisWithExhibitors | null>(null);
   const recommendationsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -84,20 +94,6 @@ export default function CompanyAnalyzer() {
 
   const handleClearResults = () => {
     setResult(null);
-  };
-
-  const handleViewRecommendations = () => {
-    if (recommendationsRef.current) {
-      recommendationsRef.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'nearest' 
-      });
-      // Add a brief highlight effect
-      recommendationsRef.current.classList.add('animate-pulse');
-      setTimeout(() => {
-        recommendationsRef.current?.classList.remove('animate-pulse');
-      }, 2000);
-    }
   };
 
   return (
@@ -267,22 +263,43 @@ export default function CompanyAnalyzer() {
                 )}
 
                 <div className="pt-4 border-t border-border">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold flex items-center gap-2">
-                      <Target className="w-4 h-4" />
-                      Matched Exhibitors
-                    </span>
-                    <span className="text-lg font-bold text-primary" data-testid="text-matched-exhibitors">
-                      {result.matchedExhibitorsCount}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Target className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold">
+                      Matched Exhibitors ({result.matchedExhibitorsCount})
                     </span>
                   </div>
-                  <Button 
-                    className="w-full" 
-                    data-testid="button-view-recommendations"
-                    onClick={handleViewRecommendations}
-                  >
-                    View Personalized Recommendations
-                  </Button>
+                  {result.matchedExhibitors && result.matchedExhibitors.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {result.matchedExhibitors.map((exhibitor, idx) => (
+                        <div 
+                          key={exhibitor.id} 
+                          className="p-3 bg-muted/30 rounded-md hover-elevate"
+                          data-testid={`matched-exhibitor-${idx}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-foreground">
+                                {exhibitor.name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {exhibitor.sector}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {exhibitor.booth}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No matched exhibitors available
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>
