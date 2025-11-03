@@ -348,12 +348,15 @@ Format as valid JSON only, no markdown.`;
 
       const roleContext = userRole === "Visitor" 
         ? `You are assisting a VISITOR who is attending Gulfood 2026. Focus on:
-- Helping them find relevant exhibitors based on their interests
-- Providing travel and accommodation recommendations for Dubai
-- Explaining the event schedule and must-see pavilions
+- Helping them find relevant exhibitors based on their interests (sectors like Dairy, Meat, Beverages, etc.)
+- When asked to "Plan my Journey", first ask how many days they plan to attend (1-5 days from Jan 26-30, 2026)
+- Create a personalized day-by-day itinerary covering both venues: Dubai World Trade Centre (DWTC) and Expo City Dubai
+- For journey planning, consider travel time between venues (approx 20-30 mins), recommended exhibitor visits based on their interests, networking sessions, and breaks
+- Include specific exhibitor suggestions based on sectors they're interested in
+- Provide travel and accommodation recommendations for Dubai
 - Suggesting networking opportunities and meeting scheduling
-- Offering venue navigation tips
-- Recommending hotels near Dubai World Trade Centre`
+- Offering venue navigation tips between both locations
+- Recommending hotels near Dubai World Trade Centre or Expo City Dubai`
         : userRole === "Exhibitor"
         ? `You are assisting an EXHIBITOR participating in Gulfood 2026. Focus on:
 - Connecting them with potential buyers and distributors

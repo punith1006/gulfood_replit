@@ -26,7 +26,7 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
     "Find exhibitors for me",
     "Show travel & route options",
-    "Plan my event schedule",
+    "Plan my Journey",
     "Book meetings",
     "Navigate the venue",
     "Hotel recommendations"
@@ -58,7 +58,7 @@ const getRoleWelcomeMessage = (role: UserRole): string => {
   if (!role) return "Ask me anything.....";
   
   const welcomeMessages = {
-    visitor: "Welcome! 👋 I'm here to help you discover the best exhibitors, plan your event schedule, navigate the venues, and make the most of Gulfood 2026. What would you like to know?",
+    visitor: "Welcome! 👋 I'm here to help you discover the best exhibitors, plan your journey across both venues (Dubai World Trade Centre & Expo City Dubai), and make the most of Gulfood 2026. What would you like to know?",
     exhibitor: "Welcome! 🤝 I'm here to help you connect with potential buyers, analyze competitors, optimize your booth strategy, and maximize your presence at Gulfood 2026. How can I assist you?",
     organizer: "Welcome! 📊 I'm here to provide you with registration analytics, engagement metrics, revenue insights, and real-time event performance data for Gulfood 2026. What insights do you need?"
   };
