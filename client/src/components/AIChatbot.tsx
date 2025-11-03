@@ -230,13 +230,15 @@ export default function AIChatbot() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           size="lg"
-          className="rounded-full w-20 h-20 shadow-2xl group relative bg-gradient-to-br from-primary to-primary/80 hover:from-primary hover:to-primary/90 ring-4 ring-primary/20 ring-offset-2 overflow-hidden"
+          className="rounded-full w-20 h-20 shadow-2xl group relative bg-gradient-to-br from-primary to-primary/80 hover:from-primary hover:to-primary/90 ring-4 ring-primary/20 ring-offset-2 overflow-hidden p-0"
           onClick={openChatbot}
           data-testid="button-open-chatbot"
           title="Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
         >
-          <img src={farisAvatar} alt="Faris AI" className="w-full h-full object-cover scale-150 group-hover:scale-[1.6] transition-transform" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-chart-3 rounded-full animate-pulse shadow-sm shadow-chart-3" />
+          <span className="absolute inset-0 flex items-center justify-center">
+            <img src={farisAvatar} alt="Faris AI" className="w-full h-full object-cover scale-[1.8] group-hover:scale-[1.9] transition-transform" />
+          </span>
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-chart-3 rounded-full animate-pulse shadow-sm shadow-chart-3 z-10" />
         </Button>
       </div>
     );
