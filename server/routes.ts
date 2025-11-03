@@ -517,20 +517,20 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       }
 
       let reportData: any = {};
+      let pdfBuffer: Buffer;
       
       if (reportType === "analytics" && userRole === "Organizer") {
         const analytics = await storage.getAnalytics();
-        const exhibitors = await storage.getExhibitors();
-        const meetings = await storage.getMeetings();
         
         reportData = {
           analytics,
-          exhibitorCount: exhibitors.length,
-          meetingCount: meetings.length,
           generatedAt: new Date().toISOString(),
           eventName: "Gulfood 2026",
           eventDates: "January 26-30, 2026"
         };
+
+        const { generateOrganizerAnalyticsPDF } = await import('./pdfGenerator.js');
+        pdfBuffer = await generateOrganizerAnalyticsPDF(analytics);
       } else if (reportType === "journey" && userRole === "Visitor") {
         if (!sessionId) {
           return res.status(400).json({ error: "Session ID is required for visitor reports" });
@@ -544,11 +544,18 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           conversationHistory: conversation?.messages || [],
           feedbackCount: feedback.length,
           generatedAt: new Date().toISOString(),
-          eventName: "Gulfood 2026"
+          eventName: "Gulfood 2026",
+          pdfData: null
         };
+
+        const { generateVisitorJourneyPDF } = await import('./pdfGenerator.js');
+        pdfBuffer = await generateVisitorJourneyPDF(reportData);
+      } else {
+        return res.status(400).json({ error: "Invalid report type or user role combination" });
       }
 
-      const fileName = `${reportType}_${userRole}_${Date.now()}.json`;
+      reportData.pdfData = pdfBuffer.toString('base64');
+      const fileName = `Gulfood2026_${reportType}_${userRole}_${Date.now()}.pdf`;
       
       const report = await storage.createGeneratedReport({
         reportType,
@@ -590,9 +597,18 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         return res.status(404).json({ error: "Report not found" });
       }
 
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
-      res.json(report.reportData);
+      const reportData = report.reportData as any;
+      if (reportData.pdfData) {
+        const pdfBuffer = Buffer.from(reportData.pdfData, 'base64');
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+      } else {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
+        res.json(report.reportData);
+      }
     } catch (error) {
       console.error("Error downloading report:", error);
       res.status(500).json({ error: "Failed to download report" });
