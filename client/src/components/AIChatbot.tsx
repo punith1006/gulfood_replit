@@ -44,9 +44,20 @@ interface Message {
   content: string;
 }
 
+const getRoleWelcomeMessage = (role: UserRole): string => {
+  if (!role) return "Ask me anything.....";
+  
+  const welcomeMessages = {
+    visitor: "Welcome! 👋 I'm here to help you discover the best exhibitors, plan your event schedule, navigate the venues, and make the most of Gulfood 2026. What would you like to know?",
+    exhibitor: "Welcome! 🤝 I'm here to help you connect with potential buyers, analyze competitors, optimize your booth strategy, and maximize your presence at Gulfood 2026. How can I assist you?",
+    organizer: "Welcome! 📊 I'm here to provide you with registration analytics, engagement metrics, revenue insights, and real-time event performance data for Gulfood 2026. What insights do you need?"
+  };
+  
+  return welcomeMessages[role];
+};
+
 export default function AIChatbot() {
   const { isOpen, openChatbot, closeChatbot } = useChatbot();
-  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const { userRole, setUserRole } = useRole();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([
@@ -65,18 +76,13 @@ export default function AIChatbot() {
   }, [messages]);
 
   useEffect(() => {
-    const hasVisited = sessionStorage.getItem('gulfood_chatbot_seen');
-    const isMobile = window.innerWidth < 640;
-    
-    if (!hasVisited && !hasAutoOpened && !isMobile) {
-      const timer = setTimeout(() => {
-        openChatbot();
-        setHasAutoOpened(true);
-        sessionStorage.setItem('gulfood_chatbot_seen', 'true');
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasAutoOpened, openChatbot]);
+    setMessages([
+      {
+        role: "assistant",
+        content: getRoleWelcomeMessage(userRole)
+      }
+    ]);
+  }, [userRole]);
 
   const chatMutation = useMutation({
     mutationFn: async ({ message, role }: { message: string; role: string | null }) => {
@@ -120,18 +126,13 @@ export default function AIChatbot() {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        {!hasAutoOpened && (
-          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl max-w-xs animate-in slide-in-from-bottom-5 duration-500">
-            <p className="text-sm font-medium">👋 Hi, I'm Faris!</p>
-            <p className="text-xs mt-1 opacity-90">Your AI guide for Gulfood 2026.</p>
-          </div>
-        )}
+      <div className="fixed bottom-6 right-6 z-50">
         <Button
           size="lg"
           className="rounded-full w-16 h-16 shadow-2xl group relative"
           onClick={openChatbot}
           data-testid="button-open-chatbot"
+          title="Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
         >
           <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-chart-3 rounded-full animate-pulse" />

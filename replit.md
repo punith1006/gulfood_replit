@@ -66,25 +66,26 @@ The application follows a premium trade show aesthetic inspired by Gulfood.com a
 - No authentication buttons (no "Sign In" or "Register Now")
 - All pages freely accessible to everyone
 
-**Proactive AI Chatbot "Faris":**
+**AI Chatbot "Faris":**
 - Named "Faris" (فارس - Arabic for "Knight" and "insightful person") - culturally relevant for Dubai event
-- Auto-opens 2 seconds after first homepage visit with welcoming introduction
-- Session-based tracking (won't auto-open on repeat visits)
-- Simple greeting: "Ask me anything....."
+- Opens only when user clicks the floating chatbot button (no auto-open)
+- Simple initial greeting: "Ask me anything....."
 - **Role-Based Intelligence**: Users select their role (Visitor, Exhibitor, or Organizer) to receive personalized, context-aware assistance
   - **Visitor Role**: AI focuses on exhibitor discovery, travel planning, event schedules, meeting booking, venue navigation, hotel recommendations
+    - Welcome message: "Welcome! 👋 I'm here to help you discover the best exhibitors, plan your event schedule, navigate the venues, and make the most of Gulfood 2026. What would you like to know?"
   - **Exhibitor Role**: AI emphasizes buyer connections, competitor analysis, booth strategies, marketing tactics, networking, event logistics
+    - Welcome message: "Welcome! 🤝 I'm here to help you connect with potential buyers, analyze competitors, optimize your booth strategy, and maximize your presence at Gulfood 2026. How can I assist you?"
   - **Organizer Role**: AI provides registration analytics, engagement metrics, revenue insights, demographics, performance tracking, strategic recommendations
+    - Welcome message: "Welcome! 📊 I'm here to provide you with registration analytics, engagement metrics, revenue insights, and real-time event performance data for Gulfood 2026. What insights do you need?"
 - **Multilingual Support**: Faris understands and responds fluently in:
   - English (default)
   - Arabic (العربية) - for regional participants
   - Simplified Chinese (简体中文) - for Asian visitors
   - Hindi (हिन्दी) - for South Asian attendees
   - Automatically detects input language and responds in the same language
+- **Chat History Management**: When switching roles, the entire chat history is cleared and a fresh role-specific welcome message appears
 - Role can be changed anytime via "Change role" button
-- Conversation history persists throughout session
-- Floating button with visual pulse indicator when closed
-- Helpful tooltip prompt: "Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
+- Floating button with visual pulse indicator and hover tooltip when closed
 
 **State Management Approach:**
 Server state is managed through React Query with custom query functions, implementing:
