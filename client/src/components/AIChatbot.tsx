@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -27,7 +27,6 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
     "Find exhibitors for me",
     "Show travel & route options",
     "Plan my Journey",
-    "Book meetings",
     "Navigate the venue",
     "Hotel recommendations"
   ],
@@ -80,6 +79,7 @@ export default function AIChatbot() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   const [contactForm, setContactForm] = useState({
     companyName: "",
     contactName: "",
@@ -101,6 +101,7 @@ export default function AIChatbot() {
         content: getRoleWelcomeMessage(userRole)
       }
     ]);
+    setFeedbackGiven({});
   }, [userRole]);
 
   const chatMutation = useMutation({
@@ -185,6 +186,44 @@ export default function AIChatbot() {
     contactSalesMutation.mutate(contactForm);
   };
 
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ messageIndex, isAccurate }: { messageIndex: number; isAccurate: boolean }) => {
+      const res = await apiRequest("POST", "/api/chat/feedback", {
+        sessionId,
+        messageIndex,
+        isAccurate
+      });
+      return await res.json();
+    },
+    onSuccess: (_data, variables) => {
+      setFeedbackGiven(prev => ({ ...prev, [variables.messageIndex]: true }));
+      toast({
+        title: "Thank you!",
+        description: variables.isAccurate 
+          ? "Your feedback helps us improve Faris." 
+          : "We'll work on improving this response.",
+      });
+    }
+  });
+
+  const downloadReportMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/reports/generate", {
+        reportType: "journey",
+        userRole: "Visitor",
+        sessionId
+      });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      window.open(data.downloadUrl, '_blank');
+      toast({
+        title: "Report Downloaded",
+        description: "Your journey report has been generated.",
+      });
+    }
+  });
+
   if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
@@ -239,7 +278,7 @@ export default function AIChatbot() {
           {messages.map((message, idx) => (
             <div
               key={idx}
-              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
             >
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
@@ -284,6 +323,33 @@ export default function AIChatbot() {
                   {message.content}
                 </ReactMarkdown>
               </div>
+              {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
+                <div className="flex gap-2 mt-1 ml-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={() => feedbackMutation.mutate({ messageIndex: idx, isAccurate: true })}
+                    data-testid={`button-feedback-up-${idx}`}
+                  >
+                    <ThumbsUp className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0"
+                    onClick={() => feedbackMutation.mutate({ messageIndex: idx, isAccurate: false })}
+                    data-testid={`button-feedback-down-${idx}`}
+                  >
+                    <ThumbsDown className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              {message.role === "assistant" && idx > 0 && feedbackGiven[idx] && (
+                <div className="text-xs text-muted-foreground mt-1 ml-2">
+                  Thanks for your feedback!
+                </div>
+              )}
             </div>
           ))}
           {chatMutation.isPending && (
@@ -359,6 +425,18 @@ export default function AIChatbot() {
                 </Badge>
               ))}
             </div>
+            {userRole === "visitor" && messages.length > 2 && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => downloadReportMutation.mutate()}
+                disabled={downloadReportMutation.isPending}
+                data-testid="button-download-journey-report"
+              >
+                <Download className="w-4 h-4" />
+                {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
+              </Button>
+            )}
             {userRole === "exhibitor" && (
               <Button
                 className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"

@@ -1,13 +1,14 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3 } from "lucide-react";
+import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3, Download, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import analyticsImage from "@assets/generated_images/Analytics_dashboard_visualization_c400d7e3.png";
 import { useRole } from "@/contexts/RoleContext";
 import { useChatbot } from "@/contexts/ChatbotContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Analytics {
   totalRegistrations: number;
@@ -15,16 +16,43 @@ interface Analytics {
   aiInteractions: number;
   meetingRequests: number;
   sectorEngagement: Array<{ sector: string; count: number; percentage: number }>;
+  aiAccuracy: number;
+  totalFeedback: number;
 }
 
 export default function AnalyticsDashboard() {
   const { userRole, setUserRole } = useRole();
   const { openChatbot } = useChatbot();
+  const { toast } = useToast();
   
   const { data: analytics, isLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
     refetchInterval: 10000,
     enabled: userRole === "organizer" // Only fetch data when user is an organizer
+  });
+
+  const generateReportMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/reports/generate", {
+        reportType: "analytics",
+        userRole: "Organizer"
+      });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      window.open(data.downloadUrl, '_blank');
+      toast({
+        title: "Report Generated",
+        description: "Your analytics report has been downloaded successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
+    }
   });
 
   const stats = [
@@ -47,22 +75,24 @@ export default function AnalyticsDashboard() {
       bgColor: "bg-chart-2/10"
     },
     {
-      label: "AI Interactions",
+      label: "AI Chatbot Interactions",
       value: analytics?.aiInteractions?.toString() || "0",
       change: "+156%",
       trend: "up",
       icon: MessageSquare,
       color: "text-chart-3",
-      bgColor: "bg-chart-3/10"
+      bgColor: "bg-chart-3/10",
+      subtitle: `${analytics?.totalFeedback || 0} feedback responses`
     },
     {
-      label: "Meeting Requests",
-      value: analytics?.meetingRequests?.toString() || "0",
-      change: "+12%",
+      label: "AI Response Accuracy",
+      value: `${analytics?.aiAccuracy || 95}%`,
+      change: "+2%",
       trend: "up",
-      icon: TrendingUp,
+      icon: CheckCircle2,
       color: "text-chart-4",
-      bgColor: "bg-chart-4/10"
+      bgColor: "bg-chart-4/10",
+      subtitle: `Based on ${analytics?.totalFeedback || 0} ratings`
     }
   ];
 
@@ -123,6 +153,18 @@ export default function AnalyticsDashboard() {
           <p className="text-lg text-muted-foreground max-w-2xl mb-8">
             Comprehensive analytics and insights to make data-driven decisions for Gulfood 2026
           </p>
+          <div className="flex gap-4 mb-8">
+            <Button 
+              variant="default" 
+              className="gap-2"
+              onClick={() => generateReportMutation.mutate()}
+              disabled={generateReportMutation.isPending}
+              data-testid="button-download-report"
+            >
+              <Download className="w-4 h-4" />
+              {generateReportMutation.isPending ? "Generating..." : "Download Analytics Report"}
+            </Button>
+          </div>
           <div className="rounded-xl overflow-hidden shadow-lg mb-8">
             <img 
               src={analyticsImage} 
@@ -159,6 +201,9 @@ export default function AnalyticsDashboard() {
                     </div>
                     <div className="text-3xl font-bold mb-1" data-testid={`text-stat-value-${idx}`}>{stat.value}</div>
                     <div className="text-sm text-muted-foreground">{stat.label}</div>
+                    {(stat as any).subtitle && (
+                      <div className="text-xs text-muted-foreground mt-1">{(stat as any).subtitle}</div>
+                    )}
                   </>
                 )}
               </Card>

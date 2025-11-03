@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
@@ -471,15 +471,131 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       messages.push({ role: "assistant", content: assistantMessage });
 
       if (conversation) {
-        await storage.updateChatConversation(sessionId, messages);
+        await storage.updateChatConversation(sessionId, messages, userRole);
       } else {
-        await storage.createChatConversation({ sessionId, messages });
+        await storage.createChatConversation({ sessionId, messages, userRole });
       }
 
       res.json({ message: assistantMessage });
     } catch (error) {
       console.error("Error processing chat:", error);
       res.status(500).json({ error: "Failed to process chat message" });
+    }
+  });
+
+  app.post("/api/chat/feedback", async (req, res) => {
+    try {
+      const validatedData = insertChatFeedbackSchema.parse(req.body);
+      const feedback = await storage.createChatFeedback(validatedData);
+      res.json(feedback);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid feedback data", details: error.errors });
+      }
+      console.error("Error saving chat feedback:", error);
+      res.status(500).json({ error: "Failed to save feedback" });
+    }
+  });
+
+  app.get("/api/chat/feedback/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const feedback = await storage.getChatFeedback(sessionId);
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error fetching chat feedback:", error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  app.post("/api/reports/generate", async (req, res) => {
+    try {
+      const { reportType, userRole, sessionId } = req.body;
+      
+      if (!reportType || !userRole) {
+        return res.status(400).json({ error: "Report type and user role are required" });
+      }
+
+      let reportData: any = {};
+      
+      if (reportType === "analytics" && userRole === "Organizer") {
+        const analytics = await storage.getAnalytics();
+        const exhibitors = await storage.getExhibitors();
+        const meetings = await storage.getMeetings();
+        
+        reportData = {
+          analytics,
+          exhibitorCount: exhibitors.length,
+          meetingCount: meetings.length,
+          generatedAt: new Date().toISOString(),
+          eventName: "Gulfood 2026",
+          eventDates: "January 26-30, 2026"
+        };
+      } else if (reportType === "journey" && userRole === "Visitor") {
+        if (!sessionId) {
+          return res.status(400).json({ error: "Session ID is required for visitor reports" });
+        }
+        
+        const conversation = await storage.getChatConversation(sessionId);
+        const feedback = await storage.getChatFeedback(sessionId);
+        
+        reportData = {
+          sessionId,
+          conversationHistory: conversation?.messages || [],
+          feedbackCount: feedback.length,
+          generatedAt: new Date().toISOString(),
+          eventName: "Gulfood 2026"
+        };
+      }
+
+      const fileName = `${reportType}_${userRole}_${Date.now()}.json`;
+      
+      const report = await storage.createGeneratedReport({
+        reportType,
+        userRole,
+        sessionId: sessionId || null,
+        reportData,
+        fileName
+      });
+
+      res.json({ 
+        success: true,
+        fileName,
+        reportId: report.id,
+        downloadUrl: `/api/reports/${report.id}/download`
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      res.status(500).json({ error: "Failed to generate report" });
+    }
+  });
+
+  app.get("/api/reports", async (req, res) => {
+    try {
+      const { userRole } = req.query;
+      const reports = await storage.getGeneratedReports(userRole as string | undefined);
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      res.status(500).json({ error: "Failed to fetch reports" });
+    }
+  });
+
+  app.get("/api/reports/:id/download", async (req, res) => {
+    try {
+      const reports = await storage.getGeneratedReports();
+      const report = reports.find(r => r.id === parseInt(req.params.id));
+      
+      if (!report) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${report.fileName}"`);
+      res.json(report.reportData);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      res.status(500).json({ error: "Failed to download report" });
     }
   });
 
