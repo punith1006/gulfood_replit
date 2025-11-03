@@ -21,6 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import farisAvatar from "@assets/generated_images/Middle_Eastern_AI_bot_avatar_3544029e.png";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
@@ -229,12 +230,12 @@ export default function AIChatbot() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           size="lg"
-          className="rounded-full w-20 h-20 shadow-2xl group relative bg-gradient-to-br from-primary to-primary/80 hover:from-primary hover:to-primary/90 ring-4 ring-primary/20 ring-offset-2"
+          className="rounded-full w-20 h-20 shadow-2xl group relative bg-gradient-to-br from-primary to-primary/80 hover:from-primary hover:to-primary/90 ring-4 ring-primary/20 ring-offset-2 overflow-hidden"
           onClick={openChatbot}
           data-testid="button-open-chatbot"
           title="Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
         >
-          <Sparkles className="w-9 h-9 group-hover:scale-110 transition-transform text-primary-foreground" />
+          <img src={farisAvatar} alt="Faris AI" className="w-14 h-14 object-cover group-hover:scale-110 transition-transform" />
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-chart-3 rounded-full animate-pulse shadow-sm shadow-chart-3" />
         </Button>
       </div>
@@ -246,8 +247,8 @@ export default function AIChatbot() {
       <div className="p-4 sm:p-5 border-b-2 border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg ring-2 ring-primary/20 ring-offset-2">
-              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg ring-2 ring-primary/20 ring-offset-2 overflow-hidden">
+              <img src={farisAvatar} alt="Faris AI" className="w-full h-full object-cover" />
             </div>
             <div>
               <div className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Faris</div>
