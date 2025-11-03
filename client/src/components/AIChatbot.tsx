@@ -229,30 +229,30 @@ export default function AIChatbot() {
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           size="lg"
-          className="rounded-full w-16 h-16 shadow-2xl group relative"
+          className="rounded-full w-20 h-20 shadow-2xl group relative bg-gradient-to-br from-primary to-primary/80 hover:from-primary hover:to-primary/90 ring-4 ring-primary/20 ring-offset-2"
           onClick={openChatbot}
           data-testid="button-open-chatbot"
           title="Hi, I'm Faris! Your AI guide for Gulfood 2026. Ask me anything!"
         >
-          <Bot className="w-7 h-7 group-hover:scale-110 transition-transform" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-chart-3 rounded-full animate-pulse" />
+          <Sparkles className="w-9 h-9 group-hover:scale-110 transition-transform text-primary-foreground" />
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-chart-3 rounded-full animate-pulse shadow-sm shadow-chart-3" />
         </Button>
       </div>
     );
   }
 
   return (
-    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-96 h-[85vh] sm:h-[500px] md:h-[600px] max-h-screen shadow-2xl z-50 flex flex-col sm:rounded-lg" data-testid="card-chatbot">
-      <div className="p-3 sm:p-4 border-b border-border bg-primary/5">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
+    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[600px] md:w-[700px] h-[90vh] sm:h-[600px] md:h-[700px] max-h-screen shadow-2xl z-50 flex flex-col sm:rounded-xl border-2" data-testid="card-chatbot">
+      <div className="p-4 sm:p-5 border-b-2 border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg ring-2 ring-primary/20 ring-offset-2">
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
             </div>
             <div>
-              <div className="font-bold text-sm sm:text-base">Faris</div>
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
+              <div className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Faris</div>
+              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-chart-3 animate-pulse shadow-sm shadow-chart-3" />
                 Your AI Guide
               </div>
             </div>
