@@ -6,6 +6,7 @@ import {
   meetings,
   chatConversations,
   venueTraffic,
+  salesContacts,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -15,7 +16,9 @@ import {
   type ChatConversation,
   type InsertChatConversation,
   type VenueTraffic,
-  type InsertVenueTraffic
+  type InsertVenueTraffic,
+  type SalesContact,
+  type InsertSalesContact
 } from "@shared/schema";
 
 export interface IStorage {
@@ -37,6 +40,9 @@ export interface IStorage {
   
   getVenueTraffic(origin: string, destination: string): Promise<VenueTraffic | undefined>;
   createOrUpdateVenueTraffic(traffic: InsertVenueTraffic): Promise<VenueTraffic>;
+  
+  getSalesContacts(): Promise<SalesContact[]>;
+  createSalesContact(contact: InsertSalesContact): Promise<SalesContact>;
   
   getAnalytics(): Promise<{
     totalRegistrations: number;
@@ -182,6 +188,15 @@ export class DatabaseStorage implements IStorage {
     }
     
     const result = await db.insert(venueTraffic).values(traffic).returning();
+    return result[0];
+  }
+
+  async getSalesContacts(): Promise<SalesContact[]> {
+    return await db.select().from(salesContacts).orderBy(desc(salesContacts.createdAt));
+  }
+
+  async createSalesContact(contact: InsertSalesContact): Promise<SalesContact> {
+    const result = await db.insert(salesContacts).values(contact).returning();
     return result[0];
   }
 

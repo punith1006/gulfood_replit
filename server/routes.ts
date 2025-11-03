@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
@@ -274,6 +274,34 @@ Format as valid JSON only, no markdown.`;
     } catch (error) {
       console.error("Error fetching meetings:", error);
       res.status(500).json({ error: "Failed to fetch meetings" });
+    }
+  });
+
+  app.post("/api/contact-sales", async (req, res) => {
+    try {
+      const parsedData = insertSalesContactSchema.parse(req.body);
+      const contact = await storage.createSalesContact(parsedData);
+      res.json({ 
+        success: true, 
+        message: "Sales contact request submitted successfully",
+        id: contact.id 
+      });
+    } catch (error) {
+      console.error("Error creating sales contact:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid contact data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to submit contact request" });
+    }
+  });
+
+  app.get("/api/sales-contacts", async (req, res) => {
+    try {
+      const contacts = await storage.getSalesContacts();
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching sales contacts:", error);
+      res.status(500).json({ error: "Failed to fetch sales contacts" });
     }
   });
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3 } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -11,6 +11,16 @@ import { useRole, type UserRole } from "@/contexts/RoleContext";
 import { useChatbot } from "@/contexts/ChatbotContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
@@ -59,6 +69,7 @@ const getRoleWelcomeMessage = (role: UserRole): string => {
 export default function AIChatbot() {
   const { isOpen, openChatbot, closeChatbot } = useChatbot();
   const { userRole, setUserRole } = useRole();
+  const { toast } = useToast();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -68,6 +79,14 @@ export default function AIChatbot() {
   ]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showContactSales, setShowContactSales] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    companyName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    inquiry: ""
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -122,6 +141,46 @@ export default function AIChatbot() {
     const userMessage: Message = { role: "user", content: action };
     setMessages(prev => [...prev, userMessage]);
     chatMutation.mutate({ message: action, role: userRole });
+  };
+
+  const contactSalesMutation = useMutation({
+    mutationFn: async (formData: typeof contactForm) => {
+      const res = await apiRequest("POST", "/api/contact-sales", formData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Request Submitted!",
+        description: "Our sales team will contact you within 24 hours.",
+      });
+      setShowContactSales(false);
+      setContactForm({
+        companyName: "",
+        contactName: "",
+        email: "",
+        phone: "",
+        inquiry: ""
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to submit request. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleContactSalesSubmit = () => {
+    if (!contactForm.companyName || !contactForm.contactName || !contactForm.email) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    contactSalesMutation.mutate(contactForm);
   };
 
   if (!isOpen) {
@@ -298,6 +357,16 @@ export default function AIChatbot() {
                 </Badge>
               ))}
             </div>
+            {userRole === "exhibitor" && (
+              <Button
+                className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                onClick={() => setShowContactSales(true)}
+                data-testid="button-contact-sales"
+              >
+                <UserPlus className="w-4 h-4" />
+                Contact Sales
+              </Button>
+            )}
           </>
         )}
         <div className="flex gap-2">
@@ -319,6 +388,97 @@ export default function AIChatbot() {
           </Button>
         </div>
       </div>
+
+      <Dialog open={showContactSales} onOpenChange={setShowContactSales}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-contact-sales">
+          <DialogHeader>
+            <DialogTitle>Contact Sales Team</DialogTitle>
+            <DialogDescription>
+              Fill in your details and our sales team will reach out to you within 24 hours.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name *</Label>
+              <Input
+                id="companyName"
+                placeholder="Your company name"
+                value={contactForm.companyName}
+                onChange={(e) => setContactForm(prev => ({ ...prev, companyName: e.target.value }))}
+                data-testid="input-company-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactName">Contact Name *</Label>
+              <Input
+                id="contactName"
+                placeholder="Your full name"
+                value={contactForm.contactName}
+                onChange={(e) => setContactForm(prev => ({ ...prev, contactName: e.target.value }))}
+                data-testid="input-contact-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@company.com"
+                value={contactForm.email}
+                onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                data-testid="input-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+971 XX XXX XXXX"
+                value={contactForm.phone}
+                onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                data-testid="input-phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inquiry">How can we help?</Label>
+              <Textarea
+                id="inquiry"
+                placeholder="Tell us about your requirements..."
+                value={contactForm.inquiry}
+                onChange={(e) => setContactForm(prev => ({ ...prev, inquiry: e.target.value }))}
+                className="min-h-24"
+                data-testid="input-inquiry"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowContactSales(false)}
+              className="flex-1"
+              data-testid="button-cancel-contact"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleContactSalesSubmit}
+              disabled={contactSalesMutation.isPending}
+              className="flex-1"
+              data-testid="button-submit-contact"
+            >
+              {contactSalesMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Request"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
