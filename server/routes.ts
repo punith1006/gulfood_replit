@@ -55,19 +55,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate company identifier - reject gibberish/invalid inputs
       const cleanedIdentifier = companyIdentifier.trim().toLowerCase();
       
-      // Check for obvious gibberish patterns
-      const hasValidPattern = 
-        // Has at least one vowel (a, e, i, o, u)
-        /[aeiou]/.test(cleanedIdentifier) &&
-        // Not too many consecutive consonants (max 4)
-        !/[bcdfghjklmnpqrstvwxyz]{5,}/.test(cleanedIdentifier) &&
-        // Not too many consecutive numbers (max 6)
-        !/\d{7,}/.test(cleanedIdentifier) &&
-        // Has reasonable length (3-100 characters)
-        cleanedIdentifier.length >= 3 && cleanedIdentifier.length <= 100 &&
-        // Not all numbers
-        !/^\d+$/.test(cleanedIdentifier);
-
       // Check for valid website pattern (if it looks like a URL)
       const isUrl = cleanedIdentifier.includes('.') || cleanedIdentifier.startsWith('www') || cleanedIdentifier.includes('://');
       if (isUrl) {
@@ -78,13 +65,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             error: "This doesn't appear to be a valid company name or website. Please enter a real company name or website URL (e.g., 'nestlé.com' or 'Coca-Cola')." 
           });
         }
-      }
+        // URL is valid, skip the gibberish checks
+      } else {
+        // For company names (not URLs), check for obvious gibberish patterns
+        const hasValidPattern = 
+          // Has at least one vowel (a, e, i, o, u)
+          /[aeiou]/.test(cleanedIdentifier) &&
+          // Not too many consecutive consonants (max 4)
+          !/[bcdfghjklmnpqrstvwxyz]{5,}/.test(cleanedIdentifier) &&
+          // Not too many consecutive numbers (max 6)
+          !/\d{7,}/.test(cleanedIdentifier) &&
+          // Has reasonable length (3-100 characters)
+          cleanedIdentifier.length >= 3 && cleanedIdentifier.length <= 100 &&
+          // Not all numbers
+          !/^\d+$/.test(cleanedIdentifier);
 
-      // Reject if it doesn't have valid pattern
-      if (!hasValidPattern) {
-        return res.status(400).json({ 
-          error: "This doesn't appear to be a valid company name or website. Please enter a real company name or website URL (e.g., 'Almarai' or 'pepsico.com')." 
-        });
+        // Reject if it doesn't have valid pattern
+        if (!hasValidPattern) {
+          return res.status(400).json({ 
+            error: "This doesn't appear to be a valid company name or website. Please enter a real company name or website URL (e.g., 'Almarai' or 'pepsico.com')." 
+          });
+        }
       }
 
       const existing = await storage.getCompanyAnalysis(companyIdentifier);
