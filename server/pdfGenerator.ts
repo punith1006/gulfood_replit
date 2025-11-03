@@ -398,8 +398,23 @@ export async function generateJourneyPlanPDF(reportData: {
 
         tables.forEach((table, tableIdx) => {
           if (table.headers.length > 0 && table.rows.length > 0) {
+            const headerText = table.headers.join(' ').toLowerCase();
+            let tableTitle = 'Information';
+            
+            if (headerText.includes('time') && headerText.includes('activity')) {
+              tableTitle = tableIdx === 0 ? 'Your Daily Schedule' : `Day ${tableIdx}`;
+            } else if (headerText.includes('days') || headerText.includes('sector') || headerText.includes('category')) {
+              tableTitle = 'Visit Details';
+            } else if (headerText.includes('hotel') || headerText.includes('accommodation')) {
+              tableTitle = 'Recommended Hotels';
+            } else if (headerText.includes('signage') || headerText.includes('navigation') || headerText.includes('info')) {
+              tableTitle = 'Venue Navigation Tips';
+            } else if (headerText.includes('distance') || headerText.includes('aspect')) {
+              tableTitle = 'General Information';
+            }
+            
             content.push({
-              text: idx === 0 && tableIdx === 0 ? 'Your Itinerary' : `Day ${tableIdx + 1}`,
+              text: tableTitle,
               style: 'sectionHeader',
               margin: [0, 15, 0, 10]
             });
