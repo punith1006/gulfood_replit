@@ -325,13 +325,15 @@ export async function generateJourneyPlanPDF(reportData: {
 }): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     let journeyPlanContent: any = null;
-    const planMessages = reportData.conversationHistory.filter(msg => 
+    const allPlanMessages = reportData.conversationHistory.filter(msg => 
       msg.role === 'assistant' && (
         msg.content.includes('|') || 
         msg.content.toLowerCase().includes('day 1') ||
         msg.content.toLowerCase().includes('itinerary')
       )
     );
+    
+    const planMessages = allPlanMessages.length > 0 ? [allPlanMessages[allPlanMessages.length - 1]] : [];
 
     const content: Content[] = [
       {
