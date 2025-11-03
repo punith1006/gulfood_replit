@@ -422,7 +422,7 @@ export async function generateJourneyPlanPDF(reportData: {
             let tableTitle = 'Information';
             
             if (headerText.includes('time') && headerText.includes('activity')) {
-              tableTitle = tableIdx === 0 ? 'Your Daily Schedule' : `Day ${tableIdx}`;
+              tableTitle = `Day ${tableIdx + 1}`;
             } else if (headerText.includes('days') || headerText.includes('sector') || headerText.includes('category')) {
               tableTitle = 'Visit Details';
             } else if (headerText.includes('hotel') || headerText.includes('accommodation')) {
