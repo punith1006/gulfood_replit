@@ -45,16 +45,47 @@ export async function generateOrganizerAnalyticsPDF(analytics: Analytics): Promi
       pageMargins: [40, 60, 40, 60],
       content: [
         {
-          text: 'Gulfood 2026 Analytics Report',
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: 515,
+              h: 80,
+              linearGradient: ['#2563eb', '#1d4ed8'],
+              color: '#2563eb'
+            }
+          ],
+          margin: [-40, -60, -40, 0]
+        },
+        {
+          text: 'GULFOOD 2026',
+          fontSize: 28,
+          bold: true,
+          color: '#ffffff',
+          alignment: 'center',
+          margin: [0, -65, 0, 5]
+        },
+        {
+          text: 'January 26-30, 2026 | Dubai World Trade Centre & Expo City Dubai',
+          fontSize: 11,
+          color: '#ffffff',
+          alignment: 'center',
+          margin: [0, 0, 0, 25]
+        },
+        {
+          text: 'Analytics Report',
           style: 'header',
           alignment: 'center',
-          margin: [0, 0, 0, 10]
+          color: '#1f2937',
+          margin: [0, 20, 0, 5]
         },
         {
           text: 'Event Organizer Dashboard',
-          style: 'subheader',
+          fontSize: 14,
+          color: '#6b7280',
           alignment: 'center',
-          margin: [0, 0, 0, 20]
+          margin: [0, 0, 0, 10]
         },
         {
           text: `Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}`,
@@ -304,16 +335,40 @@ export async function generateJourneyPlanPDF(reportData: {
 
     const content: Content[] = [
       {
-        text: 'Gulfood 2026 Journey Plan',
-        style: 'header',
-        alignment: 'center',
-        margin: [0, 0, 0, 10]
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: 515,
+            h: 80,
+            linearGradient: ['#f97316', '#ea580c'],
+            color: '#f97316'
+          }
+        ],
+        margin: [-40, -60, -40, 0]
       },
       {
-        text: 'Your Personalized Event Itinerary',
-        style: 'subheader',
+        text: 'GULFOOD 2026',
+        fontSize: 28,
+        bold: true,
+        color: '#ffffff',
         alignment: 'center',
-        margin: [0, 0, 0, 20]
+        margin: [0, -65, 0, 5]
+      },
+      {
+        text: 'January 26-30, 2026 | Dubai',
+        fontSize: 12,
+        color: '#ffffff',
+        alignment: 'center',
+        margin: [0, 0, 0, 25]
+      },
+      {
+        text: 'Your Personal Journey Plan',
+        style: 'header',
+        alignment: 'center',
+        color: '#1f2937',
+        margin: [0, 20, 0, 10]
       },
       {
         text: `Generated: ${new Date(reportData.generatedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}`,
@@ -509,16 +564,47 @@ export async function generateVisitorJourneyPDF(reportData: {
       pageMargins: [40, 60, 40, 60],
       content: [
         {
-          text: 'Gulfood 2026 Journey Report',
-          style: 'header',
-          alignment: 'center',
-          margin: [0, 0, 0, 10]
+          canvas: [
+            {
+              type: 'rect',
+              x: 0,
+              y: 0,
+              w: 515,
+              h: 80,
+              linearGradient: ['#16a34a', '#15803d'],
+              color: '#16a34a'
+            }
+          ],
+          margin: [-40, -60, -40, 0]
         },
         {
-          text: 'Your Event Experience Summary',
-          style: 'subheader',
+          text: 'GULFOOD 2026',
+          fontSize: 28,
+          bold: true,
+          color: '#ffffff',
           alignment: 'center',
-          margin: [0, 0, 0, 20]
+          margin: [0, -65, 0, 5]
+        },
+        {
+          text: 'January 26-30, 2026 | Dubai',
+          fontSize: 12,
+          color: '#ffffff',
+          alignment: 'center',
+          margin: [0, 0, 0, 25]
+        },
+        {
+          text: 'Your Event Journey Report',
+          style: 'header',
+          alignment: 'center',
+          color: '#1f2937',
+          margin: [0, 20, 0, 5]
+        },
+        {
+          text: 'Conversation Summary',
+          fontSize: 14,
+          color: '#6b7280',
+          alignment: 'center',
+          margin: [0, 0, 0, 10]
         },
         {
           text: `Generated: ${new Date(reportData.generatedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}`,
