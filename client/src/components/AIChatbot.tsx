@@ -21,7 +21,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import farisAvatar from "@assets/generated_images/Cultural_Middle_Eastern_male_bot_87ca9a7d.png";
+import farisAvatar from "@assets/generated_images/Circular_bot_head_portrait_241be4f6.png";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
