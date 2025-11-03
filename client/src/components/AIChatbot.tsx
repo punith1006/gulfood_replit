@@ -222,6 +222,14 @@ export default function AIChatbot() {
         title: "Report Downloaded",
         description: "Your journey report has been generated.",
       });
+    },
+    onError: (error: any) => {
+      console.error("Download error:", error);
+      toast({
+        title: "Download Failed",
+        description: error.message || "Failed to generate report. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 

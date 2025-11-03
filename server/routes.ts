@@ -548,7 +548,8 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           pdfData: null
         };
 
-        const hasJourneyPlan = conversation?.messages.some((msg: any) => 
+        const messages = (conversation?.messages as any[]) || [];
+        const hasJourneyPlan = messages.some((msg: any) => 
           msg.role === 'assistant' && (
             msg.content.includes('|') || 
             msg.content.toLowerCase().includes('day 1') ||

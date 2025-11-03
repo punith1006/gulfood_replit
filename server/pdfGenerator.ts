@@ -283,10 +283,20 @@ function parseMarkdownTable(markdown: string): any[] {
       tableLines.push(line);
     } else if (inTable && tableLines.length > 0) {
       if (tableLines.length > 2) {
-        const headers = tableLines[0].split('|').map(h => h.trim()).filter(h => h);
-        const rows = tableLines.slice(2).map(row => 
-          row.split('|').map(cell => cell.trim()).filter(cell => cell)
-        );
+        const headerCells = tableLines[0].split('|').map(h => h.trim());
+        const headers = headerCells.filter(h => h);
+        const headerCount = headers.length;
+        
+        const rows = tableLines.slice(2).map(row => {
+          const cells = row.split('|').map(cell => cell.trim());
+          const filteredCells = cells.filter(c => c !== '');
+          
+          while (filteredCells.length < headerCount) {
+            filteredCells.push('');
+          }
+          
+          return filteredCells.slice(0, headerCount).map(c => c || '-');
+        });
         
         if (headers.length > 0 && rows.length > 0) {
           tables.push({
@@ -301,10 +311,20 @@ function parseMarkdownTable(markdown: string): any[] {
   }
   
   if (inTable && tableLines.length > 2) {
-    const headers = tableLines[0].split('|').map(h => h.trim()).filter(h => h);
-    const rows = tableLines.slice(2).map(row => 
-      row.split('|').map(cell => cell.trim()).filter(cell => cell)
-    );
+    const headerCells = tableLines[0].split('|').map(h => h.trim());
+    const headers = headerCells.filter(h => h);
+    const headerCount = headers.length;
+    
+    const rows = tableLines.slice(2).map(row => {
+      const cells = row.split('|').map(cell => cell.trim());
+      const filteredCells = cells.filter(c => c !== '');
+      
+      while (filteredCells.length < headerCount) {
+        filteredCells.push('');
+      }
+      
+      return filteredCells.slice(0, headerCount).map(c => c || '-');
+    });
     
     if (headers.length > 0 && rows.length > 0) {
       tables.push({
