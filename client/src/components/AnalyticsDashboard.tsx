@@ -14,14 +14,8 @@ interface Analytics {
   exhibitorSignups: number;
   aiInteractions: number;
   meetingRequests: number;
+  sectorEngagement: Array<{ sector: string; count: number; percentage: number }>;
 }
-
-const sectorData = [
-  { name: "Dairy", percentage: 85, count: 1247 },
-  { name: "Beverages", percentage: 78, count: 1089 },
-  { name: "Meat & Poultry", percentage: 72, count: 934 },
-  { name: "Fresh Produce", percentage: 65, count: 812 }
-];
 
 export default function AnalyticsDashboard() {
   const { userRole, setUserRole } = useRole();
@@ -175,20 +169,35 @@ export default function AnalyticsDashboard() {
         <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-6">
             <h3 className="text-xl font-bold mb-6">Sector Engagement</h3>
-            <div className="space-y-6">
-              {sectorData.map((sector, idx) => (
-                <div key={idx}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm">{sector.name}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{sector.count} registrations</span>
-                      <span className="text-sm font-bold">{sector.percentage}%</span>
-                    </div>
+            {isLoading ? (
+              <div className="space-y-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="space-y-2 animate-pulse">
+                    <div className="h-4 bg-muted rounded" />
+                    <div className="h-2 bg-muted rounded" />
                   </div>
-                  <Progress value={sector.percentage} className="h-2" />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {analytics?.sectorEngagement && analytics.sectorEngagement.length > 0 ? (
+                  analytics.sectorEngagement.slice(0, 6).map((sector, idx) => (
+                    <div key={idx}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-sm">{sector.sector}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{sector.count} exhibitors</span>
+                          <span className="text-sm font-bold">{sector.percentage}%</span>
+                        </div>
+                      </div>
+                      <Progress value={sector.percentage} className="h-2" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">No sector data available</p>
+                )}
+              </div>
+            )}
           </Card>
 
           <Card className="p-6">

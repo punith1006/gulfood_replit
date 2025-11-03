@@ -49,6 +49,7 @@ export interface IStorage {
     exhibitorSignups: number;
     aiInteractions: number;
     meetingRequests: number;
+    sectorEngagement: Array<{ sector: string; count: number; percentage: number }>;
   }>;
 }
 
@@ -205,6 +206,7 @@ export class DatabaseStorage implements IStorage {
     exhibitorSignups: number;
     aiInteractions: number;
     meetingRequests: number;
+    sectorEngagement: Array<{ sector: string; count: number; percentage: number }>;
   }> {
     const [exhibitorCount] = await db
       .select({ count: sql<number>`count(*)` })
@@ -222,11 +224,28 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(meetings);
 
+    const sectorCounts = await db
+      .select({
+        sector: exhibitors.sector,
+        count: sql<number>`count(*)`
+      })
+      .from(exhibitors)
+      .groupBy(exhibitors.sector)
+      .orderBy(desc(sql<number>`count(*)`));
+
+    const totalExhibitors = Number(exhibitorCount?.count || 1);
+    const sectorEngagement = sectorCounts.map(({ sector, count }) => ({
+      sector,
+      count: Number(count),
+      percentage: Math.round((Number(count) / totalExhibitors) * 100)
+    }));
+
     return {
       totalRegistrations: Number(analysisCount?.count || 0),
       exhibitorSignups: Number(exhibitorCount?.count || 0),
       aiInteractions: Number(chatCount?.count || 0),
-      meetingRequests: Number(meetingCount?.count || 0)
+      meetingRequests: Number(meetingCount?.count || 0),
+      sectorEngagement
     };
   }
 }
