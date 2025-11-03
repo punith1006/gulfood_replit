@@ -9,6 +9,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AIChatbot from "@/components/AIChatbot";
 import Home from "@/pages/Home";
+import Analytics from "@/pages/Analytics";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,7 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/visitors" component={Home} />
       <Route path="/exhibitors" component={Home} />
-      <Route path="/analytics" component={Home} />
+      <Route path="/analytics" component={Analytics} />
       <Route component={NotFound} />
     </Switch>
   );

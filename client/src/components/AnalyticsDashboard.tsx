@@ -1,10 +1,13 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import analyticsImage from "@assets/generated_images/Analytics_dashboard_visualization_c400d7e3.png";
+import { useRole } from "@/contexts/RoleContext";
+import { useChatbot } from "@/contexts/ChatbotContext";
 
 interface Analytics {
   totalRegistrations: number;
@@ -21,9 +24,13 @@ const sectorData = [
 ];
 
 export default function AnalyticsDashboard() {
+  const { userRole, setUserRole } = useRole();
+  const { openChatbot } = useChatbot();
+  
   const { data: analytics, isLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
-    refetchInterval: 10000
+    refetchInterval: 10000,
+    enabled: userRole === "organizer" // Only fetch data when user is an organizer
   });
 
   const stats = [
@@ -64,6 +71,50 @@ export default function AnalyticsDashboard() {
       bgColor: "bg-chart-4/10"
     }
   ];
+
+  // Show locked state if user is not an organizer
+  if (userRole !== "organizer") {
+    return (
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-6">
+              <Lock className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">
+              Analytics Dashboard
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-xl mb-8">
+              This dashboard is exclusively available to event organizers.
+              Select "Organizer" role in Faris to access real-time analytics and insights.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button 
+                variant="default" 
+                className="gap-2"
+                onClick={() => {
+                  setUserRole("organizer");
+                }}
+                data-testid="button-select-organizer-role"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Select Organizer Role
+              </Button>
+              <Button 
+                variant="outline" 
+                className="gap-2"
+                onClick={openChatbot}
+                data-testid="button-open-faris"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Open Faris to Select Role
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-20">
