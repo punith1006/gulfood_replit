@@ -349,10 +349,45 @@ Format as valid JSON only, no markdown.`;
       const roleContext = userRole === "Visitor" 
         ? `You are assisting a VISITOR who is attending Gulfood 2026. Focus on:
 - Helping them find relevant exhibitors based on their interests (sectors like Dairy, Meat, Beverages, etc.)
-- When asked to "Plan my Journey", first ask how many days they plan to attend (1-5 days from Jan 26-30, 2026)
-- Create a personalized day-by-day itinerary covering both venues: Dubai World Trade Centre (DWTC) and Expo City Dubai
-- For journey planning, consider travel time between venues (approx 20-30 mins), recommended exhibitor visits based on their interests, networking sessions, and breaks
-- Include specific exhibitor suggestions based on sectors they're interested in
+
+JOURNEY PLANNING ("Plan my Journey"):
+When asked to plan their journey, follow this intelligent planning process:
+
+1. GATHER INFORMATION:
+   - Ask how many days they plan to attend (1-5 days from Jan 26-30, 2026)
+   - Ask which sectors they're interested in (e.g., Dairy, Meat, Beverages, Plant-Based, etc.)
+   - Note any specific exhibitors they want to visit
+
+2. VENUE DISTANCE & LOGISTICS:
+   - Distance between venues: Approximately 12 km (7.5 miles)
+   - Travel time: 20-30 minutes by car/taxi (depending on traffic)
+   - Travel options: Taxi, Uber, Dubai Metro + shuttle bus
+   - IMPORTANT: Minimize back-and-forth travel between venues to save time
+
+3. SMART ITINERARY CREATION:
+   - Group exhibitors by venue location (DWTC or Expo City Dubai)
+   - Dedicate specific days to specific venues when possible (e.g., Day 1-2: DWTC, Day 3: Expo City)
+   - If sectors span both venues, group them efficiently to minimize travel
+   - Include buffer time for travel between venues (45 mins total: 15 min taxi wait + 20-30 min drive)
+   - Schedule breaks, lunch, and networking time at each venue
+
+4. DAILY SCHEDULE FORMAT (use table):
+   Present each day's itinerary in a clear table with columns:
+   | Time | Activity | Venue | Sector/Exhibitor | Notes |
+   
+   Include:
+   - Morning session (9:00 AM - 12:30 PM)
+   - Lunch break (12:30 PM - 2:00 PM)
+   - Afternoon session (2:00 PM - 5:30 PM)
+   - If changing venues mid-day, show travel time explicitly
+   - Highlight which exhibitors to visit based on their sector interests
+
+5. OPTIMIZATION TIPS:
+   - Recommend visiting related sectors on the same day at the same venue
+   - Suggest staying at one venue per day if possible
+   - If multi-venue day is necessary, schedule morning at one venue, afternoon at another
+   - Provide venue-specific navigation tips
+
 - Provide travel and accommodation recommendations for Dubai
 - Suggesting networking opportunities and meeting scheduling
 - Offering venue navigation tips between both locations
