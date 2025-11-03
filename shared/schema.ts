@@ -8,6 +8,10 @@ export const exhibitors = pgTable("exhibitors", {
   sector: text("sector").notNull(),
   country: text("country").notNull(),
   booth: text("booth").notNull(),
+  venue: text("venue").notNull().default("Dubai World Trade Centre"),
+  hall: text("hall"),
+  boothX: integer("booth_x"),
+  boothY: integer("booth_y"),
   description: text("description").notNull(),
   logoUrl: text("logo_url"),
   website: text("website"),
@@ -50,8 +54,29 @@ export const chatConversations = pgTable("chat_conversations", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
   messages: jsonb("messages").notNull(),
+  userRole: text("user_role"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const chatFeedback = pgTable("chat_feedback", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  messageIndex: integer("message_index").notNull(),
+  isAccurate: boolean("is_accurate").notNull(),
+  feedbackText: text("feedback_text"),
+  correctedResponse: text("corrected_response"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const generatedReports = pgTable("generated_reports", {
+  id: serial("id").primaryKey(),
+  reportType: text("report_type").notNull(),
+  userRole: text("user_role").notNull(),
+  sessionId: text("session_id"),
+  reportData: jsonb("report_data").notNull(),
+  fileName: text("file_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 export const venueTraffic = pgTable("venue_traffic", {
@@ -111,6 +136,16 @@ export const insertSalesContactSchema = createInsertSchema(salesContacts).omit({
   status: true
 });
 
+export const insertChatFeedbackSchema = createInsertSchema(chatFeedback).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertGeneratedReportSchema = createInsertSchema(generatedReports).omit({
+  id: true,
+  createdAt: true
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -128,3 +163,9 @@ export type InsertVenueTraffic = z.infer<typeof insertVenueTrafficSchema>;
 
 export type SalesContact = typeof salesContacts.$inferSelect;
 export type InsertSalesContact = z.infer<typeof insertSalesContactSchema>;
+
+export type ChatFeedback = typeof chatFeedback.$inferSelect;
+export type InsertChatFeedback = z.infer<typeof insertChatFeedbackSchema>;
+
+export type GeneratedReport = typeof generatedReports.$inferSelect;
+export type InsertGeneratedReport = z.infer<typeof insertGeneratedReportSchema>;

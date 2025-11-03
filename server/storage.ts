@@ -5,6 +5,8 @@ import {
   companyAnalyses,
   meetings,
   chatConversations,
+  chatFeedback,
+  generatedReports,
   venueTraffic,
   salesContacts,
   type Exhibitor,
@@ -15,6 +17,10 @@ import {
   type InsertMeeting,
   type ChatConversation,
   type InsertChatConversation,
+  type ChatFeedback,
+  type InsertChatFeedback,
+  type GeneratedReport,
+  type InsertGeneratedReport,
   type VenueTraffic,
   type InsertVenueTraffic,
   type SalesContact,
@@ -36,7 +42,13 @@ export interface IStorage {
   
   getChatConversation(sessionId: string): Promise<ChatConversation | undefined>;
   createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
-  updateChatConversation(sessionId: string, messages: any): Promise<ChatConversation | undefined>;
+  updateChatConversation(sessionId: string, messages: any, userRole?: string): Promise<ChatConversation | undefined>;
+  
+  getChatFeedback(sessionId: string): Promise<ChatFeedback[]>;
+  createChatFeedback(feedback: InsertChatFeedback): Promise<ChatFeedback>;
+  
+  getGeneratedReports(userRole?: string): Promise<GeneratedReport[]>;
+  createGeneratedReport(report: InsertGeneratedReport): Promise<GeneratedReport>;
   
   getVenueTraffic(origin: string, destination: string): Promise<VenueTraffic | undefined>;
   createOrUpdateVenueTraffic(traffic: InsertVenueTraffic): Promise<VenueTraffic>;
@@ -50,6 +62,8 @@ export interface IStorage {
     aiInteractions: number;
     meetingRequests: number;
     sectorEngagement: Array<{ sector: string; count: number; percentage: number }>;
+    aiAccuracy: number;
+    totalFeedback: number;
   }>;
 }
 
@@ -154,12 +168,45 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateChatConversation(sessionId: string, messages: any): Promise<ChatConversation | undefined> {
+  async updateChatConversation(sessionId: string, messages: any, userRole?: string): Promise<ChatConversation | undefined> {
+    const updateData: any = { messages, updatedAt: new Date() };
+    if (userRole) {
+      updateData.userRole = userRole;
+    }
     const result = await db
       .update(chatConversations)
-      .set({ messages, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(chatConversations.sessionId, sessionId))
       .returning();
+    return result[0];
+  }
+
+  async getChatFeedback(sessionId: string): Promise<ChatFeedback[]> {
+    return await db
+      .select()
+      .from(chatFeedback)
+      .where(eq(chatFeedback.sessionId, sessionId))
+      .orderBy(desc(chatFeedback.createdAt));
+  }
+
+  async createChatFeedback(feedback: InsertChatFeedback): Promise<ChatFeedback> {
+    const result = await db.insert(chatFeedback).values(feedback).returning();
+    return result[0];
+  }
+
+  async getGeneratedReports(userRole?: string): Promise<GeneratedReport[]> {
+    if (userRole) {
+      return await db
+        .select()
+        .from(generatedReports)
+        .where(eq(generatedReports.userRole, userRole))
+        .orderBy(desc(generatedReports.createdAt));
+    }
+    return await db.select().from(generatedReports).orderBy(desc(generatedReports.createdAt));
+  }
+
+  async createGeneratedReport(report: InsertGeneratedReport): Promise<GeneratedReport> {
+    const result = await db.insert(generatedReports).values(report).returning();
     return result[0];
   }
 
@@ -207,6 +254,8 @@ export class DatabaseStorage implements IStorage {
     aiInteractions: number;
     meetingRequests: number;
     sectorEngagement: Array<{ sector: string; count: number; percentage: number }>;
+    aiAccuracy: number;
+    totalFeedback: number;
   }> {
     const [exhibitorCount] = await db
       .select({ count: sql<number>`count(*)` })
@@ -224,6 +273,15 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(meetings);
 
+    const [feedbackCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(chatFeedback);
+
+    const [accurateFeedbackCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(chatFeedback)
+      .where(eq(chatFeedback.isAccurate, true));
+
     const sectorCounts = await db
       .select({
         sector: exhibitors.sector,
@@ -240,12 +298,20 @@ export class DatabaseStorage implements IStorage {
       percentage: Math.round((Number(count) / totalExhibitors) * 100)
     }));
 
+    const totalFeedback = Number(feedbackCount?.count || 0);
+    const accurateFeedback = Number(accurateFeedbackCount?.count || 0);
+    const aiAccuracy = totalFeedback > 0 
+      ? Math.round((accurateFeedback / totalFeedback) * 100) 
+      : 95;
+
     return {
       totalRegistrations: Number(analysisCount?.count || 0),
       exhibitorSignups: Number(exhibitorCount?.count || 0),
       aiInteractions: Number(chatCount?.count || 0),
       meetingRequests: Number(meetingCount?.count || 0),
-      sectorEngagement
+      sectorEngagement,
+      aiAccuracy,
+      totalFeedback
     };
   }
 }
