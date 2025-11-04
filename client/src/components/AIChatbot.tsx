@@ -30,9 +30,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import farisAvatar from "@assets/generated_images/Circular_bot_head_portrait_241be4f6.png";
 import ReferralWidget from "@/components/ReferralWidget";
+import RegistrationShareWidget from "@/components/RegistrationShareWidget";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
+    "Register Today",
     "Find exhibitors for me",
     "Show travel & route options",
     "Plan my Journey",
@@ -163,6 +165,16 @@ export default function AIChatbot() {
 
   const handleQuickAction = (action: string) => {
     if (chatMutation.isPending) return;
+    
+    // Handle "Register Today" action by opening registration URL
+    if (action === "Register Today") {
+      window.open('https://visit.gulfood.com/reg/taTvFu6IraZ5MsCnrdzbHutAykNXdxkNXqaJunHZMSi?utm_source=www.gulfood.com&utm_medium=referral', '_blank');
+      toast({
+        title: "Opening Registration",
+        description: "Redirecting you to the Gulfood 2026 registration page...",
+      });
+      return;
+    }
     
     const userMessage: Message = { role: "user", content: action };
     setMessages(prev => [...prev, userMessage]);
@@ -550,6 +562,9 @@ export default function AIChatbot() {
                 <UserPlus className="w-4 h-4" />
                 Contact Sales
               </Button>
+            )}
+            {userRole === "visitor" && messages.length > 2 && (
+              <RegistrationShareWidget compact={true} />
             )}
             {messages.length > 2 && userRole && (
               <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">

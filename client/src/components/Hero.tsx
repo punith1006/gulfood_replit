@@ -1,17 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Calendar, MapPin, Users } from "lucide-react";
+import { ArrowRight, Calendar, MapPin, Users, UserCheck } from "lucide-react";
 import { useChatbot } from "@/contexts/ChatbotContext";
+import { useRole } from "@/contexts/RoleContext";
 import heroImage from "@assets/generated_images/Gulfood_exhibition_hall_hero_e5151e19.png";
 
 export default function Hero() {
   const { openChatbot } = useChatbot();
+  const { userRole } = useRole();
   
   const handleExploreExhibitors = () => {
     const exhibitorsSection = document.getElementById('exhibitors-directory');
     if (exhibitorsSection) {
       exhibitorsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const handleRegister = () => {
+    window.open('https://visit.gulfood.com/reg/taTvFu6IraZ5MsCnrdzbHutAykNXdxkNXqaJunHZMSi?utm_source=www.gulfood.com&utm_medium=referral', '_blank');
   };
   
   return (
@@ -51,6 +57,18 @@ export default function Hero() {
               Get Started with AI
               <ArrowRight className="w-4 h-4" />
             </Button>
+            {userRole === 'visitor' && (
+              <Button
+                size="lg"
+                variant="default"
+                className="text-base gap-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white"
+                data-testid="button-register-visitor"
+                onClick={handleRegister}
+              >
+                <UserCheck className="w-4 h-4" />
+                Register Today
+              </Button>
+            )}
             <Button
               size="lg"
               variant="outline"
