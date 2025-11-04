@@ -5,6 +5,28 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 
 ## Recent Changes
 
+### November 4, 2025 - Lead Capture System
+- **Integrated Lead Capture in Faris Chatbot**: Implemented comprehensive lead capture system differentiated from competitor "Zeta's Suzan" chatbot:
+  - **Automatic Trigger**: Dialog appears 3 seconds after user's 3rd message in conversation
+  - **Gulfood Branding**: Orange/gold gradient styling (from-orange-600 to-amber-600) instead of competitor's purple
+  - **Unique Messaging**: "Stay Connected with Gulfood 2026" title and "Connect with Us" button (vs. competitor's "Please leave your details in case we disconnect")
+  - **Category Selection**: Visitor, Exhibitor, Organizer, Media, Other
+  - **Validation**: Required fields (name, email, valid category) with proper Zod schema enforcement
+  - **Session Tracking**: Associates leads with chat sessions for context
+- **Leads Management Dashboard**: Added "Recent Leads" section to Analytics Dashboard for organizers:
+  - Displays lead cards with name, email, category badge, status badge (new/contacted/qualified/converted)
+  - Shows message preview and timestamp
+  - Auto-refreshes every 15 seconds
+  - Orange branding consistent with Gulfood theme
+  - Total lead count displayed
+- **Backend Infrastructure**:
+  - Database table: leads (id, name, email, category, message, sessionId, status, assignedTo, notes, createdAt)
+  - API endpoints: POST /api/leads (create), GET /api/leads (list with filters), PATCH /api/leads/:id (update status)
+  - Storage layer with filter support by status and category
+- **Bug Fixes**:
+  - Fixed trigger logic to use updated message count instead of stale state
+  - Enhanced validation to enforce required fields and category enum constraints
+
 ### November 3, 2025 - UI and PDF Improvements
 - **Faris Chatbot Width Optimization**: Adjusted chatbot dimensions for better UX:
   - Reduced width from 600px/700px to 480px/520px (sm/md breakpoints)
