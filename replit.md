@@ -11,6 +11,12 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
   - **Automatic Tracking**: Every share click is tracked with platform, clicks, conversions, and timestamp
   - **Smart Integration**: ReferralWidget appears in Faris chatbot alongside lead capture (both triggered after 3+ messages)
   - **Gulfood Branding**: Orange/gold gradient styling consistent with event branding
+- **Bug Fixes & UX Improvements**:
+  - Fixed API call parameter order in ReferralWidget (trackReferral now works correctly)
+  - Added cache invalidation after successful referral tracking for real-time analytics updates
+  - Enhanced widget visibility with "Help Gulfood Grow" header in orange (#f97316)
+  - Improved toast notification: 4-second duration with checkmark ("✓ Widget Code Copied!")
+  - Better spacing and contrast for referral widget in chatbot footer
 - **Referral Analytics Dashboard**: Added comprehensive analytics for organizers:
   - **Key Metrics**: Total Clicks, Total Conversions, Conversion Rate (%) displayed in gradient cards
   - **Platform Breakdown**: Interactive bar chart showing clicks and conversions per social platform
