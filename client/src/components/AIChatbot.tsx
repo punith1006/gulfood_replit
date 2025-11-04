@@ -78,7 +78,7 @@ const getRoleWelcomeMessage = (role: UserRole): string => {
 
 export default function AIChatbot() {
   const { isOpen, openChatbot, closeChatbot } = useChatbot();
-  const { userRole, setUserRole } = useRole();
+  const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([
@@ -94,7 +94,6 @@ export default function AIChatbot() {
   const [showRegistrationShare, setShowRegistrationShare] = useState(false);
   const [hasTriggeredLeadCapture, setHasTriggeredLeadCapture] = useState(false);
   const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
-  const [hasRegistered, setHasRegistered] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   
   // Derive user message count from messages array (single source of truth)
@@ -133,7 +132,6 @@ export default function AIChatbot() {
     setShowLeadCapture(false);
     setHasTriggeredLeadCapture(false);
     setHasTriggeredRegistrationShare(false);
-    setHasRegistered(false);
   }, [userRole]);
   
   // Trigger widgets when user sends 3rd message
@@ -588,7 +586,7 @@ export default function AIChatbot() {
                 Contact Sales
               </Button>
             )}
-            {userRole === "visitor" && showRegistrationShare && (
+            {userRole === "visitor" && showRegistrationShare && hasRegistered && (
               <div className="relative">
                 <button
                   onClick={() => setShowRegistrationShare(false)}

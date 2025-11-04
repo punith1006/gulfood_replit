@@ -7,7 +7,7 @@ import heroImage from "@assets/generated_images/Gulfood_exhibition_hall_hero_e51
 
 export default function Hero() {
   const { openChatbot } = useChatbot();
-  const { userRole } = useRole();
+  const { userRole, setHasRegistered } = useRole();
   
   const handleExploreExhibitors = () => {
     const exhibitorsSection = document.getElementById('exhibitors-directory');
@@ -17,6 +17,7 @@ export default function Hero() {
   };
 
   const handleRegister = () => {
+    setHasRegistered(true);
     window.open('https://visit.gulfood.com/reg/taTvFu6IraZ5MsCnrdzbHutAykNXdxkNXqaJunHZMSi?utm_source=www.gulfood.com&utm_medium=referral', '_blank');
   };
   
