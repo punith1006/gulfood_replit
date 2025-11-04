@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -92,8 +92,14 @@ export default function AIChatbot() {
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [showRegistrationShare, setShowRegistrationShare] = useState(false);
+  const [hasTriggeredLeadCapture, setHasTriggeredLeadCapture] = useState(false);
+  const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
-  const [messageCount, setMessageCount] = useState(0);
+  
+  // Derive user message count from messages array (single source of truth)
+  const userMessageCount = useMemo(() => {
+    return messages.filter(m => m.role === 'user').length;
+  }, [messages]);
   const [contactForm, setContactForm] = useState({
     companyName: "",
     contactName: "",
@@ -122,10 +128,30 @@ export default function AIChatbot() {
       }
     ]);
     setFeedbackGiven({});
-    setMessageCount(0);
     setShowRegistrationShare(false);
     setShowLeadCapture(false);
+    setHasTriggeredLeadCapture(false);
+    setHasTriggeredRegistrationShare(false);
   }, [userRole]);
+  
+  // Trigger widgets when user sends 3rd message
+  useEffect(() => {
+    if (userMessageCount >= 3 && userRole) {
+      // Trigger lead capture dialog
+      if (!hasTriggeredLeadCapture) {
+        setHasTriggeredLeadCapture(true);
+        setTimeout(() => {
+          setShowLeadCapture(true);
+        }, 3000);
+      }
+      
+      // Trigger registration share widget for visitors
+      if (!hasTriggeredRegistrationShare && userRole === 'visitor') {
+        setHasTriggeredRegistrationShare(true);
+        setShowRegistrationShare(true);
+      }
+    }
+  }, [userMessageCount, userRole, hasTriggeredLeadCapture, hasTriggeredRegistrationShare]);
 
   const chatMutation = useMutation({
     mutationFn: async ({ message, role }: { message: string; role: string | null }) => {
@@ -157,21 +183,6 @@ export default function AIChatbot() {
     setMessages(prev => [...prev, userMessage]);
     chatMutation.mutate({ message: input, role: userRole });
     setInput("");
-    
-    const newCount = messageCount + 1;
-    setMessageCount(newCount);
-    
-    // Show lead capture after 3 messages
-    if (newCount >= 3 && !showLeadCapture && userRole) {
-      setTimeout(() => {
-        setShowLeadCapture(true);
-      }, 3000);
-    }
-    
-    // Show registration share widget for visitors after 3 messages
-    if (newCount >= 3 && !showRegistrationShare && userRole === 'visitor') {
-      setShowRegistrationShare(true);
-    }
   };
 
   const handleQuickAction = (action: string) => {
