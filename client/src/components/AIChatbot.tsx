@@ -151,8 +151,9 @@ export default function AIChatbot() {
     chatMutation.mutate({ message: input, role: userRole });
     setInput("");
     
-    setMessageCount(prev => prev + 1);
-    if (messageCount >= 2 && !showLeadCapture && userRole) {
+    const newCount = messageCount + 1;
+    setMessageCount(newCount);
+    if (newCount >= 3 && !showLeadCapture && userRole) {
       setTimeout(() => {
         setShowLeadCapture(true);
       }, 3000);

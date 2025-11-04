@@ -163,6 +163,16 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   createdAt: true,
   status: true
+}).extend({
+  name: z.string().min(1, "Name is required").max(100),
+  email: z.string().email("Invalid email address"),
+  category: z.enum(["Visitor", "Exhibitor", "Organizer", "Media", "Other"], {
+    errorMap: () => ({ message: "Invalid category selected" })
+  }),
+  message: z.string().optional(),
+  sessionId: z.string().optional(),
+  assignedTo: z.string().optional(),
+  notes: z.string().optional()
 });
 
 export type Exhibitor = typeof exhibitors.$inferSelect;
