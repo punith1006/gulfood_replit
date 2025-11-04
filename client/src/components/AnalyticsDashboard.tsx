@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3, Download, CheckCircle2, UserCheck, Mail, Tag } from "lucide-react";
+import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3, Download, CheckCircle2, UserCheck, Mail, Tag, Share2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -9,6 +9,8 @@ import analyticsImage from "@assets/generated_images/Analytics_dashboard_visuali
 import { useRole } from "@/contexts/RoleContext";
 import { useChatbot } from "@/contexts/ChatbotContext";
 import { useToast } from "@/hooks/use-toast";
+import EmbeddableWidgetGenerator from "@/components/EmbeddableWidgetGenerator";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface Analytics {
   totalRegistrations: number;
@@ -30,6 +32,17 @@ interface Lead {
   createdAt: string;
 }
 
+interface ReferralStats {
+  totalClicks: number;
+  totalConversions: number;
+  conversionRate: number;
+  platformBreakdown: Array<{
+    platform: string;
+    clicks: number;
+    conversions: number;
+  }>;
+}
+
 export default function AnalyticsDashboard() {
   const { userRole, setUserRole } = useRole();
   const { openChatbot } = useChatbot();
@@ -45,6 +58,12 @@ export default function AnalyticsDashboard() {
     queryKey: ["/api/leads"],
     refetchInterval: 15000,
     enabled: userRole === "organizer" // Only fetch leads when user is an organizer
+  });
+
+  const { data: referralStats, isLoading: isLoadingReferrals } = useQuery<ReferralStats>({
+    queryKey: ["/api/referrals/stats"],
+    refetchInterval: 15000,
+    enabled: userRole === "organizer" // Only fetch referral stats when user is an organizer
   });
 
   const generateReportMutation = useMutation({
@@ -337,6 +356,95 @@ export default function AnalyticsDashboard() {
               </div>
             )}
           </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-orange-600" />
+                <h3 className="text-xl font-bold">Referral Analytics</h3>
+              </div>
+              <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                Social Sharing
+              </Badge>
+            </div>
+
+            {isLoadingReferrals ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                ))}
+              </div>
+            ) : referralStats ? (
+              <>
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="text-center p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+                    <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                      {referralStats.totalClicks}
+                    </div>
+                    <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      Total Clicks
+                    </div>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+                    <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      {referralStats.totalConversions}
+                    </div>
+                    <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      Conversions
+                    </div>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+                    <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                      {referralStats.conversionRate}%
+                    </div>
+                    <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                      Conv. Rate
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold mb-3">Platform Breakdown</h4>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={referralStats.platformBreakdown}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="platform" 
+                        className="text-xs"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <YAxis 
+                        className="text-xs"
+                        tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="clicks" fill="#3b82f6" name="Clicks" />
+                      <Bar dataKey="conversions" fill="#f97316" name="Conversions" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <Share2 className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No referral data yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Referral analytics will appear when visitors share Gulfood 2026
+                </p>
+              </div>
+            )}
+          </Card>
+
+          <EmbeddableWidgetGenerator />
         </div>
       </div>
     </section>
