@@ -195,7 +195,7 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({
   clickedAt: true,
   convertedAt: true
 }).extend({
-  platform: z.enum(["linkedin", "facebook", "x", "email", "whatsapp"], {
+  platform: z.enum(["linkedin", "facebook", "x", "email", "whatsapp", "instagram"], {
     errorMap: () => ({ message: "Invalid platform" })
   }),
   referralCode: z.string().optional(),
