@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
@@ -351,6 +351,49 @@ Format as valid JSON only, no markdown.`;
     } catch (error) {
       console.error("Error updating lead:", error);
       res.status(500).json({ error: "Failed to update lead" });
+    }
+  });
+
+  app.post("/api/referrals", async (req, res) => {
+    try {
+      const parsedData = insertReferralSchema.parse(req.body);
+      const referral = await storage.createReferral(parsedData);
+      res.json({ 
+        success: true, 
+        message: "Referral tracked successfully",
+        id: referral.id 
+      });
+    } catch (error) {
+      console.error("Error creating referral:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid referral data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to track referral" });
+    }
+  });
+
+  app.get("/api/referrals", async (req, res) => {
+    try {
+      const { platform, startDate, endDate } = req.query;
+      const referrals = await storage.getReferrals(
+        platform as string | undefined,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      res.json(referrals);
+    } catch (error) {
+      console.error("Error fetching referrals:", error);
+      res.status(500).json({ error: "Failed to fetch referrals" });
+    }
+  });
+
+  app.get("/api/referrals/stats", async (req, res) => {
+    try {
+      const stats = await storage.getReferralStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching referral stats:", error);
+      res.status(500).json({ error: "Failed to fetch referral stats" });
     }
   });
 
