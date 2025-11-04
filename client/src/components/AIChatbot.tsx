@@ -217,6 +217,10 @@ export default function AIChatbot() {
         ...formData,
         sessionId
       });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to capture lead");
+      }
       return await res.json();
     },
     onSuccess: () => {
@@ -234,10 +238,10 @@ export default function AIChatbot() {
         });
       }, 300);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Oops!",
-        description: "Something went wrong. Please try again.",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       });
     }
@@ -253,6 +257,27 @@ export default function AIChatbot() {
       return;
     }
     leadCaptureMutation.mutate(leadForm);
+  };
+
+  const handleLeadCaptureOpenChange = (open: boolean) => {
+    if (!open) {
+      // User is trying to close the modal
+      // Only allow closing if no required fields are filled (they haven't started)
+      // OR if all required fields are filled
+      const hasStartedFilling = leadForm.name.trim() || leadForm.email.trim() || leadForm.category;
+      const allRequiredFilled = leadForm.name.trim() && leadForm.email.trim() && leadForm.category;
+      
+      if (hasStartedFilling && !allRequiredFilled) {
+        // They started filling but haven't completed required fields
+        toast({
+          title: "Please Complete the Form",
+          description: "Fill in your name, email, and category to continue, or click 'Maybe Later' to skip.",
+          variant: "destructive",
+        });
+        return; // Prevent closing
+      }
+    }
+    setShowLeadCapture(open);
   };
 
   const feedbackMutation = useMutation({
@@ -652,7 +677,7 @@ export default function AIChatbot() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showLeadCapture} onOpenChange={setShowLeadCapture}>
+      <Dialog open={showLeadCapture} onOpenChange={handleLeadCaptureOpenChange}>
         <DialogContent className="sm:max-w-md border-2 border-orange-500/20" data-testid="dialog-lead-capture">
           <DialogHeader>
             <div className="flex items-center gap-2 mb-2">
@@ -722,7 +747,10 @@ export default function AIChatbot() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => setShowLeadCapture(false)}
+              onClick={() => {
+                setShowLeadCapture(false);
+                setLeadForm({ name: "", email: "", category: "", message: "" });
+              }}
               className="flex-1"
               data-testid="button-cancel-lead"
             >
