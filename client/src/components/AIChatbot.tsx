@@ -91,6 +91,7 @@ export default function AIChatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [showRegistrationShare, setShowRegistrationShare] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   const [messageCount, setMessageCount] = useState(0);
   const [contactForm, setContactForm] = useState({
@@ -121,6 +122,9 @@ export default function AIChatbot() {
       }
     ]);
     setFeedbackGiven({});
+    setMessageCount(0);
+    setShowRegistrationShare(false);
+    setShowLeadCapture(false);
   }, [userRole]);
 
   const chatMutation = useMutation({
@@ -156,10 +160,17 @@ export default function AIChatbot() {
     
     const newCount = messageCount + 1;
     setMessageCount(newCount);
+    
+    // Show lead capture after 3 messages
     if (newCount >= 3 && !showLeadCapture && userRole) {
       setTimeout(() => {
         setShowLeadCapture(true);
       }, 3000);
+    }
+    
+    // Show registration share widget for visitors after 3 messages
+    if (newCount >= 3 && !showRegistrationShare && userRole === 'visitor') {
+      setShowRegistrationShare(true);
     }
   };
 
@@ -563,8 +574,18 @@ export default function AIChatbot() {
                 Contact Sales
               </Button>
             )}
-            {userRole === "visitor" && messages.length > 2 && (
-              <RegistrationShareWidget compact={true} />
+            {userRole === "visitor" && showRegistrationShare && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowRegistrationShare(false)}
+                  className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                  data-testid="button-close-registration-share"
+                  aria-label="Close registration share widget"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <RegistrationShareWidget compact={true} />
+              </div>
             )}
             {messages.length > 2 && userRole && (
               <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
