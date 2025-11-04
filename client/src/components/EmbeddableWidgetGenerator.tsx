@@ -106,10 +106,11 @@ export default function EmbeddableWidgetGenerator() {
     navigator.clipboard.writeText(widgetCode);
     setCopied(true);
     toast({
-      title: "Copied!",
-      description: "Widget code copied to clipboard. Paste it into your website or email template.",
+      title: "✓ Widget Code Copied!",
+      description: "The embeddable code has been copied to your clipboard. You can now paste it into your website, email template, or registration page.",
+      duration: 4000,
     });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 3000);
   };
 
   return (

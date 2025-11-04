@@ -23,12 +23,16 @@ export default function ReferralWidget({
 
   const trackReferralMutation = useMutation({
     mutationFn: async (platform: string) => {
-      return await apiRequest("/api/referrals", "POST", {
+      return await apiRequest("POST", "/api/referrals", {
         platform,
         referrerName,
         referrerEmail,
         sessionId
       });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/referrals/stats"] });
     }
   });
 

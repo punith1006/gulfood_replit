@@ -526,8 +526,13 @@ export default function AIChatbot() {
                 Contact Sales
               </Button>
             )}
-            {messages.length > 2 && (
-              <div className="pt-2 border-t border-border">
+            {messages.length > 2 && userRole && (
+              <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
+                <div className="mb-2 px-1">
+                  <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                    Help Gulfood Grow
+                  </p>
+                </div>
                 <ReferralWidget 
                   sessionId={sessionId}
                   compact={true}
