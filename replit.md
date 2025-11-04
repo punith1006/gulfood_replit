@@ -59,6 +59,15 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 - **Bug Fixes**:
   - Fixed trigger logic to use updated message count instead of stale state
   - Enhanced validation to enforce required fields and category enum constraints
+  - **CRITICAL FIX: Prevent modal closing without validation**:
+    - Added custom `handleLeadCaptureOpenChange` handler to prevent ESC/outside-click/X-button from closing modal
+    - Modal can only close via: "Maybe Later" button, successful submission, or when no fields are filled
+    - Shows "Please Complete the Form" toast when user tries to close with partial data
+    - "Maybe Later" button now properly resets form state
+  - **Improved error handling**:
+    - Backend errors now display specific error messages instead of generic "Oops! Something went wrong"
+    - Added response validation and proper error parsing in mutation
+    - Error messages from API are shown in destructive toast notifications
 
 ### November 3, 2025 - UI and PDF Improvements
 - **Faris Chatbot Width Optimization**: Adjusted chatbot dimensions for better UX:
