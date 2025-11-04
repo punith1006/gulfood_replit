@@ -5,6 +5,33 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 
 ## Recent Changes
 
+### November 4, 2025 - Dual Referral System
+- **Comprehensive Social Sharing System**: Implemented complete dual referral tracking to help Gulfood 2026 grow its community through social sharing:
+  - **5 Social Platforms**: LinkedIn, Facebook, X (Twitter), WhatsApp, Email
+  - **Automatic Tracking**: Every share click is tracked with platform, clicks, conversions, and timestamp
+  - **Smart Integration**: ReferralWidget appears in Faris chatbot alongside lead capture (both triggered after 3+ messages)
+  - **Gulfood Branding**: Orange/gold gradient styling consistent with event branding
+- **Referral Analytics Dashboard**: Added comprehensive analytics for organizers:
+  - **Key Metrics**: Total Clicks, Total Conversions, Conversion Rate (%) displayed in gradient cards
+  - **Platform Breakdown**: Interactive bar chart showing clicks and conversions per social platform
+  - **Real-Time Updates**: Auto-refreshes every 15 seconds
+  - **Visual Design**: Blue bars for clicks, orange bars for conversions
+- **Embeddable Widget Generator**: Created code generator for external marketing use:
+  - **One-Click Copy**: Generates complete HTML/JavaScript snippet for embedding on external sites
+  - **Production URL Handling**: Uses VITE_APP_URL environment variable for production deployment
+  - **Environment Detection**: Shows warning banner when not in production (missing VITE_APP_URL)
+  - **Live Preview**: Displays visual preview of how widget will appear
+  - **Usage Tips**: Clear instructions for embedding in websites, emails, registration pages
+  - **Smart Tracking**: Widget hardcodes production URL to ensure external embeds call correct backend
+- **Backend Infrastructure**:
+  - Database table: referrals (id, platform, clicks, conversions, createdAt)
+  - API endpoints: POST /api/referrals (track share), GET /api/referrals/stats (analytics)
+  - Platform enum validation: linkedin, facebook, x, whatsapp, email
+- **Production Deployment Notes**:
+  - Set VITE_APP_URL environment variable to production domain for correct widget generation
+  - Widget code generated from staging/localhost will show warning to prevent misuse
+  - External embeds always point to configured production URL for API calls and share destinations
+
 ### November 4, 2025 - Lead Capture System
 - **Integrated Lead Capture in Faris Chatbot**: Implemented comprehensive lead capture system differentiated from competitor "Zeta's Suzan" chatbot:
   - **Automatic Trigger**: Dialog appears 3 seconds after user's 3rd message in conversation

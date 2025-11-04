@@ -2,19 +2,25 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Code, Copy, Check } from "lucide-react";
+import { Code, Copy, Check, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function EmbeddableWidgetGenerator() {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
+  // Use production URL from environment variable, fallback to current origin for development
+  const productionUrl = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://gulfood2026.replit.app');
+  const isProduction = import.meta.env.VITE_APP_URL !== undefined;
+  
   const widgetCode = `<!-- Gulfood 2026 Referral Widget -->
 <div id="gulfood-referral-widget"></div>
 <script>
 (function() {
   const widget = document.getElementById('gulfood-referral-widget');
-  const baseUrl = '${typeof window !== 'undefined' ? window.location.origin : 'https://gulfood2026.com'}';
+  // Production Gulfood application URL - ensures tracking works when embedded on external sites
+  const baseUrl = '${productionUrl}';
   
   const shareContent = {
     title: "Join me at Gulfood 2026!",
@@ -122,6 +128,16 @@ export default function EmbeddableWidgetGenerator() {
         Copy and paste this code into your registration pages, confirmation emails, or marketing materials to add social sharing buttons.
       </p>
 
+      {!isProduction && (
+        <Alert className="mb-4 border-orange-600 bg-orange-50 dark:bg-orange-950/20">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700 dark:text-orange-400">
+            <strong>Development Environment Detected:</strong> This widget code uses your current URL ({productionUrl}). 
+            For production use, set the <code className="px-1 py-0.5 bg-orange-100 dark:bg-orange-900 rounded text-xs">VITE_APP_URL</code> environment variable to your production domain.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="relative">
         <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto max-h-96 overflow-y-auto border border-border">
           <code>{widgetCode}</code>
@@ -177,6 +193,14 @@ export default function EmbeddableWidgetGenerator() {
           <li>Include in email templates (HTML emails only)</li>
           <li>Add to registration confirmation pages to maximize sharing</li>
           <li>All clicks are automatically tracked in your analytics dashboard</li>
+          <li className="text-orange-700 dark:text-orange-400 font-medium">
+            Widget calls API at: <code className="px-1 bg-orange-100 dark:bg-orange-900 rounded">{productionUrl}</code>
+          </li>
+          {isProduction && (
+            <li className="text-green-700 dark:text-green-400 font-medium">
+              ✓ Production URL configured - safe for external embedding
+            </li>
+          )}
         </ul>
       </div>
     </Card>
