@@ -10,6 +10,7 @@ import {
   venueTraffic,
   salesContacts,
   leads,
+  referrals,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -27,7 +28,9 @@ import {
   type SalesContact,
   type InsertSalesContact,
   type Lead,
-  type InsertLead
+  type InsertLead,
+  type Referral,
+  type InsertReferral
 } from "@shared/schema";
 
 export interface IStorage {
@@ -62,6 +65,15 @@ export interface IStorage {
   getLeads(status?: string, category?: string): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined>;
+  
+  getReferrals(platform?: string, startDate?: Date, endDate?: Date): Promise<Referral[]>;
+  createReferral(referral: InsertReferral): Promise<Referral>;
+  getReferralStats(): Promise<{
+    totalClicks: number;
+    totalConversions: number;
+    conversionRate: number;
+    platformBreakdown: Array<{ platform: string; clicks: number; conversions: number }>;
+  }>;
   
   getAnalytics(): Promise<{
     totalRegistrations: number;
@@ -285,6 +297,78 @@ export class DatabaseStorage implements IStorage {
       .where(eq(leads.id, id))
       .returning();
     return result[0];
+  }
+
+  async getReferrals(platform?: string, startDate?: Date, endDate?: Date): Promise<Referral[]> {
+    const conditions = [];
+    
+    if (platform) {
+      conditions.push(eq(referrals.platform, platform));
+    }
+    
+    if (startDate) {
+      conditions.push(sql`${referrals.clickedAt} >= ${startDate}`);
+    }
+    
+    if (endDate) {
+      conditions.push(sql`${referrals.clickedAt} <= ${endDate}`);
+    }
+    
+    if (conditions.length > 0) {
+      return await db.select().from(referrals).where(and(...conditions)).orderBy(desc(referrals.clickedAt));
+    }
+    
+    return await db.select().from(referrals).orderBy(desc(referrals.clickedAt));
+  }
+
+  async createReferral(referral: InsertReferral): Promise<Referral> {
+    const result = await db.insert(referrals).values(referral).returning();
+    return result[0];
+  }
+
+  async getReferralStats(): Promise<{
+    totalClicks: number;
+    totalConversions: number;
+    conversionRate: number;
+    platformBreakdown: Array<{ platform: string; clicks: number; conversions: number }>;
+  }> {
+    const [clickCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(referrals);
+    
+    const [conversionCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(referrals)
+      .where(sql`${referrals.convertedAt} IS NOT NULL`);
+    
+    const platformStats = await db
+      .select({
+        platform: referrals.platform,
+        clicks: sql<number>`count(*)`,
+        conversions: sql<number>`count(CASE WHEN ${referrals.convertedAt} IS NOT NULL THEN 1 END)`
+      })
+      .from(referrals)
+      .groupBy(referrals.platform)
+      .orderBy(desc(sql<number>`count(*)`));
+    
+    const totalClicks = Number(clickCount?.count || 0);
+    const totalConversions = Number(conversionCount?.count || 0);
+    const conversionRate = totalClicks > 0 
+      ? Math.round((totalConversions / totalClicks) * 100) 
+      : 0;
+    
+    const platformBreakdown = platformStats.map(({ platform, clicks, conversions }) => ({
+      platform,
+      clicks: Number(clicks),
+      conversions: Number(conversions)
+    }));
+    
+    return {
+      totalClicks,
+      totalConversions,
+      conversionRate,
+      platformBreakdown
+    };
   }
 
   async getAnalytics(): Promise<{

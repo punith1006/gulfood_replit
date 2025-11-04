@@ -117,6 +117,21 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const referrals = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  referralCode: text("referral_code"),
+  platform: text("platform").notNull(),
+  referrerName: text("referrer_name"),
+  referrerEmail: text("referrer_email"),
+  sessionId: text("session_id"),
+  clickedAt: timestamp("clicked_at").defaultNow().notNull(),
+  convertedAt: timestamp("converted_at"),
+  refereeEmail: text("referee_email"),
+  refereeCategory: text("referee_category"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent")
+});
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
@@ -175,6 +190,24 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
   notes: z.string().optional()
 });
 
+export const insertReferralSchema = createInsertSchema(referrals).omit({
+  id: true,
+  clickedAt: true,
+  convertedAt: true
+}).extend({
+  platform: z.enum(["linkedin", "facebook", "x", "email", "whatsapp"], {
+    errorMap: () => ({ message: "Invalid platform" })
+  }),
+  referralCode: z.string().optional(),
+  referrerName: z.string().optional(),
+  referrerEmail: z.string().email().optional().or(z.literal("")),
+  sessionId: z.string().optional(),
+  refereeEmail: z.string().email().optional().or(z.literal("")),
+  refereeCategory: z.string().optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional()
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -201,3 +234,6 @@ export type InsertGeneratedReport = z.infer<typeof insertGeneratedReportSchema>;
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = z.infer<typeof insertReferralSchema>;
