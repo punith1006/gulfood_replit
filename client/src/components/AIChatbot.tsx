@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,6 +20,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import farisAvatar from "@assets/generated_images/Circular_bot_head_portrait_241be4f6.png";
 
@@ -80,13 +87,21 @@ export default function AIChatbot() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
+  const [messageCount, setMessageCount] = useState(0);
   const [contactForm, setContactForm] = useState({
     companyName: "",
     contactName: "",
     email: "",
     phone: "",
     inquiry: ""
+  });
+  const [leadForm, setLeadForm] = useState({
+    name: "",
+    email: "",
+    category: "",
+    message: ""
   });
 
   useEffect(() => {
@@ -135,6 +150,13 @@ export default function AIChatbot() {
     setMessages(prev => [...prev, userMessage]);
     chatMutation.mutate({ message: input, role: userRole });
     setInput("");
+    
+    setMessageCount(prev => prev + 1);
+    if (messageCount >= 2 && !showLeadCapture && userRole) {
+      setTimeout(() => {
+        setShowLeadCapture(true);
+      }, 3000);
+    }
   };
 
   const handleQuickAction = (action: string) => {
@@ -185,6 +207,50 @@ export default function AIChatbot() {
       return;
     }
     contactSalesMutation.mutate(contactForm);
+  };
+
+  const leadCaptureMutation = useMutation({
+    mutationFn: async (formData: typeof leadForm) => {
+      const res = await apiRequest("POST", "/api/leads", {
+        ...formData,
+        sessionId
+      });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Thank You! 🎉",
+        description: "Your information has been saved. We'll stay in touch!",
+      });
+      setTimeout(() => {
+        setShowLeadCapture(false);
+        setLeadForm({
+          name: "",
+          email: "",
+          category: "",
+          message: ""
+        });
+      }, 300);
+    },
+    onError: () => {
+      toast({
+        title: "Oops!",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleLeadCaptureSubmit = () => {
+    if (!leadForm.name.trim() || !leadForm.email.trim() || !leadForm.category) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in your name, email, and category.",
+        variant: "destructive",
+      });
+      return;
+    }
+    leadCaptureMutation.mutate(leadForm);
   };
 
   const feedbackMutation = useMutation({
@@ -565,6 +631,101 @@ export default function AIChatbot() {
                 </>
               ) : (
                 "Submit Request"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLeadCapture} onOpenChange={setShowLeadCapture}>
+        <DialogContent className="sm:max-w-md border-2 border-orange-500/20" data-testid="dialog-lead-capture">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-2">
+              <UserCheck className="w-5 h-5 text-orange-600" />
+              <DialogTitle className="text-orange-900 dark:text-orange-100">
+                Stay Connected with Gulfood 2026
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-muted-foreground">
+              Share your details so we can keep you updated on exhibitors, events, and exclusive opportunities.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="leadName" className="text-sm font-medium">Your Name *</Label>
+              <Input
+                id="leadName"
+                placeholder="Full name"
+                value={leadForm.name}
+                onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                data-testid="input-lead-name"
+                className="focus-visible:ring-orange-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="leadEmail" className="text-sm font-medium">Email Address *</Label>
+              <Input
+                id="leadEmail"
+                type="email"
+                placeholder="you@example.com"
+                value={leadForm.email}
+                onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                data-testid="input-lead-email"
+                className="focus-visible:ring-orange-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="leadCategory" className="text-sm font-medium">I am a *</Label>
+              <Select
+                value={leadForm.category}
+                onValueChange={(value) => setLeadForm(prev => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger id="leadCategory" data-testid="select-lead-category" className="focus:ring-orange-500">
+                  <SelectValue placeholder="Select your category..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Visitor">Visitor</SelectItem>
+                  <SelectItem value="Exhibitor">Exhibitor</SelectItem>
+                  <SelectItem value="Organizer">Organizer</SelectItem>
+                  <SelectItem value="Media">Media</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="leadMessage" className="text-sm font-medium">Message (Optional)</Label>
+              <Textarea
+                id="leadMessage"
+                placeholder="Any specific interests or questions?"
+                value={leadForm.message}
+                onChange={(e) => setLeadForm(prev => ({ ...prev, message: e.target.value }))}
+                className="min-h-20 focus-visible:ring-orange-500"
+                data-testid="input-lead-message"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowLeadCapture(false)}
+              className="flex-1"
+              data-testid="button-cancel-lead"
+            >
+              Maybe Later
+            </Button>
+            <Button
+              onClick={handleLeadCaptureSubmit}
+              disabled={leadCaptureMutation.isPending}
+              className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white"
+              data-testid="button-submit-lead"
+            >
+              {leadCaptureMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Connect with Us"
               )}
             </Button>
           </div>
