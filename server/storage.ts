@@ -9,6 +9,7 @@ import {
   generatedReports,
   venueTraffic,
   salesContacts,
+  leads,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -24,7 +25,9 @@ import {
   type VenueTraffic,
   type InsertVenueTraffic,
   type SalesContact,
-  type InsertSalesContact
+  type InsertSalesContact,
+  type Lead,
+  type InsertLead
 } from "@shared/schema";
 
 export interface IStorage {
@@ -55,6 +58,10 @@ export interface IStorage {
   
   getSalesContacts(): Promise<SalesContact[]>;
   createSalesContact(contact: InsertSalesContact): Promise<SalesContact>;
+  
+  getLeads(status?: string, category?: string): Promise<Lead[]>;
+  createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined>;
   
   getAnalytics(): Promise<{
     totalRegistrations: number;
@@ -245,6 +252,38 @@ export class DatabaseStorage implements IStorage {
 
   async createSalesContact(contact: InsertSalesContact): Promise<SalesContact> {
     const result = await db.insert(salesContacts).values(contact).returning();
+    return result[0];
+  }
+
+  async getLeads(status?: string, category?: string): Promise<Lead[]> {
+    const conditions = [];
+    
+    if (status) {
+      conditions.push(eq(leads.status, status));
+    }
+    
+    if (category) {
+      conditions.push(eq(leads.category, category));
+    }
+    
+    if (conditions.length > 0) {
+      return await db.select().from(leads).where(and(...conditions)).orderBy(desc(leads.createdAt));
+    }
+    
+    return await db.select().from(leads).orderBy(desc(leads.createdAt));
+  }
+
+  async createLead(lead: InsertLead): Promise<Lead> {
+    const result = await db.insert(leads).values(lead).returning();
+    return result[0];
+  }
+
+  async updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined> {
+    const result = await db
+      .update(leads)
+      .set(updates)
+      .where(eq(leads.id, id))
+      .returning();
     return result[0];
   }
 

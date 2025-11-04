@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
@@ -302,6 +302,55 @@ Format as valid JSON only, no markdown.`;
     } catch (error) {
       console.error("Error fetching sales contacts:", error);
       res.status(500).json({ error: "Failed to fetch sales contacts" });
+    }
+  });
+
+  app.post("/api/leads", async (req, res) => {
+    try {
+      const parsedData = insertLeadSchema.parse(req.body);
+      const lead = await storage.createLead(parsedData);
+      res.json({ 
+        success: true, 
+        message: "Thank you! Your information has been captured successfully.",
+        id: lead.id 
+      });
+    } catch (error) {
+      console.error("Error creating lead:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid lead data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to capture lead" });
+    }
+  });
+
+  app.get("/api/leads", async (req, res) => {
+    try {
+      const { status, category } = req.query;
+      const leads = await storage.getLeads(
+        status as string | undefined,
+        category as string | undefined
+      );
+      res.json(leads);
+    } catch (error) {
+      console.error("Error fetching leads:", error);
+      res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  app.patch("/api/leads/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status, assignedTo, notes } = req.body;
+      const lead = await storage.updateLead(id, { status, assignedTo, notes });
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      res.status(500).json({ error: "Failed to update lead" });
     }
   });
 

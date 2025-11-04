@@ -104,6 +104,19 @@ export const salesContacts = pgTable("sales_contacts", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  category: text("category").notNull(),
+  message: text("message"),
+  sessionId: text("session_id"),
+  status: text("status").notNull().default("new"),
+  assignedTo: text("assigned_to"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
@@ -146,6 +159,12 @@ export const insertGeneratedReportSchema = createInsertSchema(generatedReports).
   createdAt: true
 });
 
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  status: true
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -169,3 +188,6 @@ export type InsertChatFeedback = z.infer<typeof insertChatFeedbackSchema>;
 
 export type GeneratedReport = typeof generatedReports.$inferSelect;
 export type InsertGeneratedReport = z.infer<typeof insertGeneratedReportSchema>;
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
