@@ -94,6 +94,7 @@ export default function AIChatbot() {
   const [showRegistrationShare, setShowRegistrationShare] = useState(false);
   const [hasTriggeredLeadCapture, setHasTriggeredLeadCapture] = useState(false);
   const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
+  const [hasRegistered, setHasRegistered] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   
   // Derive user message count from messages array (single source of truth)
@@ -132,6 +133,7 @@ export default function AIChatbot() {
     setShowLeadCapture(false);
     setHasTriggeredLeadCapture(false);
     setHasTriggeredRegistrationShare(false);
+    setHasRegistered(false);
   }, [userRole]);
   
   // Trigger widgets when user sends 3rd message
@@ -190,6 +192,7 @@ export default function AIChatbot() {
     
     // Handle "Register Today" action by opening registration URL
     if (action === "Register Today") {
+      setHasRegistered(true);
       window.open('https://visit.gulfood.com/reg/taTvFu6IraZ5MsCnrdzbHutAykNXdxkNXqaJunHZMSi?utm_source=www.gulfood.com&utm_medium=referral', '_blank');
       toast({
         title: "Opening Registration",
@@ -505,33 +508,33 @@ export default function AIChatbot() {
       <div className="p-4 border-t border-border space-y-3">
         {!userRole ? (
           <div className="space-y-3">
-            <div className="text-sm font-semibold text-center mb-2">I am a...</div>
+            <div className="text-xs font-semibold text-center mb-2">I am a...</div>
             <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
-                className="flex-col h-auto py-3 hover-elevate"
+                className="flex-col h-auto py-2 hover-elevate"
                 onClick={() => setUserRole("visitor")}
                 data-testid="button-role-visitor"
               >
-                <Users className="w-5 h-5 mb-1" />
+                <Users className="w-4 h-4 mb-0.5" />
                 <span className="text-xs">Visitor</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-col h-auto py-3 hover-elevate"
+                className="flex-col h-auto py-2 hover-elevate"
                 onClick={() => setUserRole("exhibitor")}
                 data-testid="button-role-exhibitor"
               >
-                <Building2 className="w-5 h-5 mb-1" />
+                <Building2 className="w-4 h-4 mb-0.5" />
                 <span className="text-xs">Exhibitor</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-col h-auto py-3 hover-elevate"
+                className="flex-col h-auto py-2 hover-elevate"
                 onClick={() => setUserRole("organizer")}
                 data-testid="button-role-organizer"
               >
-                <BarChart3 className="w-5 h-5 mb-1" />
+                <BarChart3 className="w-4 h-4 mb-0.5" />
                 <span className="text-xs">Organizer</span>
               </Button>
             </div>
@@ -598,13 +601,8 @@ export default function AIChatbot() {
                 <RegistrationShareWidget compact={true} />
               </div>
             )}
-            {messages.length > 2 && userRole && (
+            {messages.length > 2 && userRole && hasRegistered && (
               <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
-                <div className="mb-2 px-1">
-                  <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                    Help Gulfood Grow
-                  </p>
-                </div>
                 <ReferralWidget 
                   sessionId={sessionId}
                   compact={true}
