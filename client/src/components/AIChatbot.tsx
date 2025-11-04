@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import farisAvatar from "@assets/generated_images/Circular_bot_head_portrait_241be4f6.png";
+import ReferralWidget from "@/components/ReferralWidget";
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
@@ -524,6 +525,14 @@ export default function AIChatbot() {
                 <UserPlus className="w-4 h-4" />
                 Contact Sales
               </Button>
+            )}
+            {messages.length > 2 && (
+              <div className="pt-2 border-t border-border">
+                <ReferralWidget 
+                  sessionId={sessionId}
+                  compact={true}
+                />
+              </div>
             )}
           </>
         )}
