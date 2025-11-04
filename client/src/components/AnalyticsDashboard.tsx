@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3, Download, CheckCircle2 } from "lucide-react";
+import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3, Download, CheckCircle2, UserCheck, Mail, Tag } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,6 +20,16 @@ interface Analytics {
   totalFeedback: number;
 }
 
+interface Lead {
+  id: number;
+  name: string;
+  email: string;
+  category: string;
+  message: string | null;
+  status: string;
+  createdAt: string;
+}
+
 export default function AnalyticsDashboard() {
   const { userRole, setUserRole } = useRole();
   const { openChatbot } = useChatbot();
@@ -29,6 +39,12 @@ export default function AnalyticsDashboard() {
     queryKey: ["/api/analytics"],
     refetchInterval: 10000,
     enabled: userRole === "organizer" // Only fetch data when user is an organizer
+  });
+
+  const { data: leads, isLoading: isLoadingLeads } = useQuery<Lead[]>({
+    queryKey: ["/api/leads"],
+    refetchInterval: 15000,
+    enabled: userRole === "organizer" // Only fetch leads when user is an organizer
   });
 
   const generateReportMutation = useMutation({
@@ -246,21 +262,80 @@ export default function AnalyticsDashboard() {
           </Card>
 
           <Card className="p-6">
-            <h3 className="text-xl font-bold mb-6">Top AI Queries</h3>
-            <div className="space-y-4">
-              {[
-                { query: "How to schedule meetings with exhibitors?", count: 1247 },
-                { query: "Best dairy exhibitors recommendations", count: 1089 },
-                { query: "Shuttle schedule between venues", count: 934 },
-                { query: "Recommended sessions for beverage industry", count: 812 },
-                { query: "Registration process and requirements", count: 756 }
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                  <span className="text-sm flex-1">{item.query}</span>
-                  <Badge variant="secondary" className="ml-4">{item.count}</Badge>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-orange-600" />
+                <h3 className="text-xl font-bold">Recent Leads</h3>
+              </div>
+              <Badge variant="secondary" className="bg-orange-100 text-orange-700">
+                {leads?.length || 0} Total
+              </Badge>
             </div>
+            {isLoadingLeads ? (
+              <div className="space-y-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="space-y-2 animate-pulse">
+                    <div className="h-4 bg-muted rounded" />
+                    <div className="h-3 bg-muted rounded w-2/3" />
+                  </div>
+                ))}
+              </div>
+            ) : leads && leads.length > 0 ? (
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {leads.slice(0, 10).map((lead) => (
+                  <div 
+                    key={lead.id} 
+                    className="p-4 rounded-lg border border-border hover-elevate"
+                    data-testid={`card-lead-${lead.id}`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">{lead.name}</span>
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs"
+                          >
+                            {lead.category}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                          <Mail className="w-3 h-3" />
+                          {lead.email}
+                        </div>
+                        {lead.message && (
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {lead.message}
+                          </p>
+                        )}
+                      </div>
+                      <Badge 
+                        variant={lead.status === "new" ? "default" : "secondary"}
+                        className={lead.status === "new" ? "bg-orange-100 text-orange-700 text-xs" : "text-xs"}
+                      >
+                        {lead.status}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(lead.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <UserCheck className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No leads captured yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leads will appear here when visitors share their contact information
+                </p>
+              </div>
+            )}
           </Card>
         </div>
       </div>
