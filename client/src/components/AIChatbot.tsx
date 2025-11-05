@@ -1524,17 +1524,6 @@ export default function AIChatbot() {
                     return;
                   }
                   
-                  // Get session lead info for name/email
-                  const sessionLead = sessionManager.getLeadInfo();
-                  if (!sessionLead.email || !sessionLead.name) {
-                    toast({ 
-                      title: "Session required", 
-                      description: "Please interact with Faris in the Chat tab first to capture your contact info.",
-                      variant: "destructive" 
-                    });
-                    return;
-                  }
-                  
                   setIsGeneratingJourney(true);
                   try {
                     const finalIntents = [...journeyFormData.attendanceIntents];
@@ -1543,9 +1532,11 @@ export default function AIChatbot() {
                       finalIntents[index] = journeyFormData.otherIntent;
                     }
                     
+                    // Get session lead info if available, otherwise use Guest
+                    const sessionLead = sessionManager.getLeadInfo();
                     const submissionData = {
-                      name: sessionLead.name,
-                      email: sessionLead.email,
+                      name: sessionLead.name || 'Guest',
+                      email: sessionLead.email || `guest-${Date.now()}@gulfood2026.com`,
                       organization: journeyFormData.organization,
                       role: journeyFormData.role,
                       interestCategories: journeyFormData.interestCategories,
