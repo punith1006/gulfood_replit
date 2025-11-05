@@ -90,6 +90,49 @@ const extractName = (text: string): string | null => {
   return null;
 };
 
+const detectHighIntentKeywords = (text: string): boolean => {
+  const highIntentKeywords = [
+    "register", "registration", "sign up", "signup",
+    "book", "booking", "reserve", "reservation",
+    "exhibitor", "exhibit", "booth", "stand",
+    "schedule", "meeting", "appointment",
+    "attend", "visitor pass", "ticket",
+    "pricing", "cost", "price", "payment",
+    "contact", "reach out", "get in touch",
+    "interested", "apply", "application"
+  ];
+  
+  const lowerText = text.toLowerCase();
+  return highIntentKeywords.some(keyword => lowerText.includes(keyword));
+};
+
+const autoCategorizeConversation = (conversationText: string): string => {
+  const lowerText = conversationText.toLowerCase();
+  
+  // Exhibitor-related keywords
+  if (lowerText.match(/exhibitor|booth|stand|display|showcase|seller|vendor/i)) {
+    return "exhibitor_interest";
+  }
+  
+  // Visitor-related keywords
+  if (lowerText.match(/visit|attend|register|ticket|visitor pass/i)) {
+    return "visitor_registration";
+  }
+  
+  // Meeting/networking keywords
+  if (lowerText.match(/meeting|schedule|appointment|network|connect|buyer|seller/i)) {
+    return "meeting_request";
+  }
+  
+  // Product/company research keywords
+  if (lowerText.match(/product|company|exhibitor list|find|search|looking for/i)) {
+    return "product_research";
+  }
+  
+  // General inquiry
+  return "general_inquiry";
+};
+
 const getRoleWelcomeMessage = (role: UserRole): string => {
   if (!role) return "Ask me anything.....";
   
@@ -222,6 +265,8 @@ export default function AIChatbot() {
   const [detectedEmail, setDetectedEmail] = useState<string | null>(null);
   const [detectedName, setDetectedName] = useState<string | null>(null);
   const [showNLPConfirmation, setShowNLPConfirmation] = useState(false);
+  const [showContextualPrompt, setShowContextualPrompt] = useState(false);
+  const [contextualKeyword, setContextualKeyword] = useState<string>("");
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   
   // Derive user message count from messages array (single source of truth)
@@ -340,6 +385,15 @@ export default function AIChatbot() {
         setDetectedEmail(extractedEmail);
         setDetectedName(extractedName);
         setShowNLPConfirmation(true);
+      }
+      
+      // Contextual trigger - detect high-intent keywords
+      if (!extractedEmail && !extractedName && detectHighIntentKeywords(input)) {
+        setContextualKeyword(input);
+        // Delay showing contextual prompt to avoid interrupting the conversation
+        setTimeout(() => {
+          setShowContextualPrompt(true);
+        }, 2000);
       }
     }
     
@@ -852,7 +906,10 @@ export default function AIChatbot() {
                                 return;
                               }
                               
-                              // Email doesn't exist - create new lead
+                              // Email doesn't exist - create new lead with auto-categorization
+                              const conversationContext = messages.map(m => m.content).join(" ");
+                              const leadCategory = autoCategorizeConversation(conversationContext);
+                              
                               await apiRequest("POST", "/api/leads", {
                                 name: leadForm.name,
                                 email: leadForm.email,
@@ -860,7 +917,9 @@ export default function AIChatbot() {
                                 role: leadForm.role || undefined,
                                 capturedVia: "direct",
                                 conversationId: sessionId,
-                                sourcePage: "chatbot"
+                                sourcePage: "chatbot",
+                                leadCategory,
+                                userType: userRole || undefined
                               });
                               setLeadCaptured(true);
                               setShowInlineLeadForm(false);
@@ -932,13 +991,18 @@ export default function AIChatbot() {
                                 return;
                               }
                               
-                              // Save new lead
+                              // Save new lead with auto-categorization
+                              const conversationContext = messages.map(m => m.content).join(" ");
+                              const leadCategory = autoCategorizeConversation(conversationContext);
+                              
                               await apiRequest("POST", "/api/leads", {
                                 name: detectedName || "Unknown",
                                 email: detectedEmail,
                                 capturedVia: "conversational",
                                 conversationId: sessionId,
-                                sourcePage: "chatbot"
+                                sourcePage: "chatbot",
+                                leadCategory,
+                                userType: userRole || undefined
                               });
                               setLeadCaptured(true);
                               setShowNLPConfirmation(false);
@@ -984,6 +1048,45 @@ export default function AIChatbot() {
                         data-testid="button-decline-nlp"
                       >
                         No, thanks
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Contextual trigger prompt for high-intent keywords */}
+              {showContextualPrompt && !leadCaptured && userRole && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-2xl px-4 py-3 text-sm border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-4 h-4 text-blue-600" />
+                      <div className="text-xs font-semibold text-blue-900 dark:text-blue-100">Get Personalized Assistance</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      I can help you better with your inquiry if you share your contact details. This way, I can provide you with tailored recommendations and keep you updated.
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white no-default-hover-elevate"
+                        onClick={() => {
+                          setShowContextualPrompt(false);
+                          setShowInlineLeadForm(true);
+                        }}
+                        data-testid="button-contextual-share"
+                      >
+                        Share My Details
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full px-3 py-1.5 h-auto no-default-hover-elevate"
+                        onClick={() => {
+                          setShowContextualPrompt(false);
+                          setContextualKeyword("");
+                        }}
+                        data-testid="button-contextual-decline"
+                      >
+                        Maybe Later
                       </Button>
                     </div>
                   </div>
