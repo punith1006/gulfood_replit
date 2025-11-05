@@ -191,11 +191,17 @@ export async function matchExhibitorsSemantic(
   
   matches.sort((a, b) => b.relevancePercentage - a.relevancePercentage);
   
-  const uniqueMatches = new Map<number, MatchResult>();
+  const uniqueMatches = new Map<string, MatchResult>();
+  const seenCompanyNames = new Set<string>();
+  
   for (const match of matches) {
-    if (!uniqueMatches.has(match.id)) {
-      uniqueMatches.set(match.id, match);
+    const companyName = (match.data.companyName || match.data.name || '').toLowerCase().trim();
+    
+    if (!seenCompanyNames.has(companyName) && companyName) {
+      seenCompanyNames.add(companyName);
+      uniqueMatches.set(companyName, match);
     }
+    
     if (uniqueMatches.size >= topK) {
       break;
     }
