@@ -7,6 +7,7 @@ import { z } from "zod";
 import { seedDatabase } from "./seed";
 import bcrypt from "bcryptjs";
 import { requireOrganizerAuth, requireExhibitorAuth, generateOrganizerToken, generateExhibitorToken, type AuthRequest } from "./middleware/auth";
+import { matchExhibitorsSemantic, matchSessionsSemantic, calculateOverallRelevanceScore, type UserProfile } from "./semanticMatcher";
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -1290,6 +1291,9 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      console.log('=== SEMANTIC JOURNEY GENERATION ===');
+      console.log('User inputs:', { organization, role, interestCategories, attendanceIntents });
+
       let leadId: number | null = null;
       const existingLead = await storage.getLeadByEmail(email);
       if (existingLead) {
@@ -1308,27 +1312,36 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         leadId = newLead.id;
       }
 
-      const relevanceScore = calculateRelevanceScore({
+      const userProfile: UserProfile = {
         organization,
         role,
         interestCategories,
         attendanceIntents
-      });
+      };
 
       const exhibitors = await storage.getExhibitors();
-      const matchedExhibitors = matchExhibitors(exhibitors, {
-        interestCategories,
-        attendanceIntents,
-        organization,
-        role
-      });
+      console.log(`Matching against ${exhibitors.length} exhibitors using semantic analysis...`);
+      
+      const exhibitorMatches = await matchExhibitorsSemantic(userProfile, exhibitors, 5);
+      console.log('Top 5 exhibitor matches:', exhibitorMatches.map(m => ({
+        name: m.data.companyName,
+        relevance: `${m.relevancePercentage}%`
+      })));
 
       const sessions = await storage.getScheduledSessions();
-      const matchedSessions = matchSessions(sessions, {
-        interestCategories,
-        attendanceIntents,
-        role
-      });
+      console.log(`Matching against ${sessions.length} sessions using semantic analysis...`);
+      
+      const sessionMatches = await matchSessionsSemantic(userProfile, sessions, 5);
+      console.log('Top 5 session matches:', sessionMatches.map(m => ({
+        title: m.data.title,
+        relevance: `${m.relevancePercentage}%`
+      })));
+
+      const relevanceScore = calculateOverallRelevanceScore(exhibitorMatches, sessionMatches);
+      console.log(`Overall relevance score: ${relevanceScore}% (based on average match quality)`);
+
+      const matchedExhibitors = exhibitorMatches.map(m => m.data);
+      const matchedSessions = sessionMatches.map(m => m.data);
 
       const aiContent = await generateJourneyContent({
         organization,
@@ -1336,8 +1349,8 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         interestCategories,
         attendanceIntents,
         relevanceScore,
-        matchedExhibitors: matchedExhibitors.slice(0, 5),
-        matchedSessions: matchedSessions.slice(0, 3)
+        matchedExhibitors,
+        matchedSessions
       });
 
       const journeyPlan = await storage.createJourneyPlan({
@@ -1354,18 +1367,20 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         scoreJustification: aiContent.justification,
         benefits: aiContent.benefits,
         recommendations: aiContent.recommendations,
-        matchedExhibitorIds: matchedExhibitors.slice(0, 10).map(e => e.id),
-        matchedSessionIds: matchedSessions.slice(0, 5).map(s => s.id),
+        matchedExhibitorIds: matchedExhibitors.map(e => e.id),
+        matchedSessionIds: matchedSessions.map(s => s.id),
         reportData: {
-          matchedExhibitors: matchedExhibitors.slice(0, 10),
-          matchedSessions: matchedSessions.slice(0, 5)
+          matchedExhibitors,
+          matchedSessions
         }
       });
 
+      console.log('=== JOURNEY GENERATION COMPLETE ===\n');
+
       res.json({
         ...journeyPlan,
-        matchedExhibitors: matchedExhibitors.slice(0, 10),
-        matchedSessions: matchedSessions.slice(0, 5)
+        matchedExhibitors,
+        matchedSessions
       });
     } catch (error) {
       console.error("Error generating journey:", error);
