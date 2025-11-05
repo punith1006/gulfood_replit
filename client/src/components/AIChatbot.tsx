@@ -183,7 +183,7 @@ export default function AIChatbot() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [activeTab, setActiveTab] = useState("chat");
+  const [activeTab, setActiveTab] = useState("radar");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
@@ -218,30 +218,42 @@ export default function AIChatbot() {
     }
   }, [messages]);
 
+  // Track previous role to detect role changes
+  const prevRoleRef = React.useRef<string | null>(null);
+
   useEffect(() => {
-    if (userRole) {
+    // Check if role has actually changed (including null → role transition)
+    const roleChanged = prevRoleRef.current !== userRole && userRole !== null;
+    
+    // Reset chat when role changes (including first-time role selection)
+    if (roleChanged) {
       setMessages([
         {
           role: "assistant",
           content: getRoleWelcomeMessage(userRole)
         }
       ]);
-    } else if (!leadCaptureSkipped) {
-      setMessages([
-        {
-          role: "assistant",
-          content: "Hi there! 👋 Welcome to Gulfood 2026! I'm Faris, your event guide.\n\nTo help me assist you better, may I know your name and email address? This way I can provide you with personalized recommendations and keep you updated about the event.\n\nYou can share it like: 'I'm John from john@example.com' or simply type your details below."
-        }
-      ]);
-    } else {
-      setMessages([]);
+      setFeedbackGiven({});
+      setShowRegistrationShare(false);
+      setShowLeadCapture(false);
+      setHasTriggeredLeadCapture(false);
+      setHasTriggeredRegistrationShare(false);
     }
-    setFeedbackGiven({});
-    setShowRegistrationShare(false);
-    setShowLeadCapture(false);
-    setHasTriggeredLeadCapture(false);
-    setHasTriggeredRegistrationShare(false);
-  }, [userRole, leadCaptureSkipped]);
+    // Initialize greeting when Chat tab is active for the first time
+    else if (activeTab === "chat" && messages.length === 0 && !userRole) {
+      if (!leadCaptureSkipped) {
+        setMessages([
+          {
+            role: "assistant",
+            content: "Hi there! 👋 Welcome to Gulfood 2026! I'm Faris, your event guide.\n\nTo help me assist you better, may I know your name and email address? This way I can provide you with personalized recommendations and keep you updated about the event.\n\nYou can share it like: 'I'm John from john@example.com' or simply type your details below."
+          }
+        ]);
+      }
+    }
+    
+    // Update previous role reference
+    prevRoleRef.current = userRole;
+  }, [userRole, leadCaptureSkipped, activeTab, messages.length]);
   
   // Trigger widgets when user sends 3rd message
   useEffect(() => {
@@ -536,21 +548,62 @@ export default function AIChatbot() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((message, idx) => (
-            <div
-              key={idx}
-              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
-                }`}
-                data-testid={`message-${idx}`}
-              >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-4 bg-muted/50 mx-2 mt-2">
+          <TabsTrigger 
+            value="radar" 
+            className="gap-1 text-xs data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-600"
+            data-testid="tab-radar"
+          >
+            <Radar className="w-3 h-3" />
+            Radar
+          </TabsTrigger>
+          <TabsTrigger 
+            value="chat" 
+            className="gap-1 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+            data-testid="tab-chat"
+          >
+            <MessageSquare className="w-3 h-3" />
+            Chat
+          </TabsTrigger>
+          <TabsTrigger 
+            value="journey" 
+            className="gap-1 text-xs data-[state=active]:bg-blue-500/10 data-[state=active]:text-blue-600"
+            data-testid="tab-journey"
+          >
+            <Map className="w-3 h-3" />
+            Journey
+          </TabsTrigger>
+          <TabsTrigger 
+            value="referral" 
+            className="gap-1 text-xs data-[state=active]:bg-green-500/10 data-[state=active]:text-green-600"
+            data-testid="tab-referral"
+          >
+            <Share2 className="w-3 h-3" />
+            Referral
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="radar" className="flex-1 p-4 mt-0" data-testid="tab-content-radar">
+          <RightNowContent />
+        </TabsContent>
+
+        <TabsContent value="chat" className="flex-1 flex flex-col mt-0">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((message, idx) => (
+                <div
+                  key={idx}
+                  className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
+                    }`}
+                    data-testid={`message-${idx}`}
+                  >
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -767,140 +820,94 @@ export default function AIChatbot() {
         </div>
         
         {userRole && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
-            <TabsList className="grid w-full grid-cols-4 bg-muted/50">
-              <TabsTrigger 
-                value="chat" 
-                className="gap-1 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                data-testid="tab-chat"
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">Quick actions:</div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-auto py-1"
+                onClick={() => setUserRole(null)}
+                data-testid="button-change-role"
               >
-                <MessageSquare className="w-3 h-3" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger 
-                value="journey" 
-                className="gap-1 text-xs data-[state=active]:bg-blue-500/10 data-[state=active]:text-blue-600"
-                data-testid="tab-journey"
-              >
-                <Map className="w-3 h-3" />
-                Journey
-              </TabsTrigger>
-              <TabsTrigger 
-                value="referral" 
-                className="gap-1 text-xs data-[state=active]:bg-green-500/10 data-[state=active]:text-green-600"
-                data-testid="tab-referral"
-              >
-                <Share2 className="w-3 h-3" />
-                Referral
-              </TabsTrigger>
-              <TabsTrigger 
-                value="radar" 
-                className="gap-1 text-xs data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-600"
-                data-testid="tab-radar"
-              >
-                <Radar className="w-3 h-3" />
-                Radar
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="chat" className="mt-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">Quick actions:</div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs h-auto py-1"
-                  onClick={() => setUserRole(null)}
-                  data-testid="button-change-role"
+                Change role
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {roleQuickActions[userRole].map((action, idx) => (
+                <Badge
+                  key={idx}
+                  variant="secondary"
+                  className="cursor-pointer hover-elevate text-xs"
+                  onClick={() => handleQuickAction(action)}
+                  data-testid={`badge-quick-action-${idx}`}
                 >
-                  Change role
-                </Button>
+                  {action}
+                </Badge>
+              ))}
+            </div>
+            {userRole === "visitor" && messages.length > 2 && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => downloadReportMutation.mutate()}
+                disabled={downloadReportMutation.isPending}
+                data-testid="button-download-journey-report"
+              >
+                <Download className="w-4 h-4" />
+                {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
+              </Button>
+            )}
+            {userRole === "exhibitor" && (
+              <Button
+                className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                onClick={() => setShowContactSales(true)}
+                data-testid="button-contact-sales"
+              >
+                <UserPlus className="w-4 h-4" />
+                Contact Sales
+              </Button>
+            )}
+            {userRole === "visitor" && showRegistrationShare && hasRegistered && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowRegistrationShare(false)}
+                  className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                  data-testid="button-close-registration-share"
+                  aria-label="Close registration share widget"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <RegistrationShareWidget compact={true} />
               </div>
-              <div className="flex flex-wrap gap-2">
-                {roleQuickActions[userRole].map((action, idx) => (
-                  <Badge
-                    key={idx}
-                    variant="secondary"
-                    className="cursor-pointer hover-elevate text-xs"
-                    onClick={() => handleQuickAction(action)}
-                    data-testid={`badge-quick-action-${idx}`}
-                  >
-                    {action}
-                  </Badge>
-                ))}
+            )}
+            {messages.length > 2 && userRole && hasRegistered && (
+              <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
+                <ReferralWidget 
+                  sessionId={sessionId}
+                  compact={true}
+                />
               </div>
-              {userRole === "visitor" && messages.length > 2 && (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={() => downloadReportMutation.mutate()}
-                  disabled={downloadReportMutation.isPending}
-                  data-testid="button-download-journey-report"
-                >
-                  <Download className="w-4 h-4" />
-                  {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
-                </Button>
-              )}
-              {userRole === "exhibitor" && (
-                <Button
-                  className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
-                  onClick={() => setShowContactSales(true)}
-                  data-testid="button-contact-sales"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Contact Sales
-                </Button>
-              )}
-              {userRole === "visitor" && showRegistrationShare && hasRegistered && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowRegistrationShare(false)}
-                    className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
-                    data-testid="button-close-registration-share"
-                    aria-label="Close registration share widget"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <RegistrationShareWidget compact={true} />
-                </div>
-              )}
-              {messages.length > 2 && userRole && hasRegistered && (
-                <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
-                  <ReferralWidget 
-                    sessionId={sessionId}
-                    compact={true}
-                  />
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="rightnow" className="mt-3" data-testid="tab-content-rightnow">
-              <RightNowContent />
-            </TabsContent>
-            
-            <TabsContent value="journey" className="mt-3 text-center py-12" data-testid="tab-content-journey">
-              <Map className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <h3 className="font-semibold text-sm mb-1">Journey Planning</h3>
-              <p className="text-xs text-muted-foreground">Coming Soon</p>
-              <p className="text-xs text-muted-foreground mt-1">Plan your perfect event journey</p>
-            </TabsContent>
-            
-            <TabsContent value="referral" className="mt-3 text-center py-12" data-testid="tab-content-referral">
-              <Share2 className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <h3 className="font-semibold text-sm mb-1">Referral Program</h3>
-              <p className="text-xs text-muted-foreground">Coming Soon</p>
-              <p className="text-xs text-muted-foreground mt-1">Invite friends and earn rewards</p>
-            </TabsContent>
-            
-            <TabsContent value="radar" className="mt-3 text-center py-12" data-testid="tab-content-radar">
-              <Radar className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <h3 className="font-semibold text-sm mb-1">Event Radar</h3>
-              <p className="text-xs text-muted-foreground">Coming Soon</p>
-              <p className="text-xs text-muted-foreground mt-1">Discover trending exhibitors and sessions</p>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         )}
       </div>
+    </TabsContent>
+
+    <TabsContent value="journey" className="flex-1 p-4 text-center flex flex-col items-center justify-center mt-0" data-testid="tab-content-journey">
+      <Map className="w-12 h-12 mb-3 text-muted-foreground opacity-50" />
+      <h3 className="font-semibold text-sm mb-1">Journey Planning</h3>
+      <p className="text-xs text-muted-foreground">Coming Soon</p>
+      <p className="text-xs text-muted-foreground mt-1">Plan your perfect event journey</p>
+    </TabsContent>
+    
+    <TabsContent value="referral" className="flex-1 p-4 text-center flex flex-col items-center justify-center mt-0" data-testid="tab-content-referral">
+      <Share2 className="w-12 h-12 mb-3 text-muted-foreground opacity-50" />
+      <h3 className="font-semibold text-sm mb-1">Referral Program</h3>
+      <p className="text-xs text-muted-foreground">Coming Soon</p>
+      <p className="text-xs text-muted-foreground mt-1">Invite friends and earn rewards</p>
+    </TabsContent>
+  </Tabs>
 
       <Dialog open={showContactSales} onOpenChange={setShowContactSales}>
         <DialogContent className="sm:max-w-md" data-testid="dialog-contact-sales">
