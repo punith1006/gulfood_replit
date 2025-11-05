@@ -147,6 +147,16 @@ async function generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
   }
 }
 
+function transformSimilarityToRelevance(similarity: number): number {
+  const clampedSimilarity = Math.max(0, Math.min(1, similarity));
+  
+  const transformed = Math.pow(clampedSimilarity, 1.8);
+  
+  const scaled = transformed * 100;
+  
+  return Math.round(Math.max(0, Math.min(100, scaled)));
+}
+
 export async function matchExhibitorsSemantic(
   userProfile: UserProfile,
   exhibitors: ExhibitorData[],
@@ -168,9 +178,21 @@ export async function matchExhibitorsSemantic(
     allExhibitorEmbeddings.push(...batchEmbeddings);
   }
   
+  const rawSimilarities = exhibitors.map((exhibitor, index) => ({
+    exhibitor,
+    similarity: cosineSimilarity(userEmbedding, allExhibitorEmbeddings[index])
+  }));
+  
+  rawSimilarities.sort((a, b) => b.similarity - a.similarity);
+  console.log('\nTop 10 raw similarities before transformation:');
+  rawSimilarities.slice(0, 10).forEach((item, i) => {
+    const relevance = transformSimilarityToRelevance(item.similarity);
+    console.log(`${i + 1}. ${item.exhibitor.companyName || item.exhibitor.name}: ${(item.similarity * 100).toFixed(2)}% raw → ${relevance}% transformed`);
+  });
+  
   const matches = exhibitors.map((exhibitor, index) => {
     const similarity = cosineSimilarity(userEmbedding, allExhibitorEmbeddings[index]);
-    const relevancePercentage = Math.round(Math.max(0, Math.min(100, similarity * 100)));
+    const relevancePercentage = transformSimilarityToRelevance(similarity);
     
     return {
       id: exhibitor.id,
