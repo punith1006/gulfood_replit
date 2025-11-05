@@ -304,11 +304,11 @@ export default function AIChatbot() {
         }
       ]);
     } else {
-      // Show initial greeting when no role is selected
+      // Show initial greeting when no role is selected - ask for role first
       setMessages([
         {
           role: "assistant",
-          content: "👋 Hello! I'm Faris, your AI assistant for Gulfood 2026 (January 26-30, Dubai World Trade Centre & Expo City Dubai).\n\nTo get started, I'd love to personalize your experience. Would you mind sharing a few quick details with me?"
+          content: "👋 Hello! I'm Faris, your AI assistant for Gulfood 2026 (January 26-30, Dubai World Trade Centre & Expo City Dubai).\n\nTo provide you with the best personalized experience, please let me know: Are you a Visitor or an Exhibitor?"
         }
       ]);
     }
