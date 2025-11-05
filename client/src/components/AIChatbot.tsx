@@ -606,90 +606,90 @@ export default function AIChatbot() {
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.map((message, idx) => (
-            <div
-              key={idx}
-              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-foreground"
-                }`}
-                data-testid={`message-${idx}`}
-              >
-                <ReactMarkdown 
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    table: ({ node, ...props }) => (
-                      <table className="w-full border-collapse my-2 text-xs" {...props} />
-                    ),
-                    thead: ({ node, ...props }) => (
-                      <thead className="border-b border-border" {...props} />
-                    ),
-                    th: ({ node, ...props }) => (
-                      <th className="text-left py-1.5 px-2 font-semibold" {...props} />
-                    ),
-                    td: ({ node, ...props }) => (
-                      <td className="py-1.5 px-2 border-t border-border/50" {...props} />
-                    ),
-                    tr: ({ node, ...props }) => (
-                      <tr className="hover-elevate" {...props} />
-                    ),
-                    ul: ({ node, ...props }) => (
-                      <ul className="list-disc list-inside space-y-1 my-2" {...props} />
-                    ),
-                    ol: ({ node, ...props }) => (
-                      <ol className="list-decimal list-inside space-y-1 my-2" {...props} />
-                    ),
-                    li: ({ node, ...props }) => (
-                      <li className="leading-relaxed" {...props} />
-                    ),
-                    p: ({ node, ...props }) => (
-                      <p className="my-1" {...props} />
-                    )
-                  }}
+                <div
+                  key={idx}
+                  className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
                 >
-                  {message.content}
-                </ReactMarkdown>
-              </div>
-              {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
-                <div className="flex gap-2 mt-1 ml-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    onClick={() => feedbackMutation.mutate({ messageIndex: idx, isAccurate: true })}
-                    data-testid={`button-feedback-up-${idx}`}
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
+                    }`}
+                    data-testid={`message-${idx}`}
                   >
-                    <ThumbsUp className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 w-7 p-0"
-                    onClick={() => feedbackMutation.mutate({ messageIndex: idx, isAccurate: false })}
-                    data-testid={`button-feedback-down-${idx}`}
-                  >
-                    <ThumbsDown className="w-3 h-3" />
-                  </Button>
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({ node, ...props }) => (
+                          <table className="w-full border-collapse my-2 text-xs" {...props} />
+                        ),
+                        thead: ({ node, ...props }) => (
+                          <thead className="border-b border-border" {...props} />
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th className="text-left py-1.5 px-2 font-semibold" {...props} />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td className="py-1.5 px-2 border-t border-border/50" {...props} />
+                        ),
+                        tr: ({ node, ...props }) => (
+                          <tr className="hover-elevate" {...props} />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul className="list-disc list-inside space-y-1 my-2" {...props} />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol className="list-decimal list-inside space-y-1 my-2" {...props} />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="leading-relaxed" {...props} />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p className="my-1" {...props} />
+                        )
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                  {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
+                    <div className="flex gap-2 mt-1 ml-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => feedbackMutation.mutate({ messageIndex: idx, isAccurate: true })}
+                        data-testid={`button-feedback-up-${idx}`}
+                      >
+                        <ThumbsUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => feedbackMutation.mutate({ messageIndex: idx, isAccurate: false })}
+                        data-testid={`button-feedback-down-${idx}`}
+                      >
+                        <ThumbsDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                  {message.role === "assistant" && idx > 0 && feedbackGiven[idx] && (
+                    <div className="text-xs text-muted-foreground mt-1 ml-2">
+                      Thanks for your feedback!
+                    </div>
+                  )}
+                </div>
+              ))}
+              {chatMutation.isPending && (
+                <div className="flex justify-start">
+                  <div className="bg-muted text-foreground rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Thinking...
+                  </div>
                 </div>
               )}
-              {message.role === "assistant" && idx > 0 && feedbackGiven[idx] && (
-                <div className="text-xs text-muted-foreground mt-1 ml-2">
-                  Thanks for your feedback!
-                </div>
-              )}
-            </div>
-          ))}
-          {chatMutation.isPending && (
-            <div className="flex justify-start">
-              <div className="bg-muted text-foreground rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Thinking...
-              </div>
-            </div>
-          )}
               {/* Role selection buttons in message stream */}
               {!userRole && messages.length > 0 && (
                 <div className="flex justify-start">
