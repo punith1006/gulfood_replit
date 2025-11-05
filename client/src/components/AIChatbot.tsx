@@ -513,9 +513,9 @@ export default function AIChatbot() {
 
       <div className="p-2 border-t border-border space-y-2">
         {!userRole ? (
-          <div className="space-y-1.5">
-            <div className="text-xs font-semibold text-center">I am a...</div>
-            <div className="flex gap-1.5 justify-center">
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-semibold whitespace-nowrap">I am a...</div>
+            <div className="flex gap-1.5 flex-1">
               <Button
                 className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
                 onClick={() => setUserRole("visitor")}
