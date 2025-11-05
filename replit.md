@@ -4,7 +4,15 @@
 The Gulfood 2026 AI Event Assistant is a web application designed to enhance the experience for visitors, exhibitors, and event organizers at the Gulfood 2026 trade show. It offers AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. The platform is freely accessible without registration, aiming to maximize engagement by providing immediate access to its features, including an AI chatbot named "Faris." The application supports three user groups: Visitors, Exhibitors, and Event Organizers, with role-based access to specialized functionalities like the Analytics Dashboard.
 
 ## Recent Updates (November 2025)
-- **AI-Powered Journey Evaluation (LATEST)**: Replaced embedding-based matching with direct AI evaluation
+- **Enhanced Journey Planning - Exhibitly-Quality Reports (LATEST)**: Premium journey reports with rich personalization
+  - **Critical Fix**: User's own company now excluded from exhibitor recommendations using case-insensitive filtering
+  - **10 Matched Exhibitors**: Expanded from 5 to 10 exhibitors with individual match scores (0-100%)
+  - **Hyper-Personalized Reasons**: Each exhibitor includes a "Why this matters to you" explanation tailored to user's organization + role
+  - **Event Highlights**: AI generates 4-5 relevant Gulfood 2026 zones/features/areas specifically for the user's profile
+  - **Dynamic Category Filters**: Auto-generated from matched exhibitor sectors (e.g., "Dairy Products", "Beverages") with count badges
+  - **Visual Enhancements**: Color-coded match scores (green for 80%+, yellow for 60-79%), prominent personalized reasons display
+  - **Smart Filtering**: Interactive category badges allow filtering exhibitors by sector
+- **AI-Powered Journey Evaluation**: Replaced embedding-based matching with direct AI evaluation
   - **Same Approach as Company Analyzer**: Uses identical scoring criteria for consistency across app
   - **Contextual Relevance Scoring**: AI directly evaluates user profile (organization + role + interests + intents) to generate 0-100 score
   - **Industry-Based Scoring**:
@@ -12,7 +20,6 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
     - 50-79%: Food-related professionals (food tech, packaging, equipment, logistics)
     - 20-49%: Tangentially related (agricultural tech, retail, consulting)
     - 0-19%: Not related to food/beverage industry
-  - **Smart Exhibitor Matching**: AI identifies top 5 most relevant exhibitors with individual match scores (0-100)
   - **No More Mathematical Similarity**: Replaced cosine similarity with true semantic understanding of business context
   - **Sessions**: Session matching removed - shows "No data available" as requested
   - Returns meaningful scores that reflect actual industry alignment, not mathematical similarity

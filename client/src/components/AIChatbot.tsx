@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -1888,17 +1888,26 @@ export default function AIChatbot() {
                       Event Highlights for You
                     </h4>
                     <div className="grid grid-cols-1 gap-3">
-                      {journeyPlan.highlights.map((highlight: any, idx: number) => (
-                        <Card key={idx} className="p-4 hover-elevate" data-testid={`highlight-card-${idx}`}>
-                          <div className="flex items-start gap-3">
-                            <div className="text-2xl shrink-0">{highlight.icon}</div>
-                            <div className="flex-1 space-y-1">
-                              <h5 className="font-medium text-foreground">{highlight.title}</h5>
-                              <p className="text-sm text-muted-foreground leading-relaxed">{highlight.description}</p>
+                      {journeyPlan.highlights.map((highlight: any, idx: number) => {
+                        const iconMap: Record<string, any> = {
+                          Target, Droplet, Zap, Package, Globe, TrendingUp, Users, ShoppingCart, Sparkles, Award, Building2
+                        };
+                        const IconComponent = iconMap[highlight.icon] || Target;
+                        
+                        return (
+                          <Card key={idx} className="p-4 hover-elevate" data-testid={`highlight-card-${idx}`}>
+                            <div className="flex items-start gap-3">
+                              <div className="shrink-0 p-2 bg-primary/10 rounded-md">
+                                <IconComponent className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <h5 className="font-medium text-foreground">{highlight.title}</h5>
+                                <p className="text-sm text-muted-foreground leading-relaxed">{highlight.description}</p>
+                              </div>
                             </div>
-                          </div>
-                        </Card>
-                      ))}
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
