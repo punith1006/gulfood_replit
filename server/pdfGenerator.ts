@@ -338,22 +338,19 @@ function parseMarkdownTable(markdown: string): any[] {
 }
 
 export async function generateJourneyPlanPDF(reportData: {
-  sessionId: string;
-  conversationHistory: Array<{ role: string; content: string }>;
+  journeyPlan: any;
+  name?: string;
+  email?: string;
+  organization?: string;
   generatedAt: string;
   eventName: string;
 }): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    let journeyPlanContent: any = null;
-    const allPlanMessages = reportData.conversationHistory.filter(msg => 
-      msg.role === 'assistant' && (
-        msg.content.includes('|') || 
-        msg.content.toLowerCase().includes('day 1') ||
-        msg.content.toLowerCase().includes('itinerary')
-      )
-    );
+    const plan = reportData.journeyPlan;
     
-    const planMessages = allPlanMessages.length > 0 ? [allPlanMessages[allPlanMessages.length - 1]] : [];
+    if (!plan) {
+      return reject(new Error('Journey plan data is missing'));
+    }
 
     const content: Content[] = [
       {
@@ -400,75 +397,169 @@ export async function generateJourneyPlanPDF(reportData: {
       }
     ];
 
-    if (planMessages.length > 0) {
-      planMessages.forEach((msg, idx) => {
-        const tables = parseMarkdownTable(msg.content);
-        const textContent = msg.content.split('\n').filter(line => 
-          !line.trim().startsWith('|') && line.trim().length > 0
-        ).join('\n');
+    // Add user information
+    if (reportData.name || reportData.organization) {
+      content.push({
+        text: 'Prepared for',
+        fontSize: 12,
+        bold: true,
+        margin: [0, 0, 0, 5]
+      });
+      
+      const userInfo = [];
+      if (reportData.name) userInfo.push(`Name: ${reportData.name}`);
+      if (reportData.organization) userInfo.push(`Organization: ${reportData.organization}`);
+      if (plan.role) userInfo.push(`Role: ${plan.role}`);
+      
+      content.push({
+        ul: userInfo,
+        fontSize: 10,
+        margin: [0, 0, 0, 20]
+      });
+    }
 
-        if (textContent.length > 20) {
+    // Add relevance score
+    content.push({
+      text: `Relevance Score: ${plan.relevanceScore}%`,
+      fontSize: 16,
+      bold: true,
+      color: plan.relevanceScore >= 80 ? '#16a34a' : plan.relevanceScore >= 60 ? '#ca8a04' : '#dc2626',
+      margin: [0, 0, 0, 10]
+    });
+
+    // Add general overview
+    if (plan.generalOverview) {
+      content.push({
+        text: 'Overview',
+        style: 'sectionHeader',
+        margin: [0, 20, 0, 10]
+      });
+      content.push({
+        text: plan.generalOverview,
+        fontSize: 10,
+        lineHeight: 1.5,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Add score justification
+    if (plan.scoreJustification) {
+      content.push({
+        text: 'Why This Score?',
+        style: 'sectionHeader',
+        margin: [0, 15, 0, 10]
+      });
+      content.push({
+        text: plan.scoreJustification,
+        fontSize: 10,
+        lineHeight: 1.5,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Add benefits
+    if (plan.benefits && plan.benefits.length > 0) {
+      content.push({
+        text: 'Key Benefits for You',
+        style: 'sectionHeader',
+        margin: [0, 15, 0, 10]
+      });
+      content.push({
+        ul: plan.benefits,
+        fontSize: 10,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Add recommendations
+    if (plan.recommendations && plan.recommendations.length > 0) {
+      content.push({
+        text: 'Personalized Recommendations',
+        style: 'sectionHeader',
+        margin: [0, 15, 0, 10]
+      });
+      content.push({
+        ol: plan.recommendations,
+        fontSize: 10,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Add matched exhibitors
+    if (plan.matchedExhibitors && plan.matchedExhibitors.length > 0) {
+      content.push({
+        text: `Top ${plan.matchedExhibitors.length} Matched Exhibitors`,
+        style: 'sectionHeader',
+        margin: [0, 20, 0, 10]
+      });
+      
+      plan.matchedExhibitors.forEach((exhibitor: any, idx: number) => {
+        content.push({
+          text: `${idx + 1}. ${exhibitor.companyName || exhibitor.name}`,
+          fontSize: 11,
+          bold: true,
+          margin: [0, 10, 0, 3]
+        });
+        
+        const exhibitorInfo = [];
+        if (exhibitor.sector) exhibitorInfo.push(`Sector: ${exhibitor.sector}`);
+        if (exhibitor.country) exhibitorInfo.push(`Country: ${exhibitor.country}`);
+        if (exhibitor.boothNumber) exhibitorInfo.push(`Booth: ${exhibitor.boothNumber}`);
+        if (exhibitor.relevancePercentage) exhibitorInfo.push(`Match: ${exhibitor.relevancePercentage}%`);
+        
+        content.push({
+          ul: exhibitorInfo,
+          fontSize: 9,
+          margin: [0, 0, 0, 5]
+        });
+        
+        if (exhibitor.description) {
           content.push({
-            text: textContent.substring(0, 500),
-            fontSize: 10,
-            margin: [0, 0, 0, 15],
-            lineHeight: 1.4
+            text: exhibitor.description,
+            fontSize: 9,
+            color: '#6b7280',
+            margin: [0, 0, 0, 5]
           });
         }
-
-        tables.forEach((table, tableIdx) => {
-          if (table.headers.length > 0 && table.rows.length > 0) {
-            const headerText = table.headers.join(' ').toLowerCase();
-            let tableTitle = 'Information';
-            
-            if (headerText.includes('time') && headerText.includes('activity')) {
-              tableTitle = `Day ${tableIdx + 1}`;
-            } else if (headerText.includes('days') || headerText.includes('sector') || headerText.includes('category')) {
-              tableTitle = 'Visit Details';
-            } else if (headerText.includes('hotel') || headerText.includes('accommodation')) {
-              tableTitle = 'Recommended Hotels';
-            } else if (headerText.includes('signage') || headerText.includes('navigation') || headerText.includes('info')) {
-              tableTitle = 'Venue Navigation Tips';
-            } else if (headerText.includes('distance') || headerText.includes('aspect')) {
-              tableTitle = 'General Information';
-            }
-            
-            content.push({
-              text: tableTitle,
-              style: 'sectionHeader',
-              margin: [0, 15, 0, 10]
-            });
-
-            content.push({
-              table: {
-                headerRows: 1,
-                widths: Array(table.headers.length).fill('auto'),
-                body: [
-                  table.headers.map((h: string) => ({ text: h, style: 'tableHeader' })),
-                  ...table.rows.map((row: string[]) => 
-                    row.map(cell => ({ text: cell, fontSize: 9 }))
-                  )
-                ]
-              },
-              layout: {
-                fillColor: (rowIndex: number) => rowIndex === 0 ? '#f3f4f6' : (rowIndex % 2 === 0 ? '#fafafa' : null),
-                hLineWidth: () => 0.5,
-                vLineWidth: () => 0.5,
-                hLineColor: () => '#e5e7eb',
-                vLineColor: () => '#e5e7eb'
-              },
-              margin: [0, 0, 0, 15]
-            });
-          }
-        });
       });
-    } else {
+    }
+
+    // Add matched sessions
+    if (plan.matchedSessions && plan.matchedSessions.length > 0) {
       content.push({
-        text: 'No journey plan found in conversation. Please ask Faris to plan your journey first.',
-        fontSize: 11,
-        italics: true,
-        color: '#6b7280',
-        margin: [0, 20, 0, 0]
+        text: `Recommended Sessions (${plan.matchedSessions.length})`,
+        style: 'sectionHeader',
+        margin: [0, 20, 0, 10]
+      });
+      
+      plan.matchedSessions.forEach((session: any, idx: number) => {
+        content.push({
+          text: `${idx + 1}. ${session.title}`,
+          fontSize: 11,
+          bold: true,
+          margin: [0, 10, 0, 3]
+        });
+        
+        const sessionInfo = [];
+        if (session.sessionDate) {
+          sessionInfo.push(`Date: ${new Date(session.sessionDate).toLocaleDateString()}`);
+        }
+        if (session.location) sessionInfo.push(`Location: ${session.location}`);
+        
+        content.push({
+          ul: sessionInfo,
+          fontSize: 9,
+          margin: [0, 0, 0, 5]
+        });
+        
+        if (session.description) {
+          content.push({
+            text: session.description,
+            fontSize: 9,
+            color: '#6b7280',
+            margin: [0, 0, 0, 5]
+          });
+        }
       });
     }
 
