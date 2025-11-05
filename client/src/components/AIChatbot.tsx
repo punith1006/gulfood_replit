@@ -301,8 +301,18 @@ export default function AIChatbot() {
         {
           role: "assistant",
           content: getRoleWelcomeMessage(userRole)
+        },
+        {
+          role: "assistant",
+          content: "To provide you with personalized recommendations and keep you updated, I'd love to know a bit more about you."
         }
       ]);
+      // Show the inline lead form after role selection
+      setTimeout(() => {
+        if (!leadCaptured) {
+          setShowInlineLeadForm(true);
+        }
+      }, 500);
     } else {
       // Show initial greeting when no role is selected - ask for role first
       setMessages([
