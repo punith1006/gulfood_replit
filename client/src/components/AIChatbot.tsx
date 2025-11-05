@@ -296,6 +296,16 @@ export default function AIChatbot() {
   }, [messages]);
 
   useEffect(() => {
+    // Reset all state first
+    setFeedbackGiven({});
+    setShowRegistrationShare(false);
+    setShowLeadCapture(false);
+    setShowInlineLeadForm(false);
+    setHasTriggeredLeadCapture(false);
+    setHasTriggeredRegistrationShare(false);
+    setHasSkippedInitialLeadCapture(false);
+    setLeadCaptured(false);
+    
     if (userRole) {
       setMessages([
         {
@@ -307,11 +317,9 @@ export default function AIChatbot() {
           content: "To provide you with personalized recommendations and keep you updated, I'd love to know a bit more about you."
         }
       ]);
-      // Show the inline lead form after role selection
+      // Show the inline lead form after role selection (no need to check leadCaptured since we just reset it)
       setTimeout(() => {
-        if (!leadCaptured) {
-          setShowInlineLeadForm(true);
-        }
+        setShowInlineLeadForm(true);
       }, 500);
     } else {
       // Show initial greeting when no role is selected - ask for role first
@@ -322,14 +330,6 @@ export default function AIChatbot() {
         }
       ]);
     }
-    setFeedbackGiven({});
-    setShowRegistrationShare(false);
-    setShowLeadCapture(false);
-    setShowInlineLeadForm(false);
-    setHasTriggeredLeadCapture(false);
-    setHasTriggeredRegistrationShare(false);
-    setHasSkippedInitialLeadCapture(false);
-    setLeadCaptured(false);
   }, [userRole]);
   
   // Trigger widgets when user sends 3rd message
