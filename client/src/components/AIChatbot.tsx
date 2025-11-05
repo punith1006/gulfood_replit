@@ -342,6 +342,7 @@ export default function AIChatbot() {
   });
   const [isGeneratingJourney, setIsGeneratingJourney] = useState(false);
   const [journeyPlan, setJourneyPlan] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showCategorySearch, setShowCategorySearch] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [showIntentSearch, setShowIntentSearch] = useState(false);
@@ -1880,48 +1881,121 @@ export default function AIChatbot() {
                   </Card>
                 )}
 
-                {journeyPlan.matchedExhibitors && journeyPlan.matchedExhibitors.length > 0 && (
+                {journeyPlan.highlights && journeyPlan.highlights.length > 0 && (
                   <div className="space-y-3">
                     <h4 className="font-semibold text-foreground flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      Top Matched Exhibitors ({journeyPlan.matchedExhibitors.length})
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Event Highlights for You
                     </h4>
-                    {journeyPlan.matchedExhibitors.map((exhibitor: any) => (
-                      <Card key={exhibitor.id} className="p-4 hover-elevate" data-testid={`exhibitor-card-${exhibitor.id}`}>
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <h5 className="font-medium text-foreground">{exhibitor.companyName}</h5>
-                              {exhibitor.sector && (
-                                <p className="text-xs text-muted-foreground mt-0.5">{exhibitor.sector}</p>
+                    <div className="grid grid-cols-1 gap-3">
+                      {journeyPlan.highlights.map((highlight: any, idx: number) => (
+                        <Card key={idx} className="p-4 hover-elevate" data-testid={`highlight-card-${idx}`}>
+                          <div className="flex items-start gap-3">
+                            <div className="text-2xl shrink-0">{highlight.icon}</div>
+                            <div className="flex-1 space-y-1">
+                              <h5 className="font-medium text-foreground">{highlight.title}</h5>
+                              <p className="text-sm text-muted-foreground leading-relaxed">{highlight.description}</p>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {journeyPlan.matchedExhibitors && journeyPlan.matchedExhibitors.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-foreground flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-primary" />
+                        Exhibitors Matched to Your Profile ({journeyPlan.matchedExhibitors.length})
+                      </h4>
+                      
+                      {journeyPlan.categories && journeyPlan.categories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          <Badge
+                            variant={selectedCategory === "all" ? "default" : "outline"}
+                            className="cursor-pointer hover-elevate"
+                            onClick={() => setSelectedCategory("all")}
+                            data-testid="filter-category-all"
+                          >
+                            All ({journeyPlan.matchedExhibitors.length})
+                          </Badge>
+                          {journeyPlan.categories.map((category: string) => {
+                            const count = journeyPlan.matchedExhibitors.filter((e: any) => e.sector === category).length;
+                            return (
+                              <Badge
+                                key={category}
+                                variant={selectedCategory === category ? "default" : "outline"}
+                                className="cursor-pointer hover-elevate"
+                                onClick={() => setSelectedCategory(category)}
+                                data-testid={`filter-category-${category}`}
+                              >
+                                {category} ({count})
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-3">
+                      {journeyPlan.matchedExhibitors
+                        .filter((exhibitor: any) => 
+                          selectedCategory === "all" || exhibitor.sector === selectedCategory
+                        )
+                        .map((exhibitor: any) => (
+                        <Card key={exhibitor.id} className="p-4 hover-elevate" data-testid={`exhibitor-card-${exhibitor.id}`}>
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-foreground">{exhibitor.companyName}</h5>
+                                {exhibitor.sector && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">{exhibitor.sector}</p>
+                                )}
+                              </div>
+                              <Badge 
+                                variant="secondary" 
+                                className={`shrink-0 ${
+                                  exhibitor.relevancePercentage >= 80 ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
+                                  exhibitor.relevancePercentage >= 60 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400' :
+                                  ''
+                                }`}
+                                data-testid={`exhibitor-match-${exhibitor.id}`}
+                              >
+                                {exhibitor.relevancePercentage}% match
+                              </Badge>
+                            </div>
+                            
+                            {exhibitor.personalizedReason && (
+                              <div className="p-3 bg-primary/5 border border-primary/10 rounded-md">
+                                <p className="text-sm font-medium text-primary mb-1">Why this matters to you:</p>
+                                <p className="text-sm text-foreground leading-relaxed">{exhibitor.personalizedReason}</p>
+                              </div>
+                            )}
+                            
+                            {exhibitor.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">{exhibitor.description}</p>
+                            )}
+                            
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {exhibitor.country && (
+                                <span className="flex items-center gap-1">
+                                  <Globe className="w-3 h-3" />
+                                  {exhibitor.country}
+                                </span>
+                              )}
+                              {exhibitor.boothNumber && (
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="w-3 h-3" />
+                                  Booth {exhibitor.boothNumber}
+                                </span>
                               )}
                             </div>
-                            <Badge variant="secondary" className="shrink-0">
-                              {exhibitor.relevancePercentage}% match
-                            </Badge>
                           </div>
-                          
-                          {exhibitor.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">{exhibitor.description}</p>
-                          )}
-                          
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            {exhibitor.country && (
-                              <span className="flex items-center gap-1">
-                                <Globe className="w-3 h-3" />
-                                {exhibitor.country}
-                              </span>
-                            )}
-                            {exhibitor.boothNumber && (
-                              <span className="flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                Booth {exhibitor.boothNumber}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
+                        </Card>
+                      ))}
+                    </div>
                   </div>
                 )}
 
