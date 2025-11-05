@@ -4,13 +4,20 @@
 The Gulfood 2026 AI Event Assistant is a web application designed to enhance the experience for visitors, exhibitors, and event organizers at the Gulfood 2026 trade show. It offers AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. The platform is freely accessible without registration, aiming to maximize engagement by providing immediate access to its features, including an AI chatbot named "Faris." The application supports three user groups: Visitors, Exhibitors, and Event Organizers, with role-based access to specialized functionalities like the Analytics Dashboard.
 
 ## Recent Updates (November 2025)
-- **Semantic Matching Engine (NEW)**: Completely rewrote Journey planning with pure AI-powered semantic relevance
+- **Semantic Matching Engine v2 (LATEST)**: Enhanced with improved scoring and deduplication
+  - **Enhanced Deduplication**: Matches now deduplicated by company name (case-insensitive) to eliminate duplicate companies appearing in results
+  - **Improved Score Transformation**: Applied power transformation (^1.8) to amplify differences between high/medium/low relevance
+    - High relevance (0.9 similarity): ~84% score
+    - Medium relevance (0.7 similarity): ~56% score  
+    - Low relevance (0.5 similarity): ~30% score
+    - Creates meaningful differentiation instead of clustering around 50-70%
+  - **Sessions Removed**: Session matching removed per user request - shows "No data available" instead
+  - **Relevance Score**: Now based purely on average of top 5 exhibitor match scores (not sessions)
+  - Returns exactly top 5 unique exhibitors with semantically meaningful, differentiated scores
+  - Detailed logging shows raw similarity → transformed relevance for validation
+- **Semantic Matching Engine v1**: Original implementation with pure AI-powered semantic relevance
   - Replaced all hardcoded scoring with OpenAI embeddings and cosine similarity
   - Uses `text-embedding-3-small` model for true contextual understanding
-  - Each exhibitor/session gets unique relevance % based on semantic meaning (not keywords)
-  - Returns exactly top 5 most relevant exhibitors and top 5 sessions
-  - Overall relevance score computed from weighted average (60% exhibitor quality + 40% session quality)
-  - Implements deduplication to ensure unique matches by ID
   - No more arbitrary 40/25/20/15 weights - all relevance is AI-calculated
 - **Journey Planning Feature**: AI-powered personalized event journey with semantic matching
   - Session-based lead detection: If lead info already captured in current session (via Chat tab), Journey form skips name/email fields
