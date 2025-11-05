@@ -25,9 +25,9 @@ export interface ExhibitorData {
 export interface SessionData {
   id: number;
   title: string;
-  description?: string;
-  location?: string;
-  sessionDate?: string;
+  description?: string | null;
+  location?: string | null;
+  sessionDate?: string | Date;
   targetAudience?: string;
 }
 
@@ -191,7 +191,17 @@ export async function matchExhibitorsSemantic(
   
   matches.sort((a, b) => b.relevancePercentage - a.relevancePercentage);
   
-  return matches.slice(0, topK);
+  const uniqueMatches = new Map<number, MatchResult>();
+  for (const match of matches) {
+    if (!uniqueMatches.has(match.id)) {
+      uniqueMatches.set(match.id, match);
+    }
+    if (uniqueMatches.size >= topK) {
+      break;
+    }
+  }
+  
+  return Array.from(uniqueMatches.values());
 }
 
 export async function matchSessionsSemantic(
@@ -230,7 +240,17 @@ export async function matchSessionsSemantic(
   
   matches.sort((a, b) => b.relevancePercentage - a.relevancePercentage);
   
-  return matches.slice(0, topK);
+  const uniqueMatches = new Map<number, MatchResult>();
+  for (const match of matches) {
+    if (!uniqueMatches.has(match.id)) {
+      uniqueMatches.set(match.id, match);
+    }
+    if (uniqueMatches.size >= topK) {
+      break;
+    }
+  }
+  
+  return Array.from(uniqueMatches.values());
 }
 
 export function calculateOverallRelevanceScore(
