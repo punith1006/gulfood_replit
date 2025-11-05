@@ -962,9 +962,12 @@ export default function AIChatbot() {
                                   title: `Welcome back, ${checkData.lead.name}! 👋`,
                                   description: "Great to see you again! Your details are already in our system."
                                 });
+                                const roleSpecificMessage = userRole === "visitor" 
+                                  ? "I'm here to help you discover exhibitors, plan your journey, and make the most of Gulfood 2026. What would you like to know?"
+                                  : "I'm here to help you connect with buyers, analyze competitors, and maximize your booth strategy. How can I assist you?";
                                 setMessages(prev => [...prev, {
                                   role: "assistant",
-                                  content: `Welcome back, ${checkData.lead.name}! 👋 It's great to see you again. Now, to provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor.`
+                                  content: `Welcome back, ${checkData.lead.name}! 👋 It's great to see you again. ${roleSpecificMessage}`
                                 }]);
                                 setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
                                 return;
@@ -992,9 +995,12 @@ export default function AIChatbot() {
                                 title: "Thank you!",
                                 description: "Your details have been captured successfully."
                               });
+                              const roleSpecificMessage = userRole === "visitor" 
+                                ? "I'm here to help you discover exhibitors, plan your journey, and make the most of Gulfood 2026. What would you like to know?"
+                                : "I'm here to help you connect with buyers, analyze competitors, and maximize your booth strategy. How can I assist you?";
                               setMessages(prev => [...prev, {
                                 role: "assistant",
-                                content: `Thanks ${leadForm.name}! Now, to provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor.`
+                                content: `Thanks ${leadForm.name}! ${roleSpecificMessage}`
                               }]);
                               setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
                             } catch (error) {
@@ -1048,9 +1054,12 @@ export default function AIChatbot() {
                                   title: `Welcome back, ${checkData.lead.name}! 👋`,
                                   description: "Great to see you again!"
                                 });
+                                const roleSpecificMessage = userRole === "visitor" 
+                                  ? "I'm here to help you discover exhibitors, plan your journey, and make the most of Gulfood 2026. What would you like to know?"
+                                  : "I'm here to help you connect with buyers, analyze competitors, and maximize your booth strategy. How can I assist you?";
                                 setMessages(prev => [...prev, {
                                   role: "assistant",
-                                  content: `Welcome back, ${checkData.lead.name}! 👋 Great to see you again.`
+                                  content: `Welcome back, ${checkData.lead.name}! 👋 Great to see you again. ${roleSpecificMessage}`
                                 }]);
                                 setDetectedEmail(null);
                                 setDetectedName(null);
@@ -1077,9 +1086,12 @@ export default function AIChatbot() {
                                 title: "Details saved!",
                                 description: "Thank you for sharing your information."
                               });
+                              const roleSpecificMessage = userRole === "visitor" 
+                                ? "I'm here to help you discover exhibitors, plan your journey, and make the most of Gulfood 2026. What would you like to know?"
+                                : "I'm here to help you connect with buyers, analyze competitors, and maximize your booth strategy. How can I assist you?";
                               setMessages(prev => [...prev, {
                                 role: "assistant",
-                                content: `Perfect! I've saved your details. Thanks for sharing!`
+                                content: `Perfect! I've saved your details. ${roleSpecificMessage}`
                               }]);
                               setDetectedEmail(null);
                               setDetectedName(null);
