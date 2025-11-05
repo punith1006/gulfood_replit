@@ -35,6 +35,7 @@ import RegistrationShareWidget from "@/components/RegistrationShareWidget";
 import { sessionManager } from "@/lib/sessionManager";
 import { GULFOOD_CATEGORIES } from "@shared/schema";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 
 const ATTENDANCE_INTENTS = [
   "Discover new products and innovations",
@@ -1765,35 +1766,213 @@ export default function AIChatbot() {
               </>
             ) : (
               <div className="space-y-6">
-                <div className="text-center space-y-2">
-                  <h3 className="text-xl font-semibold text-foreground">Your Personalized Journey</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Here's your customized plan for Gulfood 2026
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setJourneyPlan(null);
-                      setJourneyFormData({
-                        name: '',
-                        email: '',
-                        organization: '',
-                        role: '',
-                        interestCategories: [],
-                        attendanceIntents: [],
-                        otherIntent: ''
-                      });
-                      setIsExistingLead(false);
-                    }}
-                    data-testid="button-create-new-journey"
-                  >
-                    Create New Journey
-                  </Button>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground">Your Personalized Journey</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Customized plan for Gulfood 2026
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const pdfData = {
+                            reportType: 'journey_plan',
+                            userRole: journeyFormData.role || 'visitor',
+                            sessionId: sessionManager.getOrCreateSessionId(),
+                            journeyPlan: journeyPlan,
+                            name: journeyFormData.name,
+                            email: journeyFormData.email,
+                            organization: journeyFormData.organization
+                          };
+                          
+                          const response = await apiRequest('POST', '/api/reports/generate', pdfData);
+                          
+                          if (response.id) {
+                            const link = document.createElement('a');
+                            link.href = `/api/reports/${response.id}/download`;
+                            link.download = `Gulfood_2026_Journey_Plan.pdf`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            toast({ title: "Journey plan downloaded successfully!" });
+                          }
+                        } catch (error) {
+                          console.error('Failed to export PDF:', error);
+                          toast({ title: "Failed to export PDF", variant: "destructive" });
+                        }
+                      }}
+                      className="gap-2"
+                      data-testid="button-export-journey-pdf"
+                    >
+                      <Download className="w-4 h-4" />
+                      Export PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setJourneyPlan(null);
+                        setJourneyFormData({
+                          name: '',
+                          email: '',
+                          organization: '',
+                          role: '',
+                          interestCategories: [],
+                          attendanceIntents: [],
+                          otherIntent: ''
+                        });
+                        setIsExistingLead(false);
+                      }}
+                      data-testid="button-create-new-journey"
+                    >
+                      Create New
+                    </Button>
+                  </div>
                 </div>
-                <Card className="p-6">
-                  <p className="text-sm text-muted-foreground">Journey plan will be displayed here with AI-generated recommendations, matched exhibitors, and sessions.</p>
+
+                <Card className="p-6 space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-foreground">Relevance Score</h4>
+                      <span className={`text-2xl font-bold ${
+                        journeyPlan.relevanceScore >= 80 ? 'text-green-600 dark:text-green-400' :
+                        journeyPlan.relevanceScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                        'text-orange-600 dark:text-orange-400'
+                      }`}>
+                        {journeyPlan.relevanceScore}/100
+                      </span>
+                    </div>
+                    <Progress value={journeyPlan.relevanceScore} className="h-3" />
+                    {journeyPlan.scoreJustification && (
+                      <p className="text-sm text-muted-foreground mt-2">{journeyPlan.scoreJustification}</p>
+                    )}
+                  </div>
                 </Card>
+
+                {journeyPlan.generalOverview && (
+                  <Card className="p-6">
+                    <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Overview
+                    </h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{journeyPlan.generalOverview}</p>
+                  </Card>
+                )}
+
+                {journeyPlan.benefits && journeyPlan.benefits.length > 0 && (
+                  <Card className="p-6">
+                    <h4 className="font-semibold text-foreground mb-3">Key Benefits</h4>
+                    <ul className="space-y-2">
+                      {journeyPlan.benefits.map((benefit: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <Badge variant="secondary" className="mt-0.5 shrink-0">✓</Badge>
+                          <span className="text-muted-foreground">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
+                {journeyPlan.recommendations && journeyPlan.recommendations.length > 0 && (
+                  <Card className="p-6">
+                    <h4 className="font-semibold text-foreground mb-3">Recommendations</h4>
+                    <ul className="space-y-2">
+                      {journeyPlan.recommendations.map((rec: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <span className="text-primary font-medium shrink-0">{idx + 1}.</span>
+                          <span className="text-muted-foreground">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
+                {journeyPlan.matchedExhibitors && journeyPlan.matchedExhibitors.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-primary" />
+                      Top Matched Exhibitors ({journeyPlan.matchedExhibitors.length})
+                    </h4>
+                    {journeyPlan.matchedExhibitors.map((exhibitor: any) => (
+                      <Card key={exhibitor.id} className="p-4 hover-elevate" data-testid={`exhibitor-card-${exhibitor.id}`}>
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <h5 className="font-medium text-foreground">{exhibitor.companyName}</h5>
+                              {exhibitor.sector && (
+                                <p className="text-xs text-muted-foreground mt-0.5">{exhibitor.sector}</p>
+                              )}
+                            </div>
+                            <Badge variant="secondary" className="shrink-0">
+                              {exhibitor.relevancePercentage}% match
+                            </Badge>
+                          </div>
+                          
+                          {exhibitor.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{exhibitor.description}</p>
+                          )}
+                          
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {exhibitor.country && (
+                              <span className="flex items-center gap-1">
+                                <Globe className="w-3 h-3" />
+                                {exhibitor.country}
+                              </span>
+                            )}
+                            {exhibitor.boothNumber && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
+                                Booth {exhibitor.boothNumber}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {journeyPlan.matchedSessions && journeyPlan.matchedSessions.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      Recommended Sessions ({journeyPlan.matchedSessions.length})
+                    </h4>
+                    {journeyPlan.matchedSessions.map((session: any) => (
+                      <Card key={session.id} className="p-4 hover-elevate" data-testid={`session-card-${session.id}`}>
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <h5 className="font-medium text-foreground">{session.title}</h5>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                <span>{new Date(session.sessionDate).toLocaleDateString()}</span>
+                                {session.sessionTime && <span>• {session.sessionTime}</span>}
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="shrink-0">
+                              {session.relevancePercentage}% match
+                            </Badge>
+                          </div>
+                          
+                          {session.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{session.description}</p>
+                          )}
+                          
+                          {session.location && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <span className="inline-block w-2 h-2 rounded-full bg-primary" />
+                              {session.location}
+                            </p>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
