@@ -183,7 +183,8 @@ export default function AIChatbot() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [activeTab, setActiveTab] = useState("chat");
+  const [mainTab, setMainTab] = useState("chat"); // Main 4-tab navigation
+  const [activeTab, setActiveTab] = useState("chat"); // Chat/Right Now subtab
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
@@ -225,7 +226,13 @@ export default function AIChatbot() {
         }
       ]);
     } else {
-      setMessages([]);
+      // Show initial greeting when no role is selected
+      setMessages([
+        {
+          role: "assistant",
+          content: "👋 Hello! I'm Faris, your AI assistant for Gulfood 2026. To provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor."
+        }
+      ]);
     }
     setFeedbackGiven({});
     setShowRegistrationShare(false);
@@ -527,9 +534,78 @@ export default function AIChatbot() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((message, idx) => (
+      {/* Main 4-Tab Navigation */}
+      <div className="border-b border-border bg-muted/30">
+        <div className="flex items-center">
+          <button
+            onClick={() => setMainTab("chat")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
+              mainTab === "chat"
+                ? "text-primary bg-background"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
+            data-testid="tab-main-chat"
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Chat</span>
+            {mainTab === "chat" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMainTab("journey")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
+              mainTab === "journey"
+                ? "text-primary bg-background"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
+            data-testid="tab-main-journey"
+          >
+            <Globe className="w-4 h-4" />
+            <span>Journey</span>
+            {mainTab === "journey" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMainTab("referral")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
+              mainTab === "referral"
+                ? "text-primary bg-background"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
+            data-testid="tab-main-referral"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Referral</span>
+            {mainTab === "referral" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMainTab("radar")}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
+              mainTab === "radar"
+                ? "text-primary bg-background"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
+            data-testid="tab-main-radar"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Radar</span>
+            {mainTab === "radar" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Chat Tab Content */}
+      {mainTab === "chat" && (
+        <>
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((message, idx) => (
             <div
               key={idx}
               className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
@@ -614,159 +690,204 @@ export default function AIChatbot() {
               </div>
             </div>
           )}
-          <div ref={scrollRef} />
-        </div>
-      </ScrollArea>
+              {/* Role selection buttons in message stream */}
+              {!userRole && messages.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] bg-muted rounded-2xl px-4 py-3 text-sm">
+                    <div className="text-xs font-semibold text-muted-foreground mb-2">Please select your role:</div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
+                        onClick={() => setUserRole("visitor")}
+                        data-testid="button-role-visitor"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span className="text-xs font-medium">Visitor</span>
+                      </Button>
+                      <Button
+                        className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
+                        onClick={() => setUserRole("exhibitor")}
+                        data-testid="button-role-exhibitor"
+                      >
+                        <Building2 className="w-3.5 h-3.5" />
+                        <span className="text-xs font-medium">Exhibitor</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={scrollRef} />
+            </div>
+          </ScrollArea>
 
-      <div className="p-2 border-t border-border space-y-2">
-        {!userRole && (
-          <div className="flex items-center gap-2">
-            <div className="text-xs font-semibold whitespace-nowrap">I am a...</div>
-            <div className="flex gap-1.5 flex-1">
-              <Button
-                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
-                onClick={() => setUserRole("visitor")}
-                data-testid="button-role-visitor"
+          <div className="p-2 border-t border-border space-y-2">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ask me anything..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                disabled={chatMutation.isPending}
+                data-testid="input-chat-message"
+              />
+              <Button 
+                size="icon" 
+                onClick={handleSend}
+                disabled={chatMutation.isPending || !input.trim()}
+                data-testid="button-send-message"
               >
-                <Users className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">Visitor</span>
-              </Button>
-              <Button
-                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
-                onClick={() => setUserRole("exhibitor")}
-                data-testid="button-role-exhibitor"
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">Exhibitor</span>
-              </Button>
-              <Button
-                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
-                onClick={() => setUserRole("organizer")}
-                data-testid="button-role-organizer"
-              >
-                <BarChart3 className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">Organizer</span>
+                <Send className="w-4 h-4" />
               </Button>
             </div>
+            
+            {userRole && (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+                  <TabsTrigger 
+                    value="chat" 
+                    className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                    data-testid="tab-chat"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Chat
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="rightnow" 
+                    className="gap-1.5 data-[state=active]:bg-orange-500/10 data-[state=active]:text-orange-600"
+                    data-testid="tab-rightnow"
+                  >
+                    <Bell className="w-3.5 h-3.5" />
+                    Right Now
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="chat" className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">Quick actions:</div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs h-auto py-1"
+                      onClick={() => setUserRole(null)}
+                      data-testid="button-change-role"
+                    >
+                      Change role
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {roleQuickActions[userRole].map((action, idx) => (
+                      <Badge
+                        key={idx}
+                        variant="secondary"
+                        className="cursor-pointer hover-elevate text-xs"
+                        onClick={() => handleQuickAction(action)}
+                        data-testid={`badge-quick-action-${idx}`}
+                      >
+                        {action}
+                      </Badge>
+                    ))}
+                  </div>
+                  {userRole === "visitor" && messages.length > 2 && (
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => downloadReportMutation.mutate()}
+                      disabled={downloadReportMutation.isPending}
+                      data-testid="button-download-journey-report"
+                    >
+                      <Download className="w-4 h-4" />
+                      {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
+                    </Button>
+                  )}
+                  {userRole === "exhibitor" && (
+                    <Button
+                      className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                      onClick={() => setShowContactSales(true)}
+                      data-testid="button-contact-sales"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Contact Sales
+                    </Button>
+                  )}
+                  {userRole === "visitor" && showRegistrationShare && hasRegistered && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowRegistrationShare(false)}
+                        className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                        data-testid="button-close-registration-share"
+                        aria-label="Close registration share widget"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <RegistrationShareWidget compact={true} />
+                    </div>
+                  )}
+                  {messages.length > 2 && userRole && hasRegistered && (
+                    <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
+                      <ReferralWidget 
+                        sessionId={sessionId}
+                        compact={true}
+                      />
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="rightnow" className="mt-3" data-testid="tab-content-rightnow">
+                  <RightNowContent />
+                </TabsContent>
+              </Tabs>
+            )}
           </div>
-        )}
-        <div className="flex gap-2">
-          <Input
-            placeholder="Ask me anything..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            disabled={chatMutation.isPending}
-            data-testid="input-chat-message"
-          />
-          <Button 
-            size="icon" 
-            onClick={handleSend}
-            disabled={chatMutation.isPending || !input.trim()}
-            data-testid="button-send-message"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+        </>
+      )}
+
+      {/* Journey Tab Content */}
+      {mainTab === "journey" && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+              <Globe className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">Journey Planning</h3>
+            <p className="text-sm text-muted-foreground">
+              Plan your personalized journey across both venues with AI-powered recommendations, venue navigation, and route optimization.
+            </p>
+            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+          </div>
         </div>
-        
-        {userRole && (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
-            <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-              <TabsTrigger 
-                value="chat" 
-                className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                data-testid="tab-chat"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger 
-                value="rightnow" 
-                className="gap-1.5 data-[state=active]:bg-orange-500/10 data-[state=active]:text-orange-600"
-                data-testid="tab-rightnow"
-              >
-                <Bell className="w-3.5 h-3.5" />
-                Right Now
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="chat" className="mt-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-muted-foreground">Quick actions:</div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs h-auto py-1"
-                  onClick={() => setUserRole(null)}
-                  data-testid="button-change-role"
-                >
-                  Change role
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {roleQuickActions[userRole].map((action, idx) => (
-                  <Badge
-                    key={idx}
-                    variant="secondary"
-                    className="cursor-pointer hover-elevate text-xs"
-                    onClick={() => handleQuickAction(action)}
-                    data-testid={`badge-quick-action-${idx}`}
-                  >
-                    {action}
-                  </Badge>
-                ))}
-              </div>
-              {userRole === "visitor" && messages.length > 2 && (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={() => downloadReportMutation.mutate()}
-                  disabled={downloadReportMutation.isPending}
-                  data-testid="button-download-journey-report"
-                >
-                  <Download className="w-4 h-4" />
-                  {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
-                </Button>
-              )}
-              {userRole === "exhibitor" && (
-                <Button
-                  className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
-                  onClick={() => setShowContactSales(true)}
-                  data-testid="button-contact-sales"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Contact Sales
-                </Button>
-              )}
-              {userRole === "visitor" && showRegistrationShare && hasRegistered && (
-                <div className="relative">
-                  <button
-                    onClick={() => setShowRegistrationShare(false)}
-                    className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
-                    data-testid="button-close-registration-share"
-                    aria-label="Close registration share widget"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                  <RegistrationShareWidget compact={true} />
-                </div>
-              )}
-              {messages.length > 2 && userRole && hasRegistered && (
-                <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
-                  <ReferralWidget 
-                    sessionId={sessionId}
-                    compact={true}
-                  />
-                </div>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="rightnow" className="mt-3" data-testid="tab-content-rightnow">
-              <RightNowContent />
-            </TabsContent>
-          </Tabs>
-        )}
-      </div>
+      )}
+
+      {/* Referral Tab Content */}
+      {mainTab === "referral" && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+              <UserPlus className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">Referral Program</h3>
+            <p className="text-sm text-muted-foreground">
+              Share Gulfood 2026 with your network and earn rewards. Track your referrals and see their impact.
+            </p>
+            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+          </div>
+        </div>
+      )}
+
+      {/* Radar Tab Content */}
+      {mainTab === "radar" && (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 max-w-md">
+            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-8 h-4 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">AI Radar</h3>
+            <p className="text-sm text-muted-foreground">
+              Discover trending exhibitors, hot topics, and real-time event insights powered by AI analytics.
+            </p>
+            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+          </div>
+        </div>
+      )}
 
       <Dialog open={showContactSales} onOpenChange={setShowContactSales}>
         <DialogContent className="sm:max-w-md" data-testid="dialog-contact-sales">
