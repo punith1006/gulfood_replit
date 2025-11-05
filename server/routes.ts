@@ -950,7 +950,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       const validatedData = insertScheduledSessionSchema.parse(req.body);
       const session = await storage.createScheduledSession({
         ...validatedData,
-        createdBy: req.organizerEmail
+        sessionDate: typeof validatedData.sessionDate === 'string' ? new Date(validatedData.sessionDate) : validatedData.sessionDate
       });
       res.json(session);
     } catch (error) {
@@ -966,7 +966,13 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     try {
       const id = parseInt(req.params.id);
       const partialData = insertScheduledSessionSchema.partial().parse(req.body);
-      const session = await storage.updateScheduledSession(id, partialData);
+      const updateData = {
+        ...partialData,
+        ...(partialData.sessionDate && {
+          sessionDate: typeof partialData.sessionDate === 'string' ? new Date(partialData.sessionDate) : partialData.sessionDate
+        })
+      };
+      const session = await storage.updateScheduledSession(id, updateData);
       
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
@@ -1026,10 +1032,38 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  app.get("/api/exhibitor/access-codes", requireOrganizerAuth, async (req: AuthRequest, res) => {
+    try {
+      const accessCodes = await storage.getAllExhibitorAccessCodes();
+      res.json(accessCodes);
+    } catch (error) {
+      console.error("Error fetching access codes:", error);
+      res.status(500).json({ error: "Failed to fetch access codes" });
+    }
+  });
+
   app.post("/api/exhibitor/access-codes", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertExhibitorAccessCodeSchema.parse(req.body);
-      const accessCode = await storage.createExhibitorAccessCode(validatedData);
+      
+      const generateUniqueCode = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      };
+      
+      const code = generateUniqueCode();
+      
+      const accessCodeData = {
+        ...validatedData,
+        code,
+        isActive: true
+      };
+      
+      const accessCode = await storage.createExhibitorAccessCode(accessCodeData);
       res.json(accessCode);
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -136,13 +136,9 @@ export const announcements = pgTable("announcements", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   message: text("message").notNull(),
-  category: text("category").notNull(),
+  targetAudience: text("target_audience").notNull().default("All"),
   priority: text("priority").notNull().default("normal"),
   isActive: boolean("is_active").notNull().default(true),
-  startTime: timestamp("start_time"),
-  endTime: timestamp("end_time"),
-  targetAudience: text("target_audience").array().notNull().default(["visitor", "exhibitor", "organizer"]),
-  createdBy: text("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -150,20 +146,12 @@ export const announcements = pgTable("announcements", {
 export const scheduledSessions = pgTable("scheduled_sessions", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  description: text("description").notNull(),
-  sessionType: text("session_type").notNull(),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time").notNull(),
-  venue: text("venue").notNull(),
-  hall: text("hall"),
-  speaker: text("speaker"),
-  maxAttendees: integer("max_attendees"),
-  currentAttendees: integer("current_attendees").notNull().default(0),
-  registrationRequired: boolean("registration_required").notNull().default(false),
-  targetAudience: text("target_audience").array().notNull().default(["visitor", "exhibitor", "organizer"]),
-  tags: text("tags").array(),
+  description: text("description"),
+  sessionDate: timestamp("session_date").notNull(),
+  sessionTime: text("session_time"),
+  location: text("location"),
+  targetAudience: text("target_audience").notNull().default("All"),
   isActive: boolean("is_active").notNull().default(true),
-  createdBy: text("created_by"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -274,36 +262,34 @@ export const insertAnnouncementSchema = createInsertSchema(announcements).omit({
 }).extend({
   title: z.string().min(1, "Title is required").max(200),
   message: z.string().min(1, "Message is required"),
-  category: z.enum(["general", "event", "emergency", "update", "promo"], {
-    errorMap: () => ({ message: "Invalid category" })
-  }),
-  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
-  targetAudience: z.array(z.enum(["visitor", "exhibitor", "organizer"])).default(["visitor", "exhibitor", "organizer"])
+  targetAudience: z.enum(["All", "Visitor", "Exhibitor", "Organizer"]).default("All"),
+  priority: z.enum(["normal", "high", "urgent"]).default("normal"),
+  isActive: z.boolean().default(true)
 });
 
 export const insertScheduledSessionSchema = createInsertSchema(scheduledSessions).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
-  currentAttendees: true
+  updatedAt: true
 }).extend({
   title: z.string().min(1, "Title is required").max(200),
-  description: z.string().min(1, "Description is required"),
-  sessionType: z.enum(["conference", "workshop", "networking", "demo", "panel", "other"], {
-    errorMap: () => ({ message: "Invalid session type" })
-  }),
-  venue: z.string().min(1, "Venue is required"),
-  targetAudience: z.array(z.enum(["visitor", "exhibitor", "organizer"])).default(["visitor", "exhibitor", "organizer"])
+  description: z.string().optional(),
+  sessionDate: z.string().or(z.date()),
+  sessionTime: z.string().optional(),
+  location: z.string().optional(),
+  targetAudience: z.enum(["All", "Visitor", "Exhibitor", "Organizer"]).default("All"),
+  isActive: z.boolean().default(true)
 });
 
 export const insertExhibitorAccessCodeSchema = createInsertSchema(exhibitorAccessCodes).omit({
   id: true,
+  code: true,
   createdAt: true,
   usedAt: true
 }).extend({
-  code: z.string().min(6, "Code must be at least 6 characters").max(50),
   companyName: z.string().min(1, "Company name is required"),
-  email: z.string().email("Invalid email address")
+  email: z.string().email("Invalid email address"),
+  expiresAt: z.string().optional().transform(val => val && val.trim() !== '' ? new Date(val) : undefined)
 });
 
 export const insertOrganizerSchema = createInsertSchema(organizers).omit({

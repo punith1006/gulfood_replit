@@ -108,6 +108,7 @@ export interface IStorage {
   deleteScheduledSession(id: number): Promise<boolean>;
   
   getExhibitorAccessCode(code: string): Promise<ExhibitorAccessCode | undefined>;
+  getAllExhibitorAccessCodes(): Promise<ExhibitorAccessCode[]>;
   createExhibitorAccessCode(accessCode: InsertExhibitorAccessCode): Promise<ExhibitorAccessCode>;
   validateAndUseAccessCode(code: string): Promise<ExhibitorAccessCode | null>;
   
@@ -470,19 +471,9 @@ export class DatabaseStorage implements IStorage {
 
   async getAnnouncements(targetAudience?: string[], isActive?: boolean): Promise<Announcement[]> {
     const conditions = [];
-    const now = new Date();
 
     if (isActive !== undefined) {
       conditions.push(eq(announcements.isActive, isActive));
-    }
-
-    if (isActive) {
-      conditions.push(
-        or(
-          sql`${announcements.startTime} IS NULL OR ${announcements.startTime} <= ${now}`,
-          sql`${announcements.endTime} IS NULL OR ${announcements.endTime} >= ${now}`
-        )!
-      );
     }
 
     let query = db.select().from(announcements);
@@ -495,7 +486,7 @@ export class DatabaseStorage implements IStorage {
 
     if (targetAudience && targetAudience.length > 0) {
       return allAnnouncements.filter(ann => 
-        ann.targetAudience && ann.targetAudience.some(aud => targetAudience.includes(aud))
+        ann.targetAudience && (targetAudience.includes(ann.targetAudience) || ann.targetAudience === "All")
       );
     }
 
@@ -530,7 +521,7 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (upcoming) {
-      conditions.push(sql`${scheduledSessions.startTime} >= ${now}`);
+      conditions.push(sql`${scheduledSessions.sessionDate} >= ${now}`);
     }
 
     let query = db.select().from(scheduledSessions);
@@ -539,11 +530,11 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions)!);
     }
 
-    const allSessions = await query.orderBy(scheduledSessions.startTime);
+    const allSessions = await query.orderBy(scheduledSessions.sessionDate);
 
     if (targetAudience && targetAudience.length > 0) {
       return allSessions.filter(session => 
-        session.targetAudience && session.targetAudience.some(aud => targetAudience.includes(aud))
+        session.targetAudience && (targetAudience.includes(session.targetAudience) || session.targetAudience === "All")
       );
     }
 
@@ -576,6 +567,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(exhibitorAccessCodes.code, code))
       .limit(1);
     return accessCode;
+  }
+
+  async getAllExhibitorAccessCodes(): Promise<ExhibitorAccessCode[]> {
+    const codes = await db
+      .select()
+      .from(exhibitorAccessCodes)
+      .orderBy(sql`${exhibitorAccessCodes.createdAt} DESC`);
+    return codes;
   }
 
   async createExhibitorAccessCode(accessCode: InsertExhibitorAccessCode): Promise<ExhibitorAccessCode> {
