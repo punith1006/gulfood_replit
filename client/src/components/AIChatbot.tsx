@@ -81,12 +81,7 @@ export default function AIChatbot() {
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Ask me anything....."
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
@@ -121,12 +116,16 @@ export default function AIChatbot() {
   }, [messages]);
 
   useEffect(() => {
-    setMessages([
-      {
-        role: "assistant",
-        content: getRoleWelcomeMessage(userRole)
-      }
-    ]);
+    if (userRole) {
+      setMessages([
+        {
+          role: "assistant",
+          content: getRoleWelcomeMessage(userRole)
+        }
+      ]);
+    } else {
+      setMessages([]);
+    }
     setFeedbackGiven({});
     setShowRegistrationShare(false);
     setShowLeadCapture(false);
@@ -516,33 +515,30 @@ export default function AIChatbot() {
         {!userRole ? (
           <div className="space-y-1.5">
             <div className="text-xs font-semibold text-center">I am a...</div>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="flex gap-1.5 justify-center">
               <Button
-                variant="outline"
-                className="flex-col h-auto py-1 hover-elevate"
+                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
                 onClick={() => setUserRole("visitor")}
                 data-testid="button-role-visitor"
               >
-                <Users className="w-3 h-3" />
-                <span className="text-xs">Visitor</span>
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Visitor</span>
               </Button>
               <Button
-                variant="outline"
-                className="flex-col h-auto py-1 hover-elevate"
+                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
                 onClick={() => setUserRole("exhibitor")}
                 data-testid="button-role-exhibitor"
               >
-                <Building2 className="w-3 h-3" />
-                <span className="text-xs">Exhibitor</span>
+                <Building2 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Exhibitor</span>
               </Button>
               <Button
-                variant="outline"
-                className="flex-col h-auto py-1 hover-elevate"
+                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
                 onClick={() => setUserRole("organizer")}
                 data-testid="button-role-organizer"
               >
-                <BarChart3 className="w-3 h-3" />
-                <span className="text-xs">Organizer</span>
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Organizer</span>
               </Button>
             </div>
           </div>
