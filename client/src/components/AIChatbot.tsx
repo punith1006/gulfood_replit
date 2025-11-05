@@ -396,17 +396,24 @@ export default function AIChatbot() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 text-xs text-muted-foreground" title="English | العربية | 中文 | हिन्दी" data-testid="icon-language-globe">
-              <Globe className="w-3.5 h-3.5" />
-            </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover-elevate h-7 w-7"
+              title="English | العربية | 中文 | हिन्दी"
+              data-testid="button-language-selector"
+              aria-label="Language selector"
+            >
+              <Globe className="w-4 h-4 text-muted-foreground" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={closeChatbot}
               data-testid="button-close-chatbot"
               aria-label="Close chatbot"
-              className="hover-elevate h-8 w-8"
+              className="hover-elevate h-7 w-7"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -505,36 +512,36 @@ export default function AIChatbot() {
         </div>
       </ScrollArea>
 
-      <div className="p-3 border-t border-border space-y-2.5">
+      <div className="p-2 border-t border-border space-y-2">
         {!userRole ? (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="text-xs font-semibold text-center">I am a...</div>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-1">
               <Button
                 variant="outline"
-                className="flex-col h-auto py-1.5 hover-elevate"
+                className="flex-col h-auto py-1 hover-elevate"
                 onClick={() => setUserRole("visitor")}
                 data-testid="button-role-visitor"
               >
-                <Users className="w-3 h-3 mb-0.5" />
+                <Users className="w-3 h-3" />
                 <span className="text-xs">Visitor</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-col h-auto py-1.5 hover-elevate"
+                className="flex-col h-auto py-1 hover-elevate"
                 onClick={() => setUserRole("exhibitor")}
                 data-testid="button-role-exhibitor"
               >
-                <Building2 className="w-3 h-3 mb-0.5" />
+                <Building2 className="w-3 h-3" />
                 <span className="text-xs">Exhibitor</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-col h-auto py-1.5 hover-elevate"
+                className="flex-col h-auto py-1 hover-elevate"
                 onClick={() => setUserRole("organizer")}
                 data-testid="button-role-organizer"
               >
-                <BarChart3 className="w-3 h-3 mb-0.5" />
+                <BarChart3 className="w-3 h-3" />
                 <span className="text-xs">Organizer</span>
               </Button>
             </div>
