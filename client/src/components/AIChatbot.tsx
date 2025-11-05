@@ -112,7 +112,7 @@ function RightNowContent() {
   }
 
   return (
-    <div className="space-y-4 max-h-64 overflow-y-auto">
+    <div className="space-y-4 h-full overflow-y-auto">
       {activeAnnouncements.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function AIChatbot() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [activeTab, setActiveTab] = useState("radar");
+  const [activeTab, setActiveTab] = useState("chat");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
@@ -551,14 +551,6 @@ export default function AIChatbot() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
         <TabsList className="grid w-full grid-cols-4 bg-muted/50 mx-2 mt-2">
           <TabsTrigger 
-            value="radar" 
-            className="gap-1 text-xs data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-600"
-            data-testid="tab-radar"
-          >
-            <Radar className="w-3 h-3" />
-            Radar
-          </TabsTrigger>
-          <TabsTrigger 
             value="chat" 
             className="gap-1 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             data-testid="tab-chat"
@@ -582,11 +574,15 @@ export default function AIChatbot() {
             <Share2 className="w-3 h-3" />
             Referral
           </TabsTrigger>
+          <TabsTrigger 
+            value="radar" 
+            className="gap-1 text-xs data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-600"
+            data-testid="tab-radar"
+          >
+            <Radar className="w-3 h-3" />
+            Radar
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="radar" className="flex-1 p-4 mt-0" data-testid="tab-content-radar">
-          <RightNowContent />
-        </TabsContent>
 
         <TabsContent value="chat" className="flex-1 flex flex-col mt-0">
           <ScrollArea className="flex-1 p-4">
@@ -906,6 +902,12 @@ export default function AIChatbot() {
       <h3 className="font-semibold text-sm mb-1">Referral Program</h3>
       <p className="text-xs text-muted-foreground">Coming Soon</p>
       <p className="text-xs text-muted-foreground mt-1">Invite friends and earn rewards</p>
+    </TabsContent>
+
+    <TabsContent value="radar" className="flex-1 flex flex-col mt-0 p-4" data-testid="tab-content-radar">
+      <div className="flex-1 min-h-0">
+        <RightNowContent />
+      </div>
     </TabsContent>
   </Tabs>
 
