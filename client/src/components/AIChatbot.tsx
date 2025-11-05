@@ -336,6 +336,8 @@ export default function AIChatbot() {
           content: "👋 Hello! I'm Faris, your AI assistant for Gulfood 2026 (January 26-30, Dubai World Trade Centre & Expo City Dubai).\n\nTo provide you with the best personalized experience, please let me know: Are you a Visitor or an Exhibitor?"
         }
       ]);
+      // Enable role selection buttons to appear
+      setHasSkippedInitialLeadCapture(true);
     }
   }, [userRole]);
   
