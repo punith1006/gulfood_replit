@@ -219,6 +219,30 @@ export const organizers = pgTable("organizers", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const journeyPlans = pgTable("journey_plans", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id"), // Link to leads table if lead exists
+  sessionId: text("session_id").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  organization: text("organization").notNull(),
+  role: text("role").notNull(),
+  interestCategories: text("interest_categories").array().notNull().default([]),
+  attendanceIntents: text("attendance_intents").array().notNull().default([]),
+  relevanceScore: integer("relevance_score").notNull(), // 0-100
+  // AI-generated content
+  generalOverview: text("general_overview"),
+  scoreJustification: text("score_justification"),
+  benefits: text("benefits").array(),
+  recommendations: text("recommendations").array(),
+  // Matched exhibitors and sessions
+  matchedExhibitorIds: integer("matched_exhibitor_ids").array(),
+  matchedSessionIds: integer("matched_session_ids").array(),
+  // Additional data stored as JSON
+  reportData: jsonb("report_data"), // Full report data including exhibitor details, session details, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
@@ -350,6 +374,21 @@ export const insertOrganizerSchema = createInsertSchema(organizers).omit({
   role: z.enum(["staff", "admin", "super_admin"]).default("staff")
 });
 
+export const insertJourneyPlanSchema = createInsertSchema(journeyPlans).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  organization: z.string().min(2, "Organization name is required"),
+  role: z.string().min(1, "Role is required"),
+  interestCategories: z.array(z.string()).default([]),
+  attendanceIntents: z.array(z.string()).default([]),
+  relevanceScore: z.number().min(0).max(100),
+  sessionId: z.string(),
+  leadId: z.number().optional()
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -391,3 +430,6 @@ export type InsertExhibitorAccessCode = z.infer<typeof insertExhibitorAccessCode
 
 export type Organizer = typeof organizers.$inferSelect;
 export type InsertOrganizer = z.infer<typeof insertOrganizerSchema>;
+
+export type JourneyPlan = typeof journeyPlans.$inferSelect;
+export type InsertJourneyPlan = z.infer<typeof insertJourneyPlanSchema>;
