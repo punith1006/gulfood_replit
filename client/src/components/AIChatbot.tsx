@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useRole, type UserRole } from "@/contexts/RoleContext";
 import { useChatbot } from "@/contexts/ChatbotContext";
@@ -76,6 +76,105 @@ const getRoleWelcomeMessage = (role: UserRole): string => {
   
   return welcomeMessages[role];
 };
+
+function RightNowContent() {
+  const { data: announcements, isLoading: announcementsLoading } = useQuery<any[]>({
+    queryKey: ['/api/announcements'],
+  });
+
+  const { data: sessions, isLoading: sessionsLoading } = useQuery<any[]>({
+    queryKey: ['/api/sessions'],
+  });
+
+  const activeAnnouncements = announcements?.filter(a => a.isActive) || [];
+  const upcomingSessions = sessions?.filter(s => {
+    if (!s.isActive) return false;
+    const sessionDate = new Date(s.sessionDate);
+    return sessionDate >= new Date();
+  }) || [];
+
+  if (announcementsLoading || sessionsLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (activeAnnouncements.length === 0 && upcomingSessions.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground text-sm">
+        <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
+        <p>No announcements or upcoming sessions at the moment.</p>
+        <p className="text-xs mt-1">Check back later for updates!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 max-h-64 overflow-y-auto">
+      {activeAnnouncements.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Bell className="w-4 h-4 text-orange-600" />
+            Announcements
+          </h3>
+          <div className="space-y-2">
+            {activeAnnouncements.map((announcement: any) => (
+              <Card key={announcement.id} className="p-3 hover-elevate" data-testid={`announcement-${announcement.id}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm">{announcement.title}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{announcement.message}</p>
+                    {announcement.targetAudience && (
+                      <Badge variant="secondary" className="mt-2 text-xs">
+                        For: {announcement.targetAudience}
+                      </Badge>
+                    )}
+                  </div>
+                  {announcement.priority === 'high' && (
+                    <Badge variant="destructive" className="text-xs">High Priority</Badge>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {upcomingSessions.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            Upcoming Sessions
+          </h3>
+          <div className="space-y-2">
+            {upcomingSessions.slice(0, 3).map((session: any) => (
+              <Card key={session.id} className="p-3 hover-elevate" data-testid={`session-${session.id}`}>
+                <div>
+                  <h4 className="font-medium text-sm">{session.title}</h4>
+                  {session.description && (
+                    <p className="text-xs text-muted-foreground mt-1">{session.description}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <span>{new Date(session.sessionDate).toLocaleDateString()}</span>
+                    {session.sessionTime && <span>• {session.sessionTime}</span>}
+                    {session.location && <span>• {session.location}</span>}
+                  </div>
+                  {session.targetAudience && (
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      For: {session.targetAudience}
+                    </Badge>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AIChatbot() {
   const { isOpen, openChatbot, closeChatbot } = useChatbot();
@@ -520,7 +619,7 @@ export default function AIChatbot() {
       </ScrollArea>
 
       <div className="p-2 border-t border-border space-y-2">
-        {!userRole ? (
+        {!userRole && (
           <div className="flex items-center gap-2">
             <div className="text-xs font-semibold whitespace-nowrap">I am a...</div>
             <div className="flex gap-1.5 flex-1">
@@ -550,77 +649,6 @@ export default function AIChatbot() {
               </Button>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-muted-foreground">Quick actions:</div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-auto py-1"
-                onClick={() => setUserRole(null)}
-                data-testid="button-change-role"
-              >
-                Change role
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {roleQuickActions[userRole].map((action, idx) => (
-                <Badge
-                  key={idx}
-                  variant="secondary"
-                  className="cursor-pointer hover-elevate text-xs"
-                  onClick={() => handleQuickAction(action)}
-                  data-testid={`badge-quick-action-${idx}`}
-                >
-                  {action}
-                </Badge>
-              ))}
-            </div>
-            {userRole === "visitor" && messages.length > 2 && (
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => downloadReportMutation.mutate()}
-                disabled={downloadReportMutation.isPending}
-                data-testid="button-download-journey-report"
-              >
-                <Download className="w-4 h-4" />
-                {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
-              </Button>
-            )}
-            {userRole === "exhibitor" && (
-              <Button
-                className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
-                onClick={() => setShowContactSales(true)}
-                data-testid="button-contact-sales"
-              >
-                <UserPlus className="w-4 h-4" />
-                Contact Sales
-              </Button>
-            )}
-            {userRole === "visitor" && showRegistrationShare && hasRegistered && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowRegistrationShare(false)}
-                  className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
-                  data-testid="button-close-registration-share"
-                  aria-label="Close registration share widget"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-                <RegistrationShareWidget compact={true} />
-              </div>
-            )}
-            {messages.length > 2 && userRole && hasRegistered && (
-              <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
-                <ReferralWidget 
-                  sessionId={sessionId}
-                  compact={true}
-                />
-              </div>
-            )}
-          </>
         )}
         <div className="flex gap-2">
           <Input
@@ -661,6 +689,81 @@ export default function AIChatbot() {
                 Right Now
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="chat" className="mt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">Quick actions:</div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-auto py-1"
+                  onClick={() => setUserRole(null)}
+                  data-testid="button-change-role"
+                >
+                  Change role
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {roleQuickActions[userRole].map((action, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="cursor-pointer hover-elevate text-xs"
+                    onClick={() => handleQuickAction(action)}
+                    data-testid={`badge-quick-action-${idx}`}
+                  >
+                    {action}
+                  </Badge>
+                ))}
+              </div>
+              {userRole === "visitor" && messages.length > 2 && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => downloadReportMutation.mutate()}
+                  disabled={downloadReportMutation.isPending}
+                  data-testid="button-download-journey-report"
+                >
+                  <Download className="w-4 h-4" />
+                  {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
+                </Button>
+              )}
+              {userRole === "exhibitor" && (
+                <Button
+                  className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                  onClick={() => setShowContactSales(true)}
+                  data-testid="button-contact-sales"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Contact Sales
+                </Button>
+              )}
+              {userRole === "visitor" && showRegistrationShare && hasRegistered && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowRegistrationShare(false)}
+                    className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                    data-testid="button-close-registration-share"
+                    aria-label="Close registration share widget"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <RegistrationShareWidget compact={true} />
+                </div>
+              )}
+              {messages.length > 2 && userRole && hasRegistered && (
+                <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
+                  <ReferralWidget 
+                    sessionId={sessionId}
+                    compact={true}
+                  />
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="rightnow" className="mt-3" data-testid="tab-content-rightnow">
+              <RightNowContent />
+            </TabsContent>
           </Tabs>
         )}
       </div>
