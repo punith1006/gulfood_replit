@@ -17,8 +17,16 @@ import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users } from
 
 export default function OrganizerAdmin() {
   const [, setLocation] = useLocation();
-  const { authType, organizerAuth, logout } = useAuth();
+  const { authType, organizerAuth, isLoading, logout } = useAuth();
   const { toast } = useToast();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!authType || authType !== "organizer") {
     setLocation("/organizer/login");

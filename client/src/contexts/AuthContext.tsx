@@ -18,6 +18,7 @@ interface AuthContextType {
   authType: AuthType;
   organizerAuth: OrganizerAuth | null;
   exhibitorAuth: ExhibitorAuth | null;
+  isLoading: boolean;
   loginOrganizer: (auth: OrganizerAuth & { token: string }) => void;
   loginExhibitor: (auth: ExhibitorAuth & { token: string }) => void;
   logout: () => void;
@@ -30,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
   const [authType, setAuthType] = useState<AuthType>(null);
   const [organizerAuth, setOrganizerAuth] = useState<OrganizerAuth | null>(null);
   const [exhibitorAuth, setExhibitorAuth] = useState<ExhibitorAuth | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const savedAuthType = localStorage.getItem("authType") as AuthType;
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
       setAuthType("exhibitor");
       setExhibitorAuth(JSON.parse(savedExhibitorAuth));
     }
+    setIsLoading(false);
   }, []);
 
   const loginOrganizer = (auth: OrganizerAuth & { token: string }) => {
@@ -86,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode}) {
         authType,
         organizerAuth,
         exhibitorAuth,
+        isLoading,
         loginOrganizer,
         loginExhibitor,
         logout,

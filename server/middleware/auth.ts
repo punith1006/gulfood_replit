@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.SESSION_SECRET || "gulfood-2026-secret-key";
+const JWT_SECRET = process.env.SESSION_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("CRITICAL: SESSION_SECRET environment variable must be set for JWT authentication");
+}
 
 export interface AuthRequest extends Request {
   organizerEmail?: string;
