@@ -7,7 +7,7 @@ import { z } from "zod";
 import { seedDatabase } from "./seed";
 import bcrypt from "bcryptjs";
 import { requireOrganizerAuth, requireExhibitorAuth, generateOrganizerToken, generateExhibitorToken, type AuthRequest } from "./middleware/auth";
-import { matchExhibitorsSemantic, matchSessionsSemantic, calculateOverallRelevanceScore, type UserProfile } from "./semanticMatcher";
+import { matchExhibitorsSemantic, type UserProfile } from "./semanticMatcher";
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -1328,20 +1328,16 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         relevance: `${m.relevancePercentage}%`
       })));
 
-      const sessions = await storage.getScheduledSessions();
-      console.log(`Matching against ${sessions.length} sessions using semantic analysis...`);
-      
-      const sessionMatches = await matchSessionsSemantic(userProfile, sessions, 5);
-      console.log('Top 5 session matches:', sessionMatches.map(m => ({
-        title: m.data.title,
-        relevance: `${m.relevancePercentage}%`
-      })));
+      const sessionMatches: any[] = [];
+      console.log('Sessions: No data available (hardcoded)');
 
-      const relevanceScore = calculateOverallRelevanceScore(exhibitorMatches, sessionMatches);
-      console.log(`Overall relevance score: ${relevanceScore}% (based on average match quality)`);
+      const relevanceScore = exhibitorMatches.length > 0
+        ? Math.round(exhibitorMatches.reduce((sum, m) => sum + m.relevancePercentage, 0) / exhibitorMatches.length)
+        : 0;
+      console.log(`Overall relevance score: ${relevanceScore}% (based on exhibitor match quality)`);
 
       const matchedExhibitors = exhibitorMatches.map(m => m.data);
-      const matchedSessions = sessionMatches.map(m => m.data);
+      const matchedSessions: any[] = [];
 
       const aiContent = await generateJourneyContent({
         organization,
