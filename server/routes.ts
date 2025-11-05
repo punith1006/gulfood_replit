@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
 import bcrypt from "bcryptjs";
+import { requireOrganizerAuth, requireExhibitorAuth, generateOrganizerToken, generateExhibitorToken, type AuthRequest } from "./middleware/auth";
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -874,10 +875,13 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
-  app.post("/api/announcements", async (req, res) => {
+  app.post("/api/announcements", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertAnnouncementSchema.parse(req.body);
-      const announcement = await storage.createAnnouncement(validatedData);
+      const announcement = await storage.createAnnouncement({
+        ...validatedData,
+        createdBy: req.organizerEmail
+      });
       res.json(announcement);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -888,11 +892,11 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
-  app.patch("/api/announcements/:id", async (req, res) => {
+  app.patch("/api/announcements/:id", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updates = req.body;
-      const announcement = await storage.updateAnnouncement(id, updates);
+      const partialData = insertAnnouncementSchema.partial().parse(req.body);
+      const announcement = await storage.updateAnnouncement(id, partialData);
       
       if (!announcement) {
         return res.status(404).json({ error: "Announcement not found" });
@@ -900,12 +904,15 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       
       res.json(announcement);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid announcement data", details: error.errors });
+      }
       console.error("Error updating announcement:", error);
       res.status(500).json({ error: "Failed to update announcement" });
     }
   });
 
-  app.delete("/api/announcements/:id", async (req, res) => {
+  app.delete("/api/announcements/:id", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteAnnouncement(id);
@@ -938,10 +945,13 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
-  app.post("/api/sessions", async (req, res) => {
+  app.post("/api/sessions", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertScheduledSessionSchema.parse(req.body);
-      const session = await storage.createScheduledSession(validatedData);
+      const session = await storage.createScheduledSession({
+        ...validatedData,
+        createdBy: req.organizerEmail
+      });
       res.json(session);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -952,11 +962,11 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
-  app.patch("/api/sessions/:id", async (req, res) => {
+  app.patch("/api/sessions/:id", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
-      const updates = req.body;
-      const session = await storage.updateScheduledSession(id, updates);
+      const partialData = insertScheduledSessionSchema.partial().parse(req.body);
+      const session = await storage.updateScheduledSession(id, partialData);
       
       if (!session) {
         return res.status(404).json({ error: "Session not found" });
@@ -964,12 +974,15 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       
       res.json(session);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid session data", details: error.errors });
+      }
       console.error("Error updating session:", error);
       res.status(500).json({ error: "Failed to update session" });
     }
   });
 
-  app.delete("/api/sessions/:id", async (req, res) => {
+  app.delete("/api/sessions/:id", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteScheduledSession(id);
@@ -998,9 +1011,12 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       if (!accessCode) {
         return res.status(401).json({ error: "Invalid or expired access code" });
       }
+
+      const token = generateExhibitorToken(accessCode.code, accessCode.companyName);
       
       res.json({ 
         success: true,
+        token,
         companyName: accessCode.companyName,
         email: accessCode.email
       });
@@ -1010,7 +1026,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
-  app.post("/api/exhibitor/access-codes", async (req, res) => {
+  app.post("/api/exhibitor/access-codes", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertExhibitorAccessCodeSchema.parse(req.body);
       const accessCode = await storage.createExhibitorAccessCode(validatedData);
@@ -1049,9 +1065,12 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       }
       
       await storage.updateOrganizerLastLogin(email);
+
+      const token = generateOrganizerToken(organizer.email, organizer.role);
       
       res.json({ 
         success: true,
+        token,
         organizer: {
           email: organizer.email,
           name: organizer.name,
@@ -1086,9 +1105,12 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         role: "staff",
         isActive: true
       });
+
+      const token = generateOrganizerToken(organizer.email, organizer.role);
       
       res.json({ 
         success: true,
+        token,
         organizer: {
           email: organizer.email,
           name: organizer.name,
