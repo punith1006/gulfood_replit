@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -382,33 +382,35 @@ export default function AIChatbot() {
 
   return (
     <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[480px] md:w-[520px] h-[90vh] sm:h-[600px] md:h-[650px] max-h-screen shadow-2xl z-50 flex flex-col sm:rounded-xl border-2" data-testid="card-chatbot">
-      <div className="p-4 sm:p-5 border-b-2 border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg ring-2 ring-primary/20 ring-offset-2 overflow-hidden">
+      <div className="p-2.5 border-b border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg ring-2 ring-primary/20 ring-offset-2 overflow-hidden">
               <img src={farisAvatar} alt="Faris AI" className="w-full h-full object-cover scale-150" />
             </div>
-            <div>
-              <div className="font-bold text-lg sm:text-xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Faris</div>
-              <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-chart-3 animate-pulse shadow-sm shadow-chart-3" />
-                Your AI Guide
+            <div className="flex items-center gap-2">
+              <div className="font-bold text-base bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Faris</div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse shadow-sm shadow-chart-3" />
+                Your Event Guide
               </div>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={closeChatbot}
-            data-testid="button-close-chatbot"
-            aria-label="Close chatbot"
-            className="hover-elevate"
-          >
-            <X className="w-5 h-5 sm:w-4 sm:h-4" />
-          </Button>
-        </div>
-        <div className="text-xs text-muted-foreground text-center py-1 px-2 bg-muted/50 rounded">
-          🌍 English | العربية | 中文 | हिन्दी
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground" title="English | العربية | 中文 | हिन्दी" data-testid="icon-language-globe">
+              <Globe className="w-3.5 h-3.5" />
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={closeChatbot}
+              data-testid="button-close-chatbot"
+              aria-label="Close chatbot"
+              className="hover-elevate h-8 w-8"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -503,36 +505,36 @@ export default function AIChatbot() {
         </div>
       </ScrollArea>
 
-      <div className="p-4 border-t border-border space-y-3">
+      <div className="p-3 border-t border-border space-y-2.5">
         {!userRole ? (
-          <div className="space-y-3">
-            <div className="text-xs font-semibold text-center mb-2">I am a...</div>
-            <div className="grid grid-cols-3 gap-2">
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-center">I am a...</div>
+            <div className="grid grid-cols-3 gap-1.5">
               <Button
                 variant="outline"
-                className="flex-col h-auto py-2 hover-elevate"
+                className="flex-col h-auto py-1.5 hover-elevate"
                 onClick={() => setUserRole("visitor")}
                 data-testid="button-role-visitor"
               >
-                <Users className="w-4 h-4 mb-0.5" />
+                <Users className="w-3 h-3 mb-0.5" />
                 <span className="text-xs">Visitor</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-col h-auto py-2 hover-elevate"
+                className="flex-col h-auto py-1.5 hover-elevate"
                 onClick={() => setUserRole("exhibitor")}
                 data-testid="button-role-exhibitor"
               >
-                <Building2 className="w-4 h-4 mb-0.5" />
+                <Building2 className="w-3 h-3 mb-0.5" />
                 <span className="text-xs">Exhibitor</span>
               </Button>
               <Button
                 variant="outline"
-                className="flex-col h-auto py-2 hover-elevate"
+                className="flex-col h-auto py-1.5 hover-elevate"
                 onClick={() => setUserRole("organizer")}
                 data-testid="button-role-organizer"
               >
-                <BarChart3 className="w-4 h-4 mb-0.5" />
+                <BarChart3 className="w-3 h-3 mb-0.5" />
                 <span className="text-xs">Organizer</span>
               </Button>
             </div>
