@@ -325,6 +325,31 @@ Format as valid JSON only, no markdown.`;
     }
   });
 
+  app.get("/api/leads/check/:email", async (req, res) => {
+    try {
+      const email = req.params.email;
+      const lead = await storage.getLeadByEmail(email);
+      
+      if (lead) {
+        res.json({ 
+          exists: true, 
+          lead: {
+            id: lead.id,
+            name: lead.name,
+            email: lead.email,
+            company: lead.company,
+            role: lead.role
+          } 
+        });
+      } else {
+        res.json({ exists: false, lead: null });
+      }
+    } catch (error) {
+      console.error("Error checking lead email:", error);
+      res.status(500).json({ error: "Failed to check email" });
+    }
+  });
+
   app.get("/api/leads", async (req, res) => {
     try {
       const { status, category } = req.query;
@@ -339,11 +364,28 @@ Format as valid JSON only, no markdown.`;
     }
   });
 
+  app.put("/api/leads/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const lead = await storage.updateLead(id, updates);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      res.json({ success: true, lead });
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      res.status(500).json({ error: "Failed to update lead" });
+    }
+  });
+
   app.patch("/api/leads/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status, assignedTo, notes } = req.body;
-      const lead = await storage.updateLead(id, { status, assignedTo, notes });
+      const updates = req.body;
+      const lead = await storage.updateLead(id, updates);
       
       if (!lead) {
         return res.status(404).json({ error: "Lead not found" });

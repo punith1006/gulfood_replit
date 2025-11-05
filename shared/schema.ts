@@ -107,13 +107,23 @@ export const salesContacts = pgTable("sales_contacts", {
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
-  category: text("category").notNull(),
+  email: text("email").notNull().unique(),
+  company: text("company"),
+  role: text("role"), // Visitor or Exhibitor
+  phone: text("phone"),
+  category: text("category"), // Legacy field, kept for backward compatibility
   message: text("message"),
   sessionId: text("session_id"),
+  capturedVia: text("captured_via").notNull().default("direct"), // direct, conversational, contextual
+  conversationId: text("conversation_id"), // Link to chat session
+  userType: text("user_type"), // Visitor/Exhibitor from role selection
+  leadCategory: text("lead_category"), // Auto-categorized: registration_interest, exhibitor_interest, content_interest, sponsorship_interest, general_inquiry
+  sourcePage: text("source_page"), // Track originating page URL
   status: text("status").notNull().default("new"),
   assignedTo: text("assigned_to"),
   notes: text("notes"),
+  capturedAt: timestamp("captured_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -224,15 +234,23 @@ export const insertGeneratedReportSchema = createInsertSchema(generatedReports).
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   createdAt: true,
+  capturedAt: true,
+  updatedAt: true,
   status: true
 }).extend({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
-  category: z.enum(["Visitor", "Exhibitor", "Organizer", "Media", "Other"], {
-    errorMap: () => ({ message: "Invalid category selected" })
-  }),
+  company: z.string().optional(),
+  role: z.string().optional(),
+  phone: z.string().optional(),
+  category: z.enum(["Visitor", "Exhibitor", "Organizer", "Media", "Other"]).optional(),
   message: z.string().optional(),
   sessionId: z.string().optional(),
+  capturedVia: z.enum(["direct", "conversational", "contextual"]).default("direct"),
+  conversationId: z.string().optional(),
+  userType: z.string().optional(),
+  leadCategory: z.string().optional(),
+  sourcePage: z.string().optional(),
   assignedTo: z.string().optional(),
   notes: z.string().optional()
 });

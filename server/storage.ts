@@ -75,8 +75,10 @@ export interface IStorage {
   createSalesContact(contact: InsertSalesContact): Promise<SalesContact>;
   
   getLeads(status?: string, category?: string): Promise<Lead[]>;
+  getLeadByEmail(email: string): Promise<Lead | undefined>;
   createLead(lead: InsertLead): Promise<Lead>;
-  updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined>;
+  updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined>;
+  updateLeadCategory(id: number, leadCategory: string): Promise<Lead | undefined>;
   
   getReferrals(platform?: string, startDate?: Date, endDate?: Date): Promise<Referral[]>;
   createReferral(referral: InsertReferral): Promise<Referral>;
@@ -316,15 +318,34 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(leads).orderBy(desc(leads.createdAt));
   }
 
-  async createLead(lead: InsertLead): Promise<Lead> {
-    const result = await db.insert(leads).values(lead).returning();
+  async getLeadByEmail(email: string): Promise<Lead | undefined> {
+    const result = await db.select().from(leads).where(eq(leads.email, email.toLowerCase()));
     return result[0];
   }
 
-  async updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined> {
+  async createLead(lead: InsertLead): Promise<Lead> {
+    // Convert email to lowercase for consistency
+    const normalizedLead = {
+      ...lead,
+      email: lead.email.toLowerCase()
+    };
+    const result = await db.insert(leads).values(normalizedLead).returning();
+    return result[0];
+  }
+
+  async updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined> {
     const result = await db
       .update(leads)
-      .set(updates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(leads.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async updateLeadCategory(id: number, leadCategory: string): Promise<Lead | undefined> {
+    const result = await db
+      .update(leads)
+      .set({ leadCategory, updatedAt: new Date() })
       .where(eq(leads.id, id))
       .returning();
     return result[0];
