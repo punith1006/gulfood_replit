@@ -295,6 +295,49 @@ export default function AIChatbot() {
     }
   }, [messages]);
 
+  // Reset all chatbot state when closed - fresh start on reopen
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset all state to initial values
+      setMessages([]);
+      setInput("");
+      setMainTab("chat");
+      setShowContactSales(false);
+      setShowLeadCapture(false);
+      setShowInlineLeadForm(false);
+      setShowRegistrationShare(false);
+      setHasTriggeredLeadCapture(false);
+      setHasTriggeredRegistrationShare(false);
+      setHasSkippedInitialLeadCapture(false);
+      setLeadCaptured(false);
+      setHasInteractedWithInitialLeadCapture(false);
+      setDetectedEmail(null);
+      setDetectedName(null);
+      setShowNLPConfirmation(false);
+      setShowContextualPrompt(false);
+      setContextualKeyword("");
+      setFeedbackGiven({});
+      setContactForm({
+        companyName: "",
+        contactName: "",
+        email: "",
+        phone: "",
+        inquiry: ""
+      });
+      setLeadForm({
+        name: "",
+        email: "",
+        company: "",
+        role: "",
+        category: "",
+        message: ""
+      });
+      // Reset role context
+      setUserRole(null);
+      setHasRegistered(false);
+    }
+  }, [isOpen, setUserRole, setHasRegistered]);
+
   // Use a ref to track the latest value of hasInteractedWithInitialLeadCapture
   const hasInteractedRef = useRef(hasInteractedWithInitialLeadCapture);
   
