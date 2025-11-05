@@ -262,6 +262,7 @@ export default function AIChatbot() {
   const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
   const [hasSkippedInitialLeadCapture, setHasSkippedInitialLeadCapture] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
+  const [hasInteractedWithInitialLeadCapture, setHasInteractedWithInitialLeadCapture] = useState(false);
   const [detectedEmail, setDetectedEmail] = useState<string | null>(null);
   const [detectedName, setDetectedName] = useState<string | null>(null);
   const [showNLPConfirmation, setShowNLPConfirmation] = useState(false);
@@ -295,8 +296,15 @@ export default function AIChatbot() {
     }
   }, [messages]);
 
+  // Use a ref to track the latest value of hasInteractedWithInitialLeadCapture
+  const hasInteractedRef = useRef(hasInteractedWithInitialLeadCapture);
+  
   useEffect(() => {
-    // Reset all state first
+    hasInteractedRef.current = hasInteractedWithInitialLeadCapture;
+  }, [hasInteractedWithInitialLeadCapture]);
+
+  useEffect(() => {
+    // Reset all state first (but preserve hasInteractedWithInitialLeadCapture across role changes)
     setFeedbackGiven({});
     setShowRegistrationShare(false);
     setShowLeadCapture(false);
@@ -317,9 +325,9 @@ export default function AIChatbot() {
           content: "To provide you with personalized recommendations and keep you updated, I'd love to know a bit more about you."
         }
       ]);
-      // Show the inline lead form after role selection (no need to check leadCaptured since we just reset it)
+      // Show the inline lead form after role selection ONLY if user hasn't interacted with it yet
       setTimeout(() => {
-        setShowInlineLeadForm(true);
+        setShowInlineLeadForm(!hasInteractedRef.current);
       }, 500);
     } else {
       // Show initial greeting when no role is selected - ask for role first
@@ -876,6 +884,7 @@ export default function AIChatbot() {
                           size="sm"
                           onClick={() => {
                             setShowInlineLeadForm(false);
+                            setHasInteractedWithInitialLeadCapture(true);
                             setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
                           }}
                           className="flex-1"
@@ -904,6 +913,7 @@ export default function AIChatbot() {
                                 // Email already exists - welcome back message
                                 setLeadCaptured(true);
                                 setShowInlineLeadForm(false);
+                                setHasInteractedWithInitialLeadCapture(true);
                                 toast({
                                   title: `Welcome back, ${checkData.lead.name}! 👋`,
                                   description: "Great to see you again! Your details are already in our system."
@@ -933,6 +943,7 @@ export default function AIChatbot() {
                               });
                               setLeadCaptured(true);
                               setShowInlineLeadForm(false);
+                              setHasInteractedWithInitialLeadCapture(true);
                               toast({
                                 title: "Thank you!",
                                 description: "Your details have been captured successfully."
@@ -988,6 +999,7 @@ export default function AIChatbot() {
                               if (checkData.exists) {
                                 setLeadCaptured(true);
                                 setShowNLPConfirmation(false);
+                                setHasInteractedWithInitialLeadCapture(true);
                                 toast({
                                   title: `Welcome back, ${checkData.lead.name}! 👋`,
                                   description: "Great to see you again!"
@@ -1016,6 +1028,7 @@ export default function AIChatbot() {
                               });
                               setLeadCaptured(true);
                               setShowNLPConfirmation(false);
+                              setHasInteractedWithInitialLeadCapture(true);
                               toast({
                                 title: "Details saved!",
                                 description: "Thank you for sharing your information."
@@ -1052,6 +1065,7 @@ export default function AIChatbot() {
                         className="rounded-full px-3 py-1.5 h-auto no-default-hover-elevate"
                         onClick={() => {
                           setShowNLPConfirmation(false);
+                          setHasInteractedWithInitialLeadCapture(true);
                           setDetectedEmail(null);
                           setDetectedName(null);
                         }}
