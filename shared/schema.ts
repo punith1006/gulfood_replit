@@ -2,6 +2,36 @@ import { pgTable, text, serial, integer, timestamp, jsonb, boolean } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Comprehensive Gulfood exhibitor categories
+export const GULFOOD_CATEGORIES = [
+  "Beverages",
+  "Dairy Products",
+  "Fats & Oils",
+  "Health, Wellness & Free-From",
+  "Meat & Poultry",
+  "Pulses, Grains & Cereals",
+  "World Food",
+  "Bakery & Confectionery",
+  "Fresh Produce",
+  "Seafood",
+  "Frozen Food",
+  "Canned & Preserved Food",
+  "Organic & Natural Products",
+  "Plant-Based & Vegan",
+  "Snacks & Nuts",
+  "Spices & Condiments",
+  "Ingredients & Food Additives",
+  "Food Packaging & Machinery",
+  "Catering Equipment & Supplies",
+  "Coffee & Tea",
+  "Halal Products",
+  "Kosher Products",
+  "Private Label",
+  "Retail & Distribution"
+] as const;
+
+export type GulfoodCategory = typeof GULFOOD_CATEGORIES[number];
+
 export const exhibitors = pgTable("exhibitors", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
