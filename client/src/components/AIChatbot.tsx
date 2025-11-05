@@ -585,8 +585,8 @@ export default function AIChatbot() {
         </TabsList>
 
         <TabsContent value="chat" className="flex-1 flex flex-col mt-0">
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
+          <ScrollArea className="flex-1">
+            <div className="space-y-4 p-4">
               {messages.map((message, idx) => (
                 <div
                   key={idx}
@@ -905,8 +905,10 @@ export default function AIChatbot() {
     </TabsContent>
 
     <TabsContent value="radar" className="flex-1 flex flex-col mt-0" data-testid="tab-content-radar">
-      <ScrollArea className="flex-1 p-4">
-        <RightNowContent />
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          <RightNowContent />
+        </div>
       </ScrollArea>
     </TabsContent>
   </Tabs>
