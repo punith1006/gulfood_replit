@@ -11,6 +11,9 @@ import Footer from "@/components/Footer";
 import AIChatbot from "@/components/AIChatbot";
 import Home from "@/pages/Home";
 import Analytics from "@/pages/Analytics";
+import OrganizerLogin from "@/pages/OrganizerLogin";
+import OrganizerAdmin from "@/pages/OrganizerAdmin";
+import ExhibitorVerify from "@/pages/ExhibitorVerify";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +23,9 @@ function Router() {
       <Route path="/visitors" component={Home} />
       <Route path="/exhibitors" component={Home} />
       <Route path="/analytics" component={Analytics} />
+      <Route path="/organizer/login" component={OrganizerLogin} />
+      <Route path="/organizer/admin" component={OrganizerAdmin} />
+      <Route path="/exhibitor/verify" component={ExhibitorVerify} />
       <Route component={NotFound} />
     </Switch>
   );
