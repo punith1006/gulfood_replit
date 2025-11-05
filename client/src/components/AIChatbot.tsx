@@ -413,6 +413,9 @@ export default function AIChatbot() {
   }, [hasInteractedWithInitialLeadCapture]);
 
   useEffect(() => {
+    // Only run this effect when the chatbot is open
+    if (!isOpen) return;
+    
     // Reset all state first (but preserve hasInteractedWithInitialLeadCapture across role changes)
     setFeedbackGiven({});
     setShowRegistrationShare(false);
@@ -449,7 +452,7 @@ export default function AIChatbot() {
       // Enable role selection buttons to appear
       setHasSkippedInitialLeadCapture(true);
     }
-  }, [userRole]);
+  }, [userRole, isOpen]);
   
   // Trigger widgets when user sends 3rd message
   useEffect(() => {
