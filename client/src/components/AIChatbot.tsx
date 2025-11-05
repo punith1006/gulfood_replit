@@ -789,7 +789,29 @@ export default function AIChatbot() {
                               });
                               return;
                             }
+                            
+                            // Check for duplicate email
                             try {
+                              const checkResponse = await fetch(`/api/leads/check/${encodeURIComponent(leadForm.email)}`);
+                              const checkData = await checkResponse.json();
+                              
+                              if (checkData.exists) {
+                                // Email already exists - welcome back message
+                                setLeadCaptured(true);
+                                setShowInlineLeadForm(false);
+                                toast({
+                                  title: `Welcome back, ${checkData.lead.name}! 👋`,
+                                  description: "Great to see you again! Your details are already in our system."
+                                });
+                                setMessages(prev => [...prev, {
+                                  role: "assistant",
+                                  content: `Welcome back, ${checkData.lead.name}! 👋 It's great to see you again. Now, to provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor.`
+                                }]);
+                                setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
+                                return;
+                              }
+                              
+                              // Email doesn't exist - create new lead
                               await apiRequest("POST", "/api/leads", {
                                 name: leadForm.name,
                                 email: leadForm.email,
@@ -809,6 +831,7 @@ export default function AIChatbot() {
                                 role: "assistant",
                                 content: `Thanks ${leadForm.name}! Now, to provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor.`
                               }]);
+                              setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
                             } catch (error) {
                               toast({
                                 title: "Error",
