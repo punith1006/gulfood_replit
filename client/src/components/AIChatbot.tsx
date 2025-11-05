@@ -180,7 +180,7 @@ function RightNowContent() {
   }
 
   return (
-    <div className="space-y-4 max-h-64 overflow-y-auto">
+    <div className="space-y-4">
       {activeAnnouncements.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -252,7 +252,6 @@ export default function AIChatbot() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [mainTab, setMainTab] = useState("chat"); // Main 4-tab navigation
-  const [activeTab, setActiveTab] = useState("chat"); // Chat/Right Now subtab
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
@@ -1167,101 +1166,76 @@ export default function AIChatbot() {
             </div>
             
             {userRole && (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
-                <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-                  <TabsTrigger 
-                    value="chat" 
-                    className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                    data-testid="tab-chat"
+              <div className="mt-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">Quick actions:</div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-auto py-1"
+                    onClick={() => setUserRole(null)}
+                    data-testid="button-change-role"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Chat
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="rightnow" 
-                    className="gap-1.5 data-[state=active]:bg-orange-500/10 data-[state=active]:text-orange-600"
-                    data-testid="tab-rightnow"
+                    Change role
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {roleQuickActions[userRole].map((action, idx) => (
+                    <Badge
+                      key={idx}
+                      variant="secondary"
+                      className="cursor-pointer hover-elevate text-xs"
+                      onClick={() => handleQuickAction(action)}
+                      data-testid={`badge-quick-action-${idx}`}
+                    >
+                      {action}
+                    </Badge>
+                  ))}
+                </div>
+                {userRole === "visitor" && messages.length > 2 && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => downloadReportMutation.mutate()}
+                    disabled={downloadReportMutation.isPending}
+                    data-testid="button-download-journey-report"
                   >
-                    <Bell className="w-3.5 h-3.5" />
-                    Right Now
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="chat" className="mt-3 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">Quick actions:</div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs h-auto py-1"
-                      onClick={() => setUserRole(null)}
-                      data-testid="button-change-role"
+                    <Download className="w-4 h-4" />
+                    {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
+                  </Button>
+                )}
+                {userRole === "exhibitor" && (
+                  <Button
+                    className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                    onClick={() => setShowContactSales(true)}
+                    data-testid="button-contact-sales"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Contact Sales
+                  </Button>
+                )}
+                {userRole === "visitor" && showRegistrationShare && hasRegistered && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowRegistrationShare(false)}
+                      className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                      data-testid="button-close-registration-share"
+                      aria-label="Close registration share widget"
                     >
-                      Change role
-                    </Button>
+                      <X className="w-3 h-3" />
+                    </button>
+                    <RegistrationShareWidget compact={true} />
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {roleQuickActions[userRole].map((action, idx) => (
-                      <Badge
-                        key={idx}
-                        variant="secondary"
-                        className="cursor-pointer hover-elevate text-xs"
-                        onClick={() => handleQuickAction(action)}
-                        data-testid={`badge-quick-action-${idx}`}
-                      >
-                        {action}
-                      </Badge>
-                    ))}
+                )}
+                {messages.length > 2 && userRole && hasRegistered && (
+                  <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
+                    <ReferralWidget 
+                      sessionId={sessionId}
+                      compact={true}
+                    />
                   </div>
-                  {userRole === "visitor" && messages.length > 2 && (
-                    <Button
-                      variant="outline"
-                      className="w-full gap-2"
-                      onClick={() => downloadReportMutation.mutate()}
-                      disabled={downloadReportMutation.isPending}
-                      data-testid="button-download-journey-report"
-                    >
-                      <Download className="w-4 h-4" />
-                      {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
-                    </Button>
-                  )}
-                  {userRole === "exhibitor" && (
-                    <Button
-                      className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
-                      onClick={() => setShowContactSales(true)}
-                      data-testid="button-contact-sales"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Contact Sales
-                    </Button>
-                  )}
-                  {userRole === "visitor" && showRegistrationShare && hasRegistered && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowRegistrationShare(false)}
-                        className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
-                        data-testid="button-close-registration-share"
-                        aria-label="Close registration share widget"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                      <RegistrationShareWidget compact={true} />
-                    </div>
-                  )}
-                  {messages.length > 2 && userRole && hasRegistered && (
-                    <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
-                      <ReferralWidget 
-                        sessionId={sessionId}
-                        compact={true}
-                      />
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="rightnow" className="mt-3" data-testid="tab-content-rightnow">
-                  <RightNowContent />
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
             )}
           </div>
         </>
@@ -1301,17 +1275,19 @@ export default function AIChatbot() {
 
       {/* Radar Tab Content */}
       {mainTab === "radar" && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4 max-w-md">
-            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-8 h-4 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">AI Radar</h3>
-            <p className="text-sm text-muted-foreground">
-              Discover trending exhibitors, hot topics, and real-time event insights powered by AI analytics.
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-border">
+            <h3 className="text-base font-semibold flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              Event Radar
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Live announcements and upcoming sessions
             </p>
-            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
           </div>
+          <ScrollArea className="flex-1 p-4">
+            <RightNowContent />
+          </ScrollArea>
         </div>
       )}
 
