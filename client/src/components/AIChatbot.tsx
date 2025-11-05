@@ -269,6 +269,44 @@ export default function AIChatbot() {
   const [contextualKeyword, setContextualKeyword] = useState<string>("");
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   
+  // Track viewed announcements and sessions for notification badge
+  const [viewedItems, setViewedItems] = useState<{ announcements: number[]; sessions: number[] }>(() => {
+    try {
+      const stored = localStorage.getItem('gulfood_viewed_radar_items');
+      return stored ? JSON.parse(stored) : { announcements: [], sessions: [] };
+    } catch {
+      return { announcements: [], sessions: [] };
+    }
+  });
+  
+  // Fetch announcements and sessions for notification badge
+  const { data: announcements } = useQuery<any[]>({
+    queryKey: ['/api/announcements'],
+  });
+  const { data: sessions } = useQuery<any[]>({
+    queryKey: ['/api/sessions'],
+  });
+
+  // Calculate unread count
+  const unreadCount = useMemo(() => {
+    const activeAnnouncements = announcements?.filter(a => a.isActive) || [];
+    const upcomingSessions = sessions?.filter(s => {
+      if (!s.isActive) return false;
+      const sessionDate = new Date(s.sessionDate);
+      return sessionDate >= new Date();
+    }) || [];
+    
+    const unreadAnnouncements = activeAnnouncements.filter(
+      a => !viewedItems.announcements.includes(a.id)
+    ).length;
+    
+    const unreadSessions = upcomingSessions.filter(
+      s => !viewedItems.sessions.includes(s.id)
+    ).length;
+    
+    return unreadAnnouncements + unreadSessions;
+  }, [announcements, sessions, viewedItems]);
+
   // Derive user message count from messages array (single source of truth)
   const userMessageCount = useMemo(() => {
     return messages.filter(m => m.role === 'user').length;
@@ -337,6 +375,35 @@ export default function AIChatbot() {
       setHasRegistered(false);
     }
   }, [isOpen, setUserRole, setHasRegistered]);
+
+  // Persist viewed items to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('gulfood_viewed_radar_items', JSON.stringify(viewedItems));
+    } catch (error) {
+      console.error('Failed to save viewed items to localStorage:', error);
+    }
+  }, [viewedItems]);
+
+  // Mark all items as read when switching to Radar tab
+  useEffect(() => {
+    if (mainTab === "radar" && announcements && sessions) {
+      const activeAnnouncements = announcements.filter(a => a.isActive);
+      const upcomingSessions = sessions.filter(s => {
+        if (!s.isActive) return false;
+        const sessionDate = new Date(s.sessionDate);
+        return sessionDate >= new Date();
+      });
+      
+      const allAnnouncementIds = activeAnnouncements.map(a => a.id);
+      const allSessionIds = upcomingSessions.map(s => s.id);
+      
+      setViewedItems({
+        announcements: allAnnouncementIds,
+        sessions: allSessionIds
+      });
+    }
+  }, [mainTab, announcements, sessions]);
 
   // Use a ref to track the latest value of hasInteractedWithInitialLeadCapture
   const hasInteractedRef = useRef(hasInteractedWithInitialLeadCapture);
@@ -760,6 +827,11 @@ export default function AIChatbot() {
           >
             <Sparkles className="w-4 h-4" />
             <span>Radar</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-2 right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-orange-600 rounded-full" data-testid="badge-radar-unread">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
             {mainTab === "radar" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
