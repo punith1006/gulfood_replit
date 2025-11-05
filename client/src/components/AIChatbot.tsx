@@ -219,7 +219,7 @@ export default function AIChatbot() {
   }, [messages]);
 
   // Track previous role to detect role changes
-  const prevRoleRef = React.useRef<string | null>(null);
+  const prevRoleRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Check if role has actually changed (including null → role transition)
