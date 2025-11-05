@@ -334,22 +334,40 @@ export default function AIChatbot() {
   
   // Journey form state
   const [journeyFormData, setJourneyFormData] = useState({
-    name: '',
-    email: '',
     organization: '',
     role: '',
     interestCategories: [] as string[],
     attendanceIntents: [] as string[],
     otherIntent: ''
   });
-  const [isExistingLead, setIsExistingLead] = useState(false);
-  const [isCheckingLead, setIsCheckingLead] = useState(false);
   const [isGeneratingJourney, setIsGeneratingJourney] = useState(false);
   const [journeyPlan, setJourneyPlan] = useState<any>(null);
   const [showCategorySearch, setShowCategorySearch] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [showIntentSearch, setShowIntentSearch] = useState(false);
   const [intentSearchTerm, setIntentSearchTerm] = useState('');
+  
+  // Pre-fill organization and role from session lead when Journey tab opens
+  useEffect(() => {
+    if (mainTab === 'journey' && !journeyPlan) {
+      const leadInfo = sessionManager.getLeadInfo();
+      if (leadInfo.email && leadInfo.name) {
+        // Fetch lead details to get organization and role
+        fetch(`/api/leads/check/${encodeURIComponent(leadInfo.email)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.exists && data.lead) {
+              setJourneyFormData(prev => ({
+                ...prev,
+                organization: data.lead.company || prev.organization,
+                role: data.lead.role || prev.role
+              }));
+            }
+          })
+          .catch(err => console.error('Error fetching lead details:', err));
+      }
+    }
+  }, [mainTab, journeyPlan]);
   
   // Fetch announcements and sessions for notification badge
   const { data: announcements } = useQuery<any[]>({
@@ -1500,15 +1518,20 @@ export default function AIChatbot() {
                 <form className="space-y-4" onSubmit={async (e) => {
                   e.preventDefault();
                   
-                  // Check if we have lead info in session, if not require name/email
-                  const hasSessionLead = sessionManager.hasLeadInfo();
-                  if (!hasSessionLead && (!journeyFormData.name || !journeyFormData.email)) {
-                    toast({ title: "Please provide your name and email", variant: "destructive" });
+                  // Validate required fields
+                  if (!journeyFormData.organization || !journeyFormData.role) {
+                    toast({ title: "Please fill in Organization and Role", variant: "destructive" });
                     return;
                   }
                   
-                  if (!journeyFormData.organization || !journeyFormData.role) {
-                    toast({ title: "Please fill in all required fields", variant: "destructive" });
+                  // Get session lead info for name/email
+                  const sessionLead = sessionManager.getLeadInfo();
+                  if (!sessionLead.email || !sessionLead.name) {
+                    toast({ 
+                      title: "Session required", 
+                      description: "Please interact with Faris in the Chat tab first to capture your contact info.",
+                      variant: "destructive" 
+                    });
                     return;
                   }
                   
@@ -1520,11 +1543,9 @@ export default function AIChatbot() {
                       finalIntents[index] = journeyFormData.otherIntent;
                     }
                     
-                    // Use session lead info if available
-                    const sessionLead = sessionManager.getLeadInfo();
                     const submissionData = {
-                      name: sessionLead.name || journeyFormData.name,
-                      email: sessionLead.email || journeyFormData.email,
+                      name: sessionLead.name,
+                      email: sessionLead.email,
                       organization: journeyFormData.organization,
                       role: journeyFormData.role,
                       interestCategories: journeyFormData.interestCategories,
@@ -1558,48 +1579,6 @@ export default function AIChatbot() {
                     setIsGeneratingJourney(false);
                   }
                 }}>
-                  {!sessionManager.hasLeadInfo() && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="journey-name">Name *</Label>
-                        <Input
-                          id="journey-name"
-                          value={journeyFormData.name}
-                          onChange={(e) => setJourneyFormData(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="Your full name"
-                          required
-                          data-testid="input-journey-name"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="journey-email">Email *</Label>
-                        <Input
-                          id="journey-email"
-                          type="email"
-                          value={journeyFormData.email}
-                          onChange={(e) => setJourneyFormData(prev => ({ ...prev, email: e.target.value }))}
-                          placeholder="your.email@example.com"
-                          required
-                          data-testid="input-journey-email"
-                        />
-                        {isCheckingLead && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            Checking...
-                          </p>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {isExistingLead && (
-                    <Card className="p-4 bg-muted/50">
-                      <p className="text-sm font-medium text-foreground">Welcome back, {journeyFormData.name}!</p>
-                      <p className="text-xs text-muted-foreground mt-1">{journeyFormData.email}</p>
-                    </Card>
-                  )}
-
                   <div className="space-y-2">
                     <Label htmlFor="journey-organization">Organization *</Label>
                     <Input
@@ -1788,13 +1767,14 @@ export default function AIChatbot() {
                       size="sm"
                       onClick={async () => {
                         try {
+                          const sessionLead = sessionManager.getLeadInfo();
                           const pdfData = {
                             reportType: 'journey_plan',
                             userRole: journeyFormData.role || 'visitor',
                             sessionId: sessionManager.getOrCreateSessionId(),
                             journeyPlan: journeyPlan,
-                            name: journeyFormData.name,
-                            email: journeyFormData.email,
+                            name: sessionLead.name || 'Guest',
+                            email: sessionLead.email || '',
                             organization: journeyFormData.organization
                           };
                           
@@ -1827,15 +1807,12 @@ export default function AIChatbot() {
                       onClick={() => {
                         setJourneyPlan(null);
                         setJourneyFormData({
-                          name: '',
-                          email: '',
                           organization: '',
                           role: '',
                           interestCategories: [],
                           attendanceIntents: [],
                           otherIntent: ''
                         });
-                        setIsExistingLead(false);
                       }}
                       data-testid="button-create-new-journey"
                     >
