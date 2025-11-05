@@ -648,7 +648,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
 
   app.post("/api/reports/generate", async (req, res) => {
     try {
-      const { reportType, userRole, sessionId } = req.body;
+      const { reportType, userRole, sessionId, journeyPlan, name, email, organization } = req.body;
       
       if (!reportType || !userRole) {
         return res.status(400).json({ error: "Report type and user role are required" });
@@ -669,6 +669,25 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
 
         const { generateOrganizerAnalyticsPDF } = await import('./pdfGenerator.js');
         pdfBuffer = await generateOrganizerAnalyticsPDF(analytics);
+      } else if (reportType === "journey_plan") {
+        // Handle journey plan PDF generation
+        if (!journeyPlan) {
+          return res.status(400).json({ error: "Journey plan data is required" });
+        }
+        
+        reportData = {
+          journeyPlan,
+          name: name || 'Guest',
+          email: email || '',
+          organization: organization || '',
+          generatedAt: new Date().toISOString(),
+          eventName: "Gulfood 2026",
+          eventDates: "January 26-30, 2026",
+          pdfData: null
+        };
+
+        const { generateJourneyPlanPDF } = await import('./pdfGenerator.js');
+        pdfBuffer = await generateJourneyPlanPDF(reportData);
       } else if (reportType === "journey" && userRole === "Visitor") {
         if (!sessionId) {
           return res.status(400).json({ error: "Session ID is required for visitor reports" });
@@ -1309,24 +1328,105 @@ function calculateRelevanceScore(data: {
   interestCategories: string[];
   attendanceIntents: string[];
 }): number {
-  let score = 0;
+  // FACTOR 1: Organization-Event Match (40% weight)
+  let organizationScore = 20; // Default for "Other industries"
+  const orgLower = data.organization.toLowerCase();
+  
+  // Industry mapping logic
+  if (orgLower.includes('food') || orgLower.includes('beverage') || orgLower.includes('drink')) {
+    organizationScore = 40; // 100% of 40
+  } else if (orgLower.includes('restaurant') || orgLower.includes('hospitality') || orgLower.includes('hotel')) {
+    organizationScore = 36; // 90% of 40
+  } else if (orgLower.includes('retail') || orgLower.includes('distribution') || orgLower.includes('supermarket')) {
+    organizationScore = 34; // 85% of 40
+  } else if (orgLower.includes('packaging') || orgLower.includes('equipment') || orgLower.includes('machinery')) {
+    organizationScore = 32; // 80% of 40
+  } else if (orgLower.includes('agriculture') || orgLower.includes('farming') || orgLower.includes('organic')) {
+    organizationScore = 30; // 75% of 40
+  } else if (orgLower.includes('health') || orgLower.includes('wellness') || orgLower.includes('nutrition')) {
+    organizationScore = 28; // 70% of 40
+  } else if (orgLower.includes('technology') || orgLower.includes('tech') || orgLower.includes('service')) {
+    organizationScore = 24; // 60% of 40
+  } else if (orgLower.includes('finance') || orgLower.includes('investment') || orgLower.includes('bank')) {
+    organizationScore = 20; // 50% of 40
+  } else if (orgLower.includes('government') || orgLower.includes('non-profit') || orgLower.includes('ngo')) {
+    organizationScore = 16; // 40% of 40
+  }
 
-  const organizationMatch = data.organization.length > 2 ? 40 : 0;
-  score += organizationMatch;
+  // FACTOR 2: Role Relevance (25% weight)
+  let roleScore = 10; // Default for "Other"
+  const roleLower = data.role.toLowerCase();
+  
+  if (roleLower.includes('supplier') || roleLower.includes('vendor') || roleLower.includes('manufacturer')) {
+    roleScore = 25; // 100% of 25
+  } else if (roleLower.includes('buyer') || roleLower.includes('procurement') || roleLower.includes('sourcing')) {
+    roleScore = 24; // 95% of 25
+  } else if (roleLower.includes('industry professional') || roleLower.includes('professional')) {
+    roleScore = 24; // 95% of 25
+  } else if (roleLower.includes('corporate') || roleLower.includes('representative') || roleLower.includes('manager')) {
+    roleScore = 23; // 90% of 25
+  } else if (roleLower.includes('exhibitor')) {
+    roleScore = 23; // 90% of 25
+  } else if (roleLower.includes('founder') || roleLower.includes('startup') || roleLower.includes('entrepreneur')) {
+    roleScore = 21; // 85% of 25
+  } else if (roleLower.includes('investor') || roleLower.includes('investment')) {
+    roleScore = 20; // 80% of 25
+  } else if (roleLower.includes('consultant') || roleLower.includes('advisor')) {
+    roleScore = 19; // 75% of 25
+  } else if (roleLower.includes('academic') || roleLower.includes('researcher') || roleLower.includes('scientist')) {
+    roleScore = 18; // 70% of 25
+  } else if (roleLower.includes('media') || roleLower.includes('press') || roleLower.includes('journalist')) {
+    roleScore = 16; // 65% of 25
+  } else if (roleLower.includes('student')) {
+    roleScore = 15; // 60% of 25
+  } else if (roleLower.includes('government') || roleLower.includes('official')) {
+    roleScore = 14; // 55% of 25
+  } else if (roleLower.includes('organizer') || roleLower.includes('event')) {
+    roleScore = 13; // 50% of 25
+  }
 
-  const roleKeywords = ['buyer', 'distributor', 'chef', 'manager', 'director', 'owner', 'procurement'];
-  const roleRelevance = roleKeywords.some(kw => 
-    data.role.toLowerCase().includes(kw)
-  ) ? 25 : 15;
-  score += roleRelevance;
+  // FACTOR 3: Interest Category Match (20% weight)
+  let categoryScore = 10; // Neutral score if no categories
+  if (data.interestCategories.length > 0) {
+    const categoryRatio = data.interestCategories.length / 24; // 24 total categories
+    categoryScore = Math.min(Math.round(categoryRatio * 20), 20);
+    // Bonus for high engagement (5+ categories)
+    if (data.interestCategories.length >= 5) {
+      categoryScore = Math.min(categoryScore + 2, 20);
+    }
+  }
 
-  const categoryMatch = Math.min(data.interestCategories.length * 5, 20);
-  score += categoryMatch;
+  // FACTOR 4: Intent Clarity (15% weight)
+  let intentScore = 6; // Default for 0 intents (40% of 15)
+  const intentCount = data.attendanceIntents.length;
+  
+  if (intentCount === 1) {
+    intentScore = 9; // 60% of 15 (focused but limited)
+  } else if (intentCount >= 2 && intentCount <= 3) {
+    intentScore = 14; // 90% of 15 (clear objectives)
+  } else if (intentCount >= 4 && intentCount <= 5) {
+    intentScore = 15; // 100% of 15 (comprehensive goals)
+  } else if (intentCount >= 6) {
+    intentScore = 13; // 85% of 15 (possibly unfocused)
+  }
+  
+  // Bonus points for high-value intents
+  const highValueIntents = [
+    'source new products',
+    'find distribution partners',
+    'explore investment',
+    'launch new products'
+  ];
+  const hasHighValueIntent = data.attendanceIntents.some(intent =>
+    highValueIntents.some(hv => intent.toLowerCase().includes(hv))
+  );
+  if (hasHighValueIntent && intentScore < 15) {
+    intentScore = Math.min(intentScore + 1, 15);
+  }
 
-  const intentClarity = data.attendanceIntents.length > 0 ? 15 : 0;
-  score += intentClarity;
-
-  return Math.min(score, 100);
+  // Calculate final score
+  const totalScore = organizationScore + roleScore + categoryScore + intentScore;
+  return Math.min(Math.round(totalScore), 100);
 }
 
 function matchExhibitors(exhibitors: any[], criteria: {
@@ -1339,33 +1439,53 @@ function matchExhibitors(exhibitors: any[], criteria: {
     .map(exhibitor => {
       let matchScore = 0;
 
+      // Category overlap: +30 points per matching category
       const categoryMatch = criteria.interestCategories.some(cat =>
         exhibitor.sector?.toLowerCase().includes(cat.toLowerCase()) ||
         exhibitor.productCategories?.some((pc: string) => pc.toLowerCase().includes(cat.toLowerCase()))
       );
-      if (categoryMatch) matchScore += 40;
+      if (categoryMatch) matchScore += 30;
 
+      // Keywords match: +10 points per matching keyword
       const keywordMatch = criteria.attendanceIntents.some(intent =>
         exhibitor.description?.toLowerCase().includes(intent.toLowerCase().split(' ').slice(0, 2).join(' '))
       );
-      if (keywordMatch) matchScore += 30;
+      if (keywordMatch) matchScore += 10;
 
+      // Intent alignment: +20 points
+      const isSourceIntent = criteria.attendanceIntents.some(intent =>
+        intent.toLowerCase().includes('source') || intent.toLowerCase().includes('find')
+      );
+      if (isSourceIntent) matchScore += 20;
+
+      // Geographic relevance: +15 points
       if (exhibitor.country && exhibitor.country !== 'UAE') {
         matchScore += 15;
       }
 
+      // Role match bonus
       const roleMatch = ['buyer', 'distributor', 'procurement'].some(kw =>
         criteria.role.toLowerCase().includes(kw)
       );
       if (roleMatch && exhibitor.sector) matchScore += 15;
 
+      // Convert to percentage (max possible score is ~90)
+      const relevancePercentage = Math.min(Math.round((matchScore / 90) * 100), 100);
+
       return {
-        ...exhibitor,
+        id: exhibitor.id,
+        companyName: exhibitor.name,  // Map 'name' to 'companyName' for frontend consistency
+        name: exhibitor.name,  // Keep for backward compatibility
+        sector: exhibitor.sector,
+        description: exhibitor.description,
+        country: exhibitor.country,
+        boothNumber: exhibitor.boothNumber,
+        productCategories: exhibitor.productCategories,
         matchScore,
-        relevancePercentage: matchScore
+        relevancePercentage
       };
     })
-    .filter(e => e.matchScore > 20)
+    .filter(e => e.matchScore > 15)
     .sort((a, b) => b.matchScore - a.matchScore);
 }
 
@@ -1419,6 +1539,11 @@ async function generateJourneyContent(data: {
   recommendations: string[];
 }> {
   try {
+    // Determine score interpretation
+    const scoreLevel = data.relevanceScore >= 80 ? 'excellent' : 
+                      data.relevanceScore >= 60 ? 'good' : 
+                      data.relevanceScore >= 40 ? 'fair' : 'limited';
+    
     const prompt = `You are an AI assistant for Gulfood 2026, the world's largest annual food and beverage trade show in Dubai (January 26-30, 2026).
 
 User Profile:
@@ -1426,16 +1551,36 @@ User Profile:
 - Role: ${data.role}
 - Interest Categories: ${data.interestCategories.join(', ')}
 - Attendance Intents: ${data.attendanceIntents.join(', ')}
-- Relevance Score: ${data.relevanceScore}/100
+- Relevance Score: ${data.relevanceScore}/100 (${scoreLevel} match)
+- Matched Exhibitors: ${data.matchedExhibitors.length} companies
+- Matched Sessions: ${data.matchedSessions.length} events
 
-Matched Exhibitors: ${data.matchedExhibitors.length} companies
-Matched Sessions: ${data.matchedSessions.length} events
+Generate a highly personalized journey plan following these guidelines:
 
-Generate a personalized journey plan with:
-1. A brief overview (2-3 sentences) of why Gulfood 2026 is perfect for them
-2. Score justification (1-2 sentences) explaining their ${data.relevanceScore}/100 relevance score
-3. Three key benefits they'll gain from attending (array of strings)
-4. Three actionable recommendations for maximizing their experience (array of strings)
+1. OVERVIEW (2-3 sentences):
+   - Mention ${data.organization}'s industry/sector
+   - Reference their specific interest categories
+   - Preview the value they'll find at Gulfood 2026
+
+2. JUSTIFICATION (2-3 sentences):
+   - Explain WHY they got ${data.relevanceScore}/100 score
+   - Mention alignment with their role as ${data.role}
+   - Reference their attendance intents
+   - Be specific about strengths and any limitations
+
+3. BENEFITS (4-5 bullet points):
+   ${data.relevanceScore >= 80 ? '- Focus on "maximize ROI" benefits since score is excellent' : 
+     data.relevanceScore >= 60 ? '- Focus on "expand horizons" benefits since score is good' :
+     '- Focus on "exploratory opportunities" benefits since score is fair/limited'}
+   - Tailor benefits based on role: ${data.role}
+   - Include specific category benefits for: ${data.interestCategories.slice(0, 3).join(', ')}
+   - Reference their intents: ${data.attendanceIntents.slice(0, 2).join(', ')}
+
+4. RECOMMENDATIONS (3-4 actionable items):
+   - Provide role-specific recommendations for ${data.role}
+   - Suggest strategies based on their ${data.attendanceIntents.join(', ')}
+   - If score < 60%, suggest alternative approaches or adjacent opportunities
+   - Reference the ${data.matchedExhibitors.length} matched exhibitors and ${data.matchedSessions.length} sessions
 
 Return ONLY a valid JSON object with keys: overview, justification, benefits, recommendations`;
 
@@ -1448,7 +1593,7 @@ Return ONLY a valid JSON object with keys: overview, justification, benefits, re
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'You are a helpful assistant that generates personalized event recommendations in JSON format.' },
+          { role: 'system', content: 'You are a helpful assistant that generates personalized event recommendations in JSON format. Be specific and reference user data directly.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -1457,6 +1602,7 @@ Return ONLY a valid JSON object with keys: overview, justification, benefits, re
     });
 
     if (!response.ok) {
+      console.error('OpenAI API failed:', response.status, response.statusText);
       throw new Error('OpenAI API request failed');
     }
 
@@ -1464,25 +1610,43 @@ Return ONLY a valid JSON object with keys: overview, justification, benefits, re
     const content = JSON.parse(result.choices[0].message.content);
 
     return {
-      overview: content.overview || "Gulfood 2026 offers unparalleled opportunities for your organization.",
-      justification: content.justification || "Your profile aligns well with the event's offerings.",
-      benefits: content.benefits || ["Network with industry leaders", "Discover innovative products", "Expand your business reach"],
-      recommendations: content.recommendations || ["Visit top-matched exhibitors", "Attend relevant sessions", "Plan your itinerary in advance"]
+      overview: content.overview || `${data.organization} operates in sectors that align well with Gulfood 2026's extensive ${data.interestCategories.slice(0, 2).join(' and ')} showcase. Your role as ${data.role} positions you to leverage the event's networking and discovery opportunities.`,
+      justification: content.justification || `Your ${data.relevanceScore}/100 relevance score reflects ${scoreLevel} alignment between your organization's focus and Gulfood's exhibitor base. Your interest in ${data.interestCategories.slice(0, 2).join(' and ')} matches well with the event's core offerings.`,
+      benefits: content.benefits || [
+        `Connect with ${data.matchedExhibitors.length}+ pre-matched exhibitors in your categories`,
+        `Access to specialized sessions covering ${data.interestCategories.slice(0, 2).join(', ')}`,
+        `Networking opportunities tailored for ${data.role} professionals`,
+        `Direct engagement with innovations aligned to ${data.attendanceIntents[0] || 'your goals'}`
+      ],
+      recommendations: content.recommendations || [
+        `Prioritize visiting the ${data.matchedExhibitors.length} matched exhibitors we've identified`,
+        `Attend the ${data.matchedSessions.length} recommended sessions aligned with your intents`,
+        `Schedule pre-event meetings with key exhibitors using Gulfood's matchmaking platform`,
+        data.relevanceScore >= 70 ? `Consider VIP access for enhanced networking opportunities` : `Explore adjacent categories to broaden your sourcing options`
+      ]
     };
   } catch (error) {
     console.error('Error generating AI content:', error);
+    
+    // Enhanced fallback content
+    const scoreLevel = data.relevanceScore >= 80 ? 'Excellent' : 
+                      data.relevanceScore >= 60 ? 'Good' : 
+                      data.relevanceScore >= 40 ? 'Fair' : 'Limited';
+    
     return {
-      overview: "Gulfood 2026 brings together the global food and beverage industry under one roof, offering you direct access to innovations, suppliers, and networking opportunities that align with your professional goals.",
-      justification: `Your relevance score of ${data.relevanceScore}/100 reflects strong alignment between your interests and Gulfood's exhibitor base and program content.`,
+      overview: `${data.organization} operates in sectors highly relevant to Gulfood 2026. With interests in ${data.interestCategories.slice(0, 3).join(', ')}, you'll find valuable opportunities across the event's extensive exhibitor lineup and conference programs.`,
+      justification: `Your ${data.relevanceScore}/100 score indicates ${scoreLevel.toLowerCase()} alignment with Gulfood 2026. As a ${data.role}, your focus on ${data.attendanceIntents.slice(0, 2).join(' and ')} is well-supported by the event's offerings in your categories of interest.`,
       benefits: [
-        "Access to over 5,000+ exhibitors across your categories of interest",
-        "Networking opportunities with industry professionals in your role",
-        "Insights into the latest market trends and innovations"
+        `Access to ${data.matchedExhibitors.length}+ exhibitors matching your ${data.interestCategories.slice(0, 2).join(' and ')} interests`,
+        `Networking with industry professionals in ${data.role} positions`,
+        `${data.matchedSessions.length} curated sessions aligned with your attendance goals`,
+        data.relevanceScore >= 70 ? `High ROI potential with extensive category coverage` : `Opportunities to explore adjacent markets and discover new trends`
       ],
       recommendations: [
-        "Focus on the matched exhibitors we've identified for maximum ROI",
-        "Attend sessions that align with your attendance intents",
-        "Plan your journey across both Dubai World Trade Centre and Expo City venues"
+        `Focus on the ${data.matchedExhibitors.length} exhibitors we've pre-matched for you`,
+        `Attend ${data.matchedSessions.length} sessions covering ${data.interestCategories[0]}`,
+        `Use Gulfood's pre-event platform to schedule meetings with key exhibitors`,
+        data.relevanceScore >= 70 ? `Consider booking VIP access for premium networking opportunities` : `Explore adjacent categories to expand your sourcing possibilities`
       ]
     };
   }

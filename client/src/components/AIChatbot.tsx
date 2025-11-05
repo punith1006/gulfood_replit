@@ -1517,16 +1517,32 @@ export default function AIChatbot() {
                       finalIntents[index] = journeyFormData.otherIntent;
                     }
                     
+                    console.log('🚀 Generating journey with data:', {
+                      ...journeyFormData,
+                      attendanceIntents: finalIntents
+                    });
+                    
                     const response = await apiRequest('POST', '/api/journey/generate', {
                       ...journeyFormData,
                       attendanceIntents: finalIntents,
                       sessionId: sessionManager.getOrCreateSessionId()
                     });
                     
+                    console.log('✅ Journey plan received:', response);
+                    console.log('📊 Journey details:', {
+                      relevanceScore: response.relevanceScore,
+                      overview: response.generalOverview,
+                      justification: response.scoreJustification,
+                      benefitsCount: response.benefits?.length || 0,
+                      recommendationsCount: response.recommendations?.length || 0,
+                      exhibitorsCount: response.matchedExhibitors?.length || 0,
+                      sessionsCount: response.matchedSessions?.length || 0
+                    });
+                    
                     setJourneyPlan(response);
                     toast({ title: "Journey plan generated successfully!" });
                   } catch (error) {
-                    console.error('Failed to generate journey:', error);
+                    console.error('❌ Failed to generate journey:', error);
                     toast({ title: "Failed to generate journey plan", variant: "destructive" });
                   } finally {
                     setIsGeneratingJourney(false);
@@ -1836,19 +1852,30 @@ export default function AIChatbot() {
 
                 <Card className="p-6 space-y-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-foreground">Relevance Score</h4>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold">Relevance Score</span>
                       <span className={`text-2xl font-bold ${
                         journeyPlan.relevanceScore >= 80 ? 'text-green-600 dark:text-green-400' :
                         journeyPlan.relevanceScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
-                        'text-orange-600 dark:text-orange-400'
-                      }`}>
-                        {journeyPlan.relevanceScore}/100
+                        journeyPlan.relevanceScore >= 40 ? 'text-orange-600 dark:text-orange-400' :
+                        'text-red-600 dark:text-red-400'
+                      }`} data-testid="text-journey-relevance-score">
+                        {journeyPlan.relevanceScore}%
                       </span>
                     </div>
                     <Progress value={journeyPlan.relevanceScore} className="h-3" />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {journeyPlan.relevanceScore >= 80 ? "Excellent" : 
+                       journeyPlan.relevanceScore >= 60 ? "Good" : 
+                       journeyPlan.relevanceScore >= 40 ? "Fair" : "Limited"} match for Gulfood 2026
+                    </p>
                     {journeyPlan.scoreJustification && (
-                      <p className="text-sm text-muted-foreground mt-2">{journeyPlan.scoreJustification}</p>
+                      <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                        <p className="text-sm font-medium mb-1 text-foreground">Why this score?</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-journey-score-justification">
+                          {journeyPlan.scoreJustification}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </Card>
