@@ -188,9 +188,12 @@ export default function AIChatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [showInlineLeadForm, setShowInlineLeadForm] = useState(false);
   const [showRegistrationShare, setShowRegistrationShare] = useState(false);
   const [hasTriggeredLeadCapture, setHasTriggeredLeadCapture] = useState(false);
   const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
+  const [hasSkippedInitialLeadCapture, setHasSkippedInitialLeadCapture] = useState(false);
+  const [leadCaptured, setLeadCaptured] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   
   // Derive user message count from messages array (single source of truth)
@@ -207,6 +210,8 @@ export default function AIChatbot() {
   const [leadForm, setLeadForm] = useState({
     name: "",
     email: "",
+    company: "",
+    role: "",
     category: "",
     message: ""
   });
@@ -230,15 +235,18 @@ export default function AIChatbot() {
       setMessages([
         {
           role: "assistant",
-          content: "👋 Hello! I'm Faris, your AI assistant for Gulfood 2026. To provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor."
+          content: "👋 Hello! I'm Faris, your AI assistant for Gulfood 2026 (January 26-30, Dubai World Trade Centre & Expo City Dubai).\n\nTo get started, I'd love to personalize your experience. Would you mind sharing a few quick details with me?"
         }
       ]);
     }
     setFeedbackGiven({});
     setShowRegistrationShare(false);
     setShowLeadCapture(false);
+    setShowInlineLeadForm(false);
     setHasTriggeredLeadCapture(false);
     setHasTriggeredRegistrationShare(false);
+    setHasSkippedInitialLeadCapture(false);
+    setLeadCaptured(false);
   }, [userRole]);
   
   // Trigger widgets when user sends 3rd message
@@ -381,6 +389,8 @@ export default function AIChatbot() {
         setLeadForm({
           name: "",
           email: "",
+          company: "",
+          role: "",
           category: "",
           message: ""
         });
@@ -690,8 +700,135 @@ export default function AIChatbot() {
                   </div>
                 </div>
               )}
+              {/* Initial lead capture buttons */}
+              {!userRole && !leadCaptured && !hasSkippedInitialLeadCapture && !showInlineLeadForm && messages.length > 0 && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] bg-muted rounded-2xl px-4 py-3 text-sm">
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        className="rounded-full px-4 py-1.5 h-auto bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-md no-default-hover-elevate flex items-center gap-1.5"
+                        onClick={() => setShowInlineLeadForm(true)}
+                        data-testid="button-share-details"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span className="text-xs font-medium">Share My Details</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="rounded-full px-4 py-1.5 h-auto no-default-hover-elevate flex items-center gap-1.5"
+                        onClick={() => setHasSkippedInitialLeadCapture(true)}
+                        data-testid="button-skip-details"
+                      >
+                        <span className="text-xs font-medium">Skip for Now</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* Inline lead capture form */}
+              {showInlineLeadForm && !leadCaptured && (
+                <div className="flex justify-start">
+                  <Card className="max-w-[85%] p-4 shadow-lg border-2 border-orange-500/20">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserCheck className="w-4 h-4 text-orange-600" />
+                        <h4 className="text-sm font-semibold text-orange-900 dark:text-orange-100">Share Your Details</h4>
+                      </div>
+                      <div className="space-y-2">
+                        <Input
+                          placeholder="Your Name *"
+                          value={leadForm.name}
+                          onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
+                          className="text-sm focus-visible:ring-orange-500"
+                          data-testid="input-inline-lead-name"
+                        />
+                        <Input
+                          type="email"
+                          placeholder="Email Address *"
+                          value={leadForm.email}
+                          onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                          className="text-sm focus-visible:ring-orange-500"
+                          data-testid="input-inline-lead-email"
+                        />
+                        <Input
+                          placeholder="Company (Optional)"
+                          value={leadForm.company}
+                          onChange={(e) => setLeadForm(prev => ({ ...prev, company: e.target.value }))}
+                          className="text-sm focus-visible:ring-orange-500"
+                          data-testid="input-inline-lead-company"
+                        />
+                        <Input
+                          placeholder="Role/Title (Optional)"
+                          value={leadForm.role}
+                          onChange={(e) => setLeadForm(prev => ({ ...prev, role: e.target.value }))}
+                          className="text-sm focus-visible:ring-orange-500"
+                          data-testid="input-inline-lead-role"
+                        />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setShowInlineLeadForm(false);
+                            setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
+                          }}
+                          className="flex-1"
+                          data-testid="button-cancel-inline-lead"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={async () => {
+                            if (!leadForm.name || !leadForm.email) {
+                              toast({
+                                title: "Required fields missing",
+                                description: "Please provide your name and email address.",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            try {
+                              await apiRequest("POST", "/api/leads", {
+                                name: leadForm.name,
+                                email: leadForm.email,
+                                company: leadForm.company || undefined,
+                                role: leadForm.role || undefined,
+                                capturedVia: "direct",
+                                conversationId: sessionId,
+                                sourcePage: "chatbot"
+                              });
+                              setLeadCaptured(true);
+                              setShowInlineLeadForm(false);
+                              toast({
+                                title: "Thank you!",
+                                description: "Your details have been captured successfully."
+                              });
+                              setMessages(prev => [...prev, {
+                                role: "assistant",
+                                content: `Thanks ${leadForm.name}! Now, to provide you with personalized guidance, please let me know if you're a Visitor or an Exhibitor.`
+                              }]);
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to capture your details. Please try again.",
+                                variant: "destructive"
+                              });
+                            }
+                          }}
+                          className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white"
+                          data-testid="button-submit-inline-lead"
+                        >
+                          Submit
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+              )}
               {/* Role selection buttons in message stream */}
-              {!userRole && messages.length > 0 && (
+              {!userRole && messages.length > 0 && (leadCaptured || hasSkippedInitialLeadCapture) && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] bg-muted rounded-2xl px-4 py-3 text-sm">
                     <div className="text-xs font-semibold text-muted-foreground mb-2">Please select your role:</div>
@@ -1052,7 +1189,7 @@ export default function AIChatbot() {
               variant="outline"
               onClick={() => {
                 setShowLeadCapture(false);
-                setLeadForm({ name: "", email: "", category: "", message: "" });
+                setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
               }}
               className="flex-1"
               data-testid="button-cancel-lead"
