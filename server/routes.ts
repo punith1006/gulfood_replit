@@ -675,8 +675,70 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           return res.status(400).json({ error: "Journey plan data is required" });
         }
         
-        reportData = {
-          journeyPlan,
+        // Sanitize journeyPlan to avoid circular references from ORM objects
+        // Extract matched exhibitors and sessions from reportData if available
+        const reportDataObj = typeof journeyPlan.reportData === 'object' ? journeyPlan.reportData : {};
+        const matchedExhibitors = Array.isArray(reportDataObj.matchedExhibitors) 
+          ? JSON.parse(JSON.stringify(reportDataObj.matchedExhibitors.map((ex: any) => ({
+              id: ex.id,
+              name: ex.name,
+              companyName: ex.companyName,
+              sector: ex.sector,
+              country: ex.country,
+              boothNumber: ex.boothNumber,
+              description: ex.description,
+              relevancePercentage: ex.relevancePercentage
+            }))))
+          : [];
+        
+        const matchedSessions = Array.isArray(reportDataObj.matchedSessions)
+          ? JSON.parse(JSON.stringify(reportDataObj.matchedSessions.map((s: any) => ({
+              id: s.id,
+              title: s.title,
+              description: s.description,
+              sessionDate: s.sessionDate,
+              location: s.location,
+              matchScore: s.matchScore
+            }))))
+          : [];
+        
+        // Create sanitized data for PDF generation
+        const pdfInputData = {
+          journeyPlan: {
+            relevanceScore: Number(journeyPlan.relevanceScore) || 0,
+            generalOverview: String(journeyPlan.generalOverview || ''),
+            scoreJustification: String(journeyPlan.scoreJustification || ''),
+            benefits: Array.isArray(journeyPlan.benefits) ? [...journeyPlan.benefits] : [],
+            recommendations: Array.isArray(journeyPlan.recommendations) ? [...journeyPlan.recommendations] : [],
+            role: String(journeyPlan.role || ''),
+            organization: String(journeyPlan.organization || ''),
+            interestCategories: Array.isArray(journeyPlan.interestCategories) ? [...journeyPlan.interestCategories] : [],
+            attendanceIntents: Array.isArray(journeyPlan.attendanceIntents) ? [...journeyPlan.attendanceIntents] : [],
+            matchedExhibitors,
+            matchedSessions
+          },
+          name: name || 'Guest',
+          email: email || '',
+          organization: organization || '',
+          generatedAt: new Date().toISOString(),
+          eventName: "Gulfood 2026",
+          eventDates: "January 26-30, 2026"
+        };
+
+        const { generateJourneyPlanPDF } = await import('./pdfGenerator.js');
+        pdfBuffer = await generateJourneyPlanPDF(pdfInputData);
+        
+        // Create SEPARATE clean object for database storage (don't reuse pdfInputData)
+        reportData = JSON.parse(JSON.stringify({
+          journeyPlan: {
+            relevanceScore: Number(journeyPlan.relevanceScore) || 0,
+            generalOverview: String(journeyPlan.generalOverview || ''),
+            scoreJustification: String(journeyPlan.scoreJustification || ''),
+            benefits: Array.isArray(journeyPlan.benefits) ? journeyPlan.benefits.map(String) : [],
+            recommendations: Array.isArray(journeyPlan.recommendations) ? journeyPlan.recommendations.map(String) : [],
+            role: String(journeyPlan.role || ''),
+            organization: String(journeyPlan.organization || '')
+          },
           name: name || 'Guest',
           email: email || '',
           organization: organization || '',
@@ -684,10 +746,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           eventName: "Gulfood 2026",
           eventDates: "January 26-30, 2026",
           pdfData: null
-        };
-
-        const { generateJourneyPlanPDF } = await import('./pdfGenerator.js');
-        pdfBuffer = await generateJourneyPlanPDF(reportData);
+        }));
       } else if (reportType === "journey" && userRole === "Visitor") {
         if (!sessionId) {
           return res.status(400).json({ error: "Session ID is required for visitor reports" });
@@ -939,10 +998,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
   app.post("/api/announcements", requireOrganizerAuth, async (req: AuthRequest, res) => {
     try {
       const validatedData = insertAnnouncementSchema.parse(req.body);
-      const announcement = await storage.createAnnouncement({
-        ...validatedData,
-        createdBy: req.organizerEmail
-      });
+      const announcement = await storage.createAnnouncement(validatedData);
       res.json(announcement);
     } catch (error) {
       if (error instanceof z.ZodError) {
