@@ -1,0 +1,302 @@
+===============================================
+PART 3: RELEVANCE SCORE CALCULATION ENGINE
+===============================================
+
+ALGORITHM FOR RELEVANCE SCORE (0-100%):
+
+Calculate score based on these factors:
+
+FACTOR 1: Organization-Event Match (40% weight)
+- Query organization name against event focus areas
+- Check if organization's industry aligns with Gulfood sectors
+- Industry mapping logic:
+  * Food & Beverage companies → 100% match
+  * Restaurant/Hospitality → 90% match
+  * Retail/Distribution → 85% match
+  * Packaging/Equipment → 80% match
+  * Agriculture/Farming → 75% match
+  * Healthcare/Wellness → 70% match
+  * Technology/Services → 60% match
+  * Finance/Investment → 50% match
+  * Government/Non-profit → 40% match
+  * Other industries → 20% match
+
+FACTOR 2: Role Relevance (25% weight)
+- Score by role:
+  * Supplier/Vendor → 100%
+  * Industry Professional → 95%
+  * Corporate Representative → 90%
+  * Exhibitor → 90%
+  * Buyer/Procurement → 95%
+  * Startup Founder → 85%
+  * Investor → 80%
+  * Consultant → 75%
+  * Academic/Researcher → 70%
+  * Student → 60%
+  * Media/Press → 65%
+  * Government Official → 55%
+  * Event Organizer → 50%
+  * Other → 40%
+
+FACTOR 3: Interest Category Match (20% weight)
+- If user selected categories:
+  * Calculate: (Number of selected categories / Total available categories) × 100
+  * Weight: If user selected many categories (5+) = higher engagement = higher score
+  * If no categories selected, give neutral score of 50%
+
+FACTOR 4: Intent Clarity (15% weight)
+- Score based on number and type of intents selected:
+  * 1 intent selected → 60% (focused but limited)
+  * 2-3 intents selected → 90% (clear objectives)
+  * 4-5 intents selected → 100% (comprehensive goals)
+  * 6+ intents selected → 85% (possibly unfocused)
+  * 0 intents selected → 40% (unclear purpose)
+- Bonus points for high-value intents:
+  * "Source new products/suppliers" → +5%
+  * "Find distribution partners" → +5%
+  * "Explore investment opportunities" → +5%
+  * "Launch new products" → +5%
+
+FINAL SCORE CALCULATION:
+Relevance Score = (Organization Match × 0.40) +
+(Role Relevance × 0.25) +
+(Category Match × 0.20) +
+(Intent Clarity × 0.15)
+
+Round to nearest whole number percentage.
+
+SCORE INTERPRETATION:
+- 80-100% → Excellent match (Green indicator)
+- 60-79% → Good match (Yellow indicator)
+- 40-59% → Fair match (Orange indicator)
+- 0-39% → Limited relevance (Red indicator)
+
+===============================================
+PART 4: REPORT GENERATION - UI/UX DESIGN
+===============================================
+
+After user submits form, display comprehensive report:
+
+REPORT LAYOUT:
+
+┌─────────────────────────────────────────────┐
+│  [Organization Name]                     × │
+│  ─────────────────────────────────────────  │
+│                                             │
+│  📋 General                                 │
+│  [Dynamic summary paragraph about the       │
+│   organization and its fit for the event]   │
+│                                             │
+│  Relevance Score                      XX%  │
+│  [Progress bar with color coding]           │
+│  [Score interpretation text]                │
+│                                             │
+│  ❓ Why this score?                         │
+│  [Detailed justification explaining the     │
+│   score based on each factor]               │
+│                                             │
+│  💡 Why Gulfood 2026 is Perfect for You    │
+│  ✓ [Benefit point 1 based on their data]   │
+│  ✓ [Benefit point 2 based on their data]   │
+│  ✓ [Benefit point 3 based on their data]   │
+│  ✓ [Benefit point 4 based on their data]   │
+│                                             │
+│  💡 Personalized Recommendations            │
+│  → [Recommendation 1 with "Why:" subtitle]  │
+│  → [Recommendation 2 with "Why:" subtitle]  │
+│  → [Recommendation 3 with "Why:" subtitle]  │
+│                                             │
+│  🤝 Matched Exhibitors (XX)                │
+│  [List of matched exhibitors with:         │
+│   - Company name                            │
+│   - Similarity score/relevance indicator    │
+│   - Brief description                       │
+│   - Booth number (if available)             │
+│   - Categories they cover]                  │
+│                                             │
+│  📅 Matched Sessions (XX)                  │
+│  [List of relevant sessions/conferences:   │
+│   - Session title                           │
+│   - Date & time                             │
+│   - Relevance reason                        │
+│   - Speaker names                           │
+│   - Track/Category]                         │
+│                                             │
+│  [Download Journey Plan PDF button]         │
+│  [Add to Calendar button]                   │
+│  [Share Journey button]                     │
+└─────────────────────────────────────────────┘
+
+===============================================
+PART 5: CONTENT GENERATION INSTRUCTIONS
+===============================================
+
+SECTION 1: GENERAL OVERVIEW
+Generate dynamic 2-3 sentence summary:
+- Mention organization name and industry
+- State their primary focus based on input
+- Preview whether event is beneficial
+
+Example template:
+"[Organization] is a [industry type] company focusing on [interests]. Their operations in [relevant sectors] align with Gulfood 2026's extensive [matching categories] showcase. [Their role] will find [specific value proposition] at this event."
+
+SECTION 2: RELEVANCE SCORE DISPLAY
+- Show percentage prominently in large font
+- Display color-coded progress bar
+- Add interpretation text below:
+  * 80-100%: "Excellent match for Gulfood 2026"
+  * 60-79%: "Good match for Gulfood 2026"
+  * 40-59%: "Fair match for Gulfood 2026"
+  * 0-39%: "Limited direct relevance to core business"
+
+SECTION 3: WHY THIS SCORE? (Justification)
+Generate detailed explanation breaking down each factor:
+
+Template:
+"[Organization name] operates primarily in [industry/sector]. [Analysis of alignment with event focus]. While they [positive aspects], [any limitations]. Their role as [role] provides [opportunities]. With interest in [categories], they can explore [specific benefits]. Their intent to [intents] is [fully/partially] supported by the event's offerings."
+
+Make this conversational and specific to their input.
+
+SECTION 4: WHY GULFOOD 2026 IS PERFECT FOR YOU
+Generate 4-6 bullet points with checkmarks based on their data:
+
+Logic for generating benefits:
+- If role = Supplier/Vendor:
+  "✓ Connect with 5,000+ buyers from 180+ countries"
+  "✓ Showcase products to qualified procurement decision-makers"
+  
+- If intent = Source new products:
+  "✓ Access to 5,000+ exhibitors across 8 specialized sectors"
+  "✓ Discover emerging brands and innovative products"
+  
+- If intent = Network:
+  "✓ Attend exclusive networking events and matchmaking sessions"
+  "✓ Meet industry leaders in [their interested categories]"
+  
+- If interest categories selected:
+  "✓ Dedicated pavilions for [selected categories]"
+  "✓ Exposure to [category] trends that inform business strategy"
+  
+- Based on score level:
+  * High score (80%+): Focus on "maximize ROI" benefits
+  * Medium score (60-79%): Focus on "expand horizons" benefits  
+  * Low score (<60%): Focus on "exploratory opportunities" benefits
+
+SECTION 5: PERSONALIZED RECOMMENDATIONS
+Generate 3-4 actionable recommendations with justifications:
+
+Recommendation types based on data:
+
+IF role = Exhibitor:
+"Consider partnering with complementary exhibitors for joint promotions"
+Why: "Collaboration could enhance visibility and attract more booth visitors"
+
+IF interest = multiple categories:
+"Attend the [Category] Summit on Day 2"
+Why: "Covers all your interest areas in one comprehensive session"
+
+IF intent = Source new suppliers:
+"Use the Gulfood Business Connect platform to pre-schedule meetings"
+Why: "Maximize your time by meeting pre-qualified suppliers before the event"
+
+IF score < 60%:
+"Explore alternative industry events more aligned with your sector"
+Why: "Gulfood focuses on food/beverage which is outside your core business"
+
+IF score > 80%:
+"Book VIP pass for exclusive lounge access and private meeting rooms"
+Why: "Your high relevance justifies premium experience investment"
+
+Generate recommendations dynamically based on their specific input combination.
+
+===============================================
+PART 6: EXHIBITOR MATCHING ALGORITHM
+===============================================
+
+MATCHING LOGIC:
+
+Step 1: Query exhibitor database
+- Filter exhibitors by selected interest categories
+- If no categories selected, use organization industry as filter
+
+Step 2: Calculate similarity scores for each exhibitor
+Scoring factors:
+- Category overlap: +30 points per matching category
+- Keywords match: Compare organization description with exhibitor description (+10 points per matching keyword)
+- Intent alignment: If user intent = "source products" and exhibitor = "supplier" (+20 points)
+- Geographic relevance: If organization location matches exhibitor target markets (+15 points)
+
+Step 3: Rank exhibitors by total score
+- Display top 20-50 matches (depending on available data)
+- Show similarity score as percentage or as "Highly Relevant", "Relevant", "Somewhat Relevant"
+
+Step 4: Format exhibitor cards
+
+EXHIBITOR CARD DESIGN:
+┌───────────────────────────────────┐
+│ [Company Logo]  RELEVANCE: 92%    │
+│ Company Name                      │
+│ [Brief description - 1 line]      │
+│ Categories: Cat1, Cat2, Cat3      │
+│ Booth: Hall 4, Stand B-123        │
+│ 🔗 Website  📧 Contact            │
+│ [+ Add to My Journey button]      │
+└───────────────────────────────────┘
+
+DISPLAY OPTIONS:
+- Default: List view (stacked cards)
+- Alternative: Grid view (2-3 columns)
+- Add filter/sort options:
+  * Sort by: Relevance, Alphabetical, Category
+  * Filter by: Specific category, Country, Company size
+
+"NO MATCHES" SCENARIO:
+If no exhibitors match criteria:
+Display message:
+"No matched exhibitors available for your specific criteria. However, here are popular exhibitors from adjacent categories that might interest you:"
+[Show general top exhibitors]
+
+===============================================
+PART 7: SESSION MATCHING ALGORITHM
+===============================================
+
+MATCHING LOGIC:
+
+Step 1: Query sessions/conferences database
+- Filter sessions by keywords matching:
+  * Selected interest categories
+  * User intent (e.g., if intent = "Learn about innovations" → prioritize innovation tracks)
+  * Role relevance (e.g., if role = "Investor" → prioritize investment forums)
+
+Step 2: Calculate relevance score
+Scoring factors:
+- Topic alignment with interests: +40 points
+- Speaker reputation: +20 points (if high-profile speakers)
+- Session format matching user preference: +15 points
+- Time slot availability: +10 points (avoid conflicts)
+- Track/category match: +15 points
+
+Step 3: Rank sessions by score
+- Display top 10-15 most relevant sessions
+
+Step 4: Format session cards
+
+SESSION CARD DESIGN:
+┌───────────────────────────────────┐
+│ 📅 Day 2 | March 16 | 2:00 PM     │
+│ Session Title Here                │
+│ Track: [Category Name]            │
+│ 🎤 Speaker: John Doe (Company)    │
+│ Why relevant: [1 sentence reason] │
+│ Duration: 60 mins | Hall 3        │
+│ [+ Add to My Schedule button]     │
+└───────────────────────────────────┘
+
+CONFLICT DETECTION:
+- If user adds multiple sessions at same time, show warning:
+  "⚠️ This session conflicts with [Other Session]. Would you like to replace it?"
+
+"NO SESSIONS" SCENARIO:
+If no sessions match:
+"No sessions directly match your interests, but here are general keynotes that all attendees find valuable:"
+[Show main keynote sessions]

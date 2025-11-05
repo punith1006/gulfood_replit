@@ -1,0 +1,123 @@
+TASK: Build intelligent "Plan Your Journey" feature with relevance scoring, personalized recommendations, and exhibitor/session matching
+
+===============================================
+PART 1: TAB ACTIVATION & DATA COLLECTION
+===============================================
+
+JOURNEY TAB BEHAVIOR:
+
+When user clicks on "Journey 🗺️" tab:
+
+SCENARIO 1 - Lead info already captured in current session (via Chat tab):
+- Skip name, email, company fields
+- Display welcome message: "Great! Let's personalize your event experience, [Name]"
+- Show only these fields:
+  * Organization/Company* (mandatory - text input)
+  * Your Role* (mandatory - dropdown with "Other" option as specified earlier)
+  * Interest Categories (optional - multi-select dropdown)
+  * Intent of Attending (optional - multi-select dropdown)
+
+SCENARIO 2 - No lead info captured yet in current session:
+- Display message: "To create your personalized journey, please share some details"
+- Show all fields:
+  * Name* (mandatory - text input)
+  * Email* (mandatory - email input with validation)
+  * Organization/Company* (mandatory - text input)
+  * Your Role* (mandatory - dropdown with "Other" option)
+  * Interest Categories (optional - multi-select dropdown)
+  * Intent of Attending (optional - multi-select dropdown)
+- After submission, also save to leads database (same as Chat tab lead capture)
+
+SESSION DEFINITION:
+- Session starts: User opens chatbot
+- Session ends: User closes chatbot window/tab
+- Track session_id in browser localStorage or sessionStorage
+- On new session, check if lead exists in database by email (if they return)
+
+===============================================
+PART 2: DATA COLLECTION FIELDS SPECIFICATION
+===============================================
+
+FIELD 1: ORGANIZATION/COMPANY*
+- Type: Text input
+- Placeholder: "e.g., Nestlé, Unilever, Local Restaurant"
+- Required: Yes
+- Character limit: 100
+- Validation: Minimum 2 characters
+
+FIELD 2: YOUR ROLE*
+- Type: Dropdown with custom input option
+- Options: [Same as previous lead capture role dropdown]
+  - Attendee/Visitor
+  - Exhibitor
+  - Speaker
+  - Sponsor
+  - Media/Press
+  - Student
+  - Industry Professional
+  - Event Organizer
+  - Venue Staff
+  - Supplier/Vendor
+  - Investor
+  - Startup Founder
+  - Corporate Representative
+  - Association Member
+  - Government Official
+  - Academic/Researcher
+  - Consultant
+  - Other (specify)
+- Required: Yes
+- If "Other" selected, show text input (required)
+
+FIELD 3: INTEREST CATEGORIES (Optional)
+- Type: Multi-select dropdown with search functionality
+- Label: "What product categories are you interested in?"
+- Options: **SCRAPE FROM GULFOOD WEBSITE EXHIBITOR CATEGORIES**
+  
+INSTRUCTION TO REPLIT:
+"Extract all exhibitor categories from the Gulfood website event data. This should include categories like:
+- Beverages
+- Dairy Products
+- Fats & Oils
+- Health, Wellness & Free-From
+- Meat & Poultry
+- Pulses, Grains & Cereals
+- World Food
+- etc.
+
+Use the website scraping data that's already been ingested. Create a comprehensive list of all available categories. Allow users to select multiple categories (checkbox style in dropdown)."
+
+- Display format: Checkbox list inside dropdown
+- User can select multiple options
+- Add "Select All" option at top
+- Show selected count: "3 categories selected"
+- Placeholder: "Select categories of interest..."
+
+FIELD 4: INTENT OF ATTENDING (Optional)
+- Type: Multi-select dropdown
+- Label: "What's your primary goal for attending?"
+- Options (allow multiple selections):
+  □ Source new products/suppliers
+  □ Meet existing suppliers
+  □ Explore market trends
+  □ Network with industry professionals
+  □ Learn about innovations
+  □ Find distribution partners
+  □ Discover investment opportunities
+  □ Launch new products
+  □ Conduct market research
+  □ Attend conferences/workshops
+  □ Scout competition
+  □ Build brand awareness
+  □ Explore export opportunities
+  □ Other (specify)
+
+- If "Other" selected, show text input
+- Display selected count: "2 intents selected"
+- Placeholder: "Select your goals..."
+
+SUBMIT BUTTON:
+- Text: "Generate My Journey Plan"
+- Disabled until mandatory fields filled
+- Show loading spinner while processing
+- Loading text: "Analyzing your profile and matching exhibitors..."
