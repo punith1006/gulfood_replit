@@ -112,7 +112,7 @@ function RightNowContent() {
   }
 
   return (
-    <div className="space-y-4 h-full overflow-y-auto">
+    <div className="space-y-4">
       {activeAnnouncements.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -904,10 +904,10 @@ export default function AIChatbot() {
       <p className="text-xs text-muted-foreground mt-1">Invite friends and earn rewards</p>
     </TabsContent>
 
-    <TabsContent value="radar" className="flex-1 flex flex-col mt-0 p-4" data-testid="tab-content-radar">
-      <div className="flex-1 min-h-0">
+    <TabsContent value="radar" className="flex-1 flex flex-col mt-0" data-testid="tab-content-radar">
+      <ScrollArea className="flex-1 p-4">
         <RightNowContent />
-      </div>
+      </ScrollArea>
     </TabsContent>
   </Tabs>
 
