@@ -106,6 +106,25 @@ const detectHighIntentKeywords = (text: string): boolean => {
   return highIntentKeywords.some(keyword => lowerText.includes(keyword));
 };
 
+const detectJourneyIntent = (text: string): boolean => {
+  const journeyKeywords = [
+    "plan", "planning", "planner",
+    "visit", "visiting",
+    "itinerary", "itineraries",
+    "schedule", "scheduling",
+    "navigate", "navigation",
+    "route", "routing",
+    "journey", "trip",
+    "where should i", "what should i",
+    "how do i get", "guide me",
+    "recommend", "suggestion",
+    "explore", "discover"
+  ];
+  
+  const lowerText = text.toLowerCase();
+  return journeyKeywords.some(keyword => lowerText.includes(keyword));
+};
+
 const autoCategorizeConversation = (conversationText: string): string => {
   const lowerText = conversationText.toLowerCase();
   
@@ -279,6 +298,19 @@ export default function AIChatbot() {
     }
   });
   
+  // Track journey hint shown status
+  const [journeyHintShown, setJourneyHintShown] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('gulfood_journey_hint_shown');
+      return stored === 'true';
+    } catch {
+      return false;
+    }
+  });
+  
+  // Track if journey tab should be highlighted
+  const [highlightJourneyTab, setHighlightJourneyTab] = useState(false);
+  
   // Fetch announcements and sessions for notification badge
   const { data: announcements } = useQuery<any[]>({
     queryKey: ['/api/announcements'],
@@ -384,6 +416,22 @@ export default function AIChatbot() {
       console.error('Failed to save viewed items to localStorage:', error);
     }
   }, [viewedItems]);
+
+  // Persist journey hint shown status to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('gulfood_journey_hint_shown', journeyHintShown.toString());
+    } catch (error) {
+      console.error('Failed to save journey hint status to localStorage:', error);
+    }
+  }, [journeyHintShown]);
+
+  // Stop highlighting Journey tab when user clicks on it
+  useEffect(() => {
+    if (mainTab === "journey") {
+      setHighlightJourneyTab(false);
+    }
+  }, [mainTab]);
 
   // Mark all items as read when switching to Radar tab
   useEffect(() => {
@@ -507,6 +555,20 @@ export default function AIChatbot() {
 
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
+    
+    // Journey intent detection - highlight Journey tab if user mentions planning keywords
+    if (!journeyHintShown && detectJourneyIntent(input)) {
+      setHighlightJourneyTab(true);
+      setJourneyHintShown(true);
+      
+      // Show AI suggestion message about Journey feature
+      setTimeout(() => {
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: "💡 Tip: You can use the Journey tab to create a personalized itinerary for your visit!"
+        }]);
+      }, 1000);
+    }
     
     // NLP extraction - detect email and name patterns
     if (!leadCaptured && userRole) {
@@ -795,7 +857,7 @@ export default function AIChatbot() {
               mainTab === "journey"
                 ? "text-primary bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            }`}
+            } ${highlightJourneyTab ? "journey-pulse" : ""}`}
             data-testid="tab-main-journey"
           >
             <Globe className="w-4 h-4" />
