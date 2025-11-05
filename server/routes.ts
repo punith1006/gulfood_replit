@@ -1325,40 +1325,54 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         `ID ${e.id}: ${e.name} - ${e.sector} - ${e.description?.substring(0, 100) || 'No description'}`
       ).join('\n');
 
-      const prompt = `Analyze this visitor profile for Gulfood 2026, the world's largest FOOD & BEVERAGE exhibition in Dubai.
+      const prompt = `You are evaluating visitor relevance for Gulfood 2026, the world's largest FOOD & BEVERAGE trade show.
 
 VISITOR PROFILE:
 - Organization: ${organization}
 - Role: ${role}
-- Interest Categories: ${interestCategories.join(', ')}
-- Attendance Intents: ${attendanceIntents.join(', ')}
+- Interest Categories: ${interestCategories.join(', ') || 'None specified'}
+- Attendance Intents: ${attendanceIntents.join(', ') || 'None specified'}
 
-SAMPLE EXHIBITORS (first 50 of ${exhibitors.length}):
+EXHIBITORS AVAILABLE (first 50 of ${exhibitors.length}):
 ${exhibitorSummaries}
 
-SCORING CRITERIA (same as Company Analyzer):
-- 80-100%: Direct food/beverage professionals from F&B companies (manufacturers, suppliers, distributors, restaurants)
-- 50-79%: Food-related professionals (food tech, packaging, equipment, logistics, food safety, hospitality)
-- 20-49%: Tangentially related (agricultural tech, retail chains, general consulting for F&B)
-- 0-19%: NOT related to food/beverage industry (IT firms, finance, real estate, general tech, etc.)
+CRITICAL SCORING RULES - FOLLOW THESE EXACTLY:
 
-BE REALISTIC AND STRICT:
-- If the organization is NOT in food/beverage or food-related industries, score should be 0-19% maximum
-- If the role is not relevant to F&B (e.g., "AI Engineer" at a tech company), score LOW
-- Interest categories and intents can slightly boost relevance but NOT if base industry is wrong
+1. ORGANIZATION INDUSTRY (Primary Factor):
+   - Is ${organization} a FOOD or BEVERAGE company? (dairy, beverages, food manufacturing, restaurants, catering, food distribution)
+     → YES = 80-100% base score
+     → FOOD-RELATED (packaging, food tech, food equipment, food logistics, hospitality) = 50-79% base score
+     → TANGENTIALLY RELATED (agriculture, retail selling food, F&B consulting) = 20-49% base score
+     → NOT FOOD/BEVERAGE = 0-19% maximum score
+
+2. ROLE RELEVANCE (Secondary Factor):
+   - Is ${role} directly involved in food/beverage operations? (procurement, supply chain, distributor, manufacturer, chef, F&B manager)
+     → Can boost score +10-15% if organization is already F&B-related
+     → CANNOT save score if organization is wrong industry
+
+EXAMPLES TO CALIBRATE YOUR SCORING:
+- "Al Rawabi Dairy" + "Procurement Manager" = 85-95% (Direct dairy manufacturer)
+- "Nestlé" + "Supply Chain Director" = 90-95% (Major F&B company)
+- "Food Packaging Co" + "Sales Manager" = 55-70% (Food-related industry)
+- "Tech Startup" + "AI Engineer" = 5-15% (Not F&B industry)
+- "Investment Firm" + "Analyst" = 5-10% (Not F&B industry)
 
 TASK:
-1. Evaluate overall relevance score (0-100) based on ACTUAL industry alignment
-2. Identify the top 5 most relevant exhibitors from the list above with individual match scores (0-100)
-3. Provide reasoning for the overall score
+1. Determine if ${organization} is a FOOD/BEVERAGE company (yes/no)
+2. Assign relevance score based on the rules above
+3. Select top 5 most relevant exhibitors for this visitor
+4. Explain your score in 2-3 sentences
 
-Respond with JSON only (no markdown):
+Respond with valid JSON only (no markdown, no explanations outside JSON):
 {
   "overallRelevanceScore": <number 0-100>,
-  "scoreReasoning": "<2-3 sentences explaining why this score was given>",
+  "scoreReasoning": "<explain why you gave this score based on organization industry and role>",
   "topExhibitors": [
-    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<brief reason>" },
-    ... 5 total
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" }
   ]
 }`;
 
