@@ -1,0 +1,148 @@
+UPDATED LEAD CAPTURE FORM - ROLE FIELD SPECIFICATION
+
+=== MODIFY PHASE 2: LEAD CAPTURE FLOW - ROLE FIELD ===
+
+Replace the simple Role dropdown with a HYBRID ROLE SELECTOR:
+
+ROLE FIELD DESIGN:
+
+Create a dropdown menu with pre-defined options + "Other" option that reveals text input:
+
+DROPDOWN OPTIONS:
+- Attendee/Visitor
+- Exhibitor
+- Speaker
+- Sponsor
+- Media/Press
+- Student
+- Industry Professional
+- Event Organizer
+- Venue Staff
+- Supplier/Vendor
+- Investor
+- Startup Founder
+- Corporate Representative
+- Association Member
+- Government Official
+- Academic/Researcher
+- Consultant
+- Other (specify)
+
+FUNCTIONALITY:
+
+1. Display dropdown with all options listed above
+2. When user selects "Other (specify)":
+   - Show additional text input field below dropdown
+   - Placeholder text: "Please specify your role..."
+   - This text input becomes required when "Other" is selected
+   - Character limit: 50 characters
+
+3. Save to database:
+   - If pre-defined option selected → role: "Attendee/Visitor" (exact dropdown value)
+   - If "Other" selected → role: "Other" AND custom_role: "[user's text input]"
+
+UPDATED DATABASE SCHEMA:
+
+Modify the "leads" table to include:
+{
+  id: UUID,
+  name: STRING (required),
+  email: STRING (required, unique),
+  company: STRING (nullable),
+  role: STRING (nullable, values from dropdown),
+  custom_role: STRING (nullable, only filled when role = "Other"),
+  phone: STRING (nullable),
+  captured_at: TIMESTAMP,
+  captured_via: STRING,
+  conversation_id: STRING,
+  user_type: STRING,
+  lead_category: STRING (nullable),
+  source_page: STRING
+}
+
+UI/UX SPECIFICATIONS:
+
+Form layout should be:
+┌─────────────────────────────────────┐
+│ Name*                                │
+│ [text input]                         │
+│                                      │
+│ Email*                               │
+│ [email input]                        │
+│                                      │
+│ Company                              │
+│ [text input]                         │
+│                                      │
+│ Role                                 │
+│ [dropdown: Select your role... ▼]    │
+│                                      │
+│ (If "Other" selected, show below:)  │
+│ Please specify:                      │
+│ [text input]                         │
+│                                      │
+│ Phone                                │
+│ [text input]                         │
+│                                      │
+│ [Submit Button]                      │
+└─────────────────────────────────────┘
+
+VALIDATION RULES:
+
+1. Role dropdown is optional (user can skip)
+2. If "Other (specify)" is selected, the text input becomes REQUIRED
+3. Show error if "Other" selected but text input is empty: "Please specify your role"
+4. Trim whitespace from custom role input
+5. Minimum 2 characters for custom role input
+
+CONVERSATIONAL CAPTURE UPDATE:
+
+When detecting role in conversation, match against these patterns:
+- "I'm an [role]" or "I am a [role]"
+- "I work as [role]"
+- "My role is [role]"
+- "I'm here as [role]"
+
+Try to match to pre-defined roles first, if no match found, save as custom_role
+
+ADMIN DASHBOARD CONSIDERATION:
+
+When displaying leads in admin panel, show:
+- If role is pre-defined: Display role value
+- If role is "Other": Display "Other: [custom_role]"
+- Example: "Other: Event Technology Manager"
+
+ANALYTICS TRACKING:
+
+Track in separate analytics:
+- Most common pre-defined roles selected
+- Most common custom roles entered
+- This data helps improve the dropdown list over time
+
+API RESPONSE FORMAT:
+
+When returning lead data:
+{
+  "id": "uuid-here",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "role": "Other",
+  "custom_role": "Chief Innovation Officer",
+  "display_role": "Other: Chief Innovation Officer"  // Computed field for easy display
+}
+
+IMPLEMENTATION PRIORITY:
+
+Update the lead capture form with this hybrid role selector before completing Phase 2.
+
+TESTING CHECKLIST FOR ROLE FIELD:
+
+□ Dropdown displays all pre-defined role options
+□ "Other (specify)" option appears at the end of dropdown
+□ Text input appears only when "Other" is selected
+□ Text input hides when different option selected
+□ Validation works: error shows if "Other" selected but text is empty
+□ Both role and custom_role save correctly to database
+□ Custom role accepts alphanumeric and special characters (spaces, hyphens, etc.)
+□ Character limit enforced on custom role input
+□ Form still works when role field is left empty (optional field)
+□ Mobile display shows dropdown and text input properly
