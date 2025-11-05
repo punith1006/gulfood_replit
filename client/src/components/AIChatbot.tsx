@@ -1522,11 +1522,13 @@ export default function AIChatbot() {
                       attendanceIntents: finalIntents
                     });
                     
-                    const response = await apiRequest('POST', '/api/journey/generate', {
+                    const res = await apiRequest('POST', '/api/journey/generate', {
                       ...journeyFormData,
                       attendanceIntents: finalIntents,
                       sessionId: sessionManager.getOrCreateSessionId()
                     });
+                    
+                    const response = await res.json();
                     
                     console.log('✅ Journey plan received:', response);
                     console.log('📊 Journey details:', {
@@ -1805,11 +1807,12 @@ export default function AIChatbot() {
                             organization: journeyFormData.organization
                           };
                           
-                          const response = await apiRequest('POST', '/api/reports/generate', pdfData);
+                          const res = await apiRequest('POST', '/api/reports/generate', pdfData);
+                          const response = await res.json();
                           
-                          if (response.id) {
+                          if (response.reportId) {
                             const link = document.createElement('a');
-                            link.href = `/api/reports/${response.id}/download`;
+                            link.href = `/api/reports/${response.reportId}/download`;
                             link.download = `Gulfood_2026_Journey_Plan.pdf`;
                             document.body.appendChild(link);
                             link.click();
