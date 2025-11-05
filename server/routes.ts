@@ -7,7 +7,7 @@ import { z } from "zod";
 import { seedDatabase } from "./seed";
 import bcrypt from "bcryptjs";
 import { requireOrganizerAuth, requireExhibitorAuth, generateOrganizerToken, generateExhibitorToken, type AuthRequest } from "./middleware/auth";
-import { matchExhibitorsSemantic, type UserProfile } from "./semanticMatcher";
+// Semantic matcher no longer used - replaced with AI evaluation
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -1291,7 +1291,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      console.log('=== SEMANTIC JOURNEY GENERATION ===');
+      console.log('=== AI-POWERED JOURNEY GENERATION ===');
       console.log('User inputs:', { organization, role, interestCategories, attendanceIntents });
 
       let leadId: number | null = null;
@@ -1312,31 +1312,102 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         leadId = newLead.id;
       }
 
-      const userProfile: UserProfile = {
-        organization,
-        role,
-        interestCategories,
-        attendanceIntents
-      };
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "Journey generation requires AI analysis. Please configure OPENAI_API_KEY." 
+        });
+      }
 
       const exhibitors = await storage.getExhibitors();
-      console.log(`Matching against ${exhibitors.length} exhibitors using semantic analysis...`);
+      console.log(`Analyzing user profile against ${exhibitors.length} exhibitors using AI evaluation...`);
       
-      const exhibitorMatches = await matchExhibitorsSemantic(userProfile, exhibitors, 5);
-      console.log('Top 5 exhibitor matches:', exhibitorMatches.map(m => ({
-        name: m.data.companyName,
-        relevance: `${m.relevancePercentage}%`
+      const exhibitorSummaries = exhibitors.slice(0, 50).map(e => 
+        `ID ${e.id}: ${e.name} - ${e.sector} - ${e.description?.substring(0, 100) || 'No description'}`
+      ).join('\n');
+
+      const prompt = `Analyze this visitor profile for Gulfood 2026, the world's largest FOOD & BEVERAGE exhibition in Dubai.
+
+VISITOR PROFILE:
+- Organization: ${organization}
+- Role: ${role}
+- Interest Categories: ${interestCategories.join(', ')}
+- Attendance Intents: ${attendanceIntents.join(', ')}
+
+SAMPLE EXHIBITORS (first 50 of ${exhibitors.length}):
+${exhibitorSummaries}
+
+SCORING CRITERIA (same as Company Analyzer):
+- 80-100%: Direct food/beverage professionals from F&B companies (manufacturers, suppliers, distributors, restaurants)
+- 50-79%: Food-related professionals (food tech, packaging, equipment, logistics, food safety, hospitality)
+- 20-49%: Tangentially related (agricultural tech, retail chains, general consulting for F&B)
+- 0-19%: NOT related to food/beverage industry (IT firms, finance, real estate, general tech, etc.)
+
+BE REALISTIC AND STRICT:
+- If the organization is NOT in food/beverage or food-related industries, score should be 0-19% maximum
+- If the role is not relevant to F&B (e.g., "AI Engineer" at a tech company), score LOW
+- Interest categories and intents can slightly boost relevance but NOT if base industry is wrong
+
+TASK:
+1. Evaluate overall relevance score (0-100) based on ACTUAL industry alignment
+2. Identify the top 5 most relevant exhibitors from the list above with individual match scores (0-100)
+3. Provide reasoning for the overall score
+
+Respond with JSON only (no markdown):
+{
+  "overallRelevanceScore": <number 0-100>,
+  "scoreReasoning": "<2-3 sentences explaining why this score was given>",
+  "topExhibitors": [
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<brief reason>" },
+    ... 5 total
+  ]
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+      });
+
+      const content = completion.choices[0].message.content || "{}";
+      let aiEvaluation;
+      try {
+        aiEvaluation = JSON.parse(content.replace(/```json\n?/g, "").replace(/```\n?/g, ""));
+      } catch (parseError) {
+        console.error("Failed to parse AI evaluation:", content);
+        return res.status(500).json({ error: "Failed to parse AI analysis. Please try again." });
+      }
+
+      const relevanceScore = Math.max(0, Math.min(100, aiEvaluation.overallRelevanceScore || 50));
+      const scoreReasoning = aiEvaluation.scoreReasoning || "Score based on industry alignment with Gulfood 2026.";
+      
+      console.log(`AI Evaluation - Relevance Score: ${relevanceScore}%`);
+      console.log(`Score Reasoning: ${scoreReasoning}`);
+
+      const matchedExhibitors = [];
+      if (aiEvaluation.topExhibitors && Array.isArray(aiEvaluation.topExhibitors)) {
+        for (const match of aiEvaluation.topExhibitors.slice(0, 5)) {
+          const exhibitor = exhibitors.find(e => e.id === match.exhibitorId);
+          if (exhibitor) {
+            matchedExhibitors.push({
+              id: exhibitor.id,
+              companyName: exhibitor.name,
+              name: exhibitor.name,
+              sector: exhibitor.sector,
+              description: exhibitor.description,
+              country: exhibitor.country,
+              boothNumber: exhibitor.booth,
+              productCategories: exhibitor.products || [],
+              relevancePercentage: Math.max(0, Math.min(100, match.matchScore || 50))
+            });
+          }
+        }
+      }
+
+      console.log('Top 5 matched exhibitors:', matchedExhibitors.map(e => ({
+        name: e.name,
+        relevance: `${e.relevancePercentage}%`
       })));
 
-      const sessionMatches: any[] = [];
-      console.log('Sessions: No data available (hardcoded)');
-
-      const relevanceScore = exhibitorMatches.length > 0
-        ? Math.round(exhibitorMatches.reduce((sum, m) => sum + m.relevancePercentage, 0) / exhibitorMatches.length)
-        : 0;
-      console.log(`Overall relevance score: ${relevanceScore}% (based on exhibitor match quality)`);
-
-      const matchedExhibitors = exhibitorMatches.map(m => m.data);
       const matchedSessions: any[] = [];
 
       const aiContent = await generateJourneyContent({
