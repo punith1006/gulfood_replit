@@ -11,6 +11,10 @@ import {
   salesContacts,
   leads,
   referrals,
+  announcements,
+  scheduledSessions,
+  exhibitorAccessCodes,
+  organizers,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -30,7 +34,15 @@ import {
   type Lead,
   type InsertLead,
   type Referral,
-  type InsertReferral
+  type InsertReferral,
+  type Announcement,
+  type InsertAnnouncement,
+  type ScheduledSession,
+  type InsertScheduledSession,
+  type ExhibitorAccessCode,
+  type InsertExhibitorAccessCode,
+  type Organizer,
+  type InsertOrganizer
 } from "@shared/schema";
 
 export interface IStorage {
@@ -84,6 +96,24 @@ export interface IStorage {
     aiAccuracy: number;
     totalFeedback: number;
   }>;
+  
+  getAnnouncements(targetAudience?: string[], isActive?: boolean): Promise<Announcement[]>;
+  createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement>;
+  updateAnnouncement(id: number, updates: Partial<InsertAnnouncement>): Promise<Announcement | undefined>;
+  deleteAnnouncement(id: number): Promise<boolean>;
+  
+  getScheduledSessions(targetAudience?: string[], isActive?: boolean, upcoming?: boolean): Promise<ScheduledSession[]>;
+  createScheduledSession(session: InsertScheduledSession): Promise<ScheduledSession>;
+  updateScheduledSession(id: number, updates: Partial<InsertScheduledSession>): Promise<ScheduledSession | undefined>;
+  deleteScheduledSession(id: number): Promise<boolean>;
+  
+  getExhibitorAccessCode(code: string): Promise<ExhibitorAccessCode | undefined>;
+  createExhibitorAccessCode(accessCode: InsertExhibitorAccessCode): Promise<ExhibitorAccessCode>;
+  validateAndUseAccessCode(code: string): Promise<ExhibitorAccessCode | null>;
+  
+  getOrganizerByEmail(email: string): Promise<Organizer | undefined>;
+  createOrganizer(organizer: InsertOrganizer): Promise<Organizer>;
+  updateOrganizerLastLogin(email: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -436,6 +466,166 @@ export class DatabaseStorage implements IStorage {
       aiAccuracy,
       totalFeedback
     };
+  }
+
+  async getAnnouncements(targetAudience?: string[], isActive?: boolean): Promise<Announcement[]> {
+    const conditions = [];
+    const now = new Date();
+
+    if (isActive !== undefined) {
+      conditions.push(eq(announcements.isActive, isActive));
+    }
+
+    if (isActive) {
+      conditions.push(
+        or(
+          sql`${announcements.startTime} IS NULL OR ${announcements.startTime} <= ${now}`,
+          sql`${announcements.endTime} IS NULL OR ${announcements.endTime} >= ${now}`
+        )!
+      );
+    }
+
+    let query = db.select().from(announcements);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)!);
+    }
+
+    const allAnnouncements = await query.orderBy(desc(announcements.priority), desc(announcements.createdAt));
+
+    if (targetAudience && targetAudience.length > 0) {
+      return allAnnouncements.filter(ann => 
+        ann.targetAudience && ann.targetAudience.some(aud => targetAudience.includes(aud))
+      );
+    }
+
+    return allAnnouncements;
+  }
+
+  async createAnnouncement(announcement: InsertAnnouncement): Promise<Announcement> {
+    const [created] = await db.insert(announcements).values(announcement).returning();
+    return created;
+  }
+
+  async updateAnnouncement(id: number, updates: Partial<InsertAnnouncement>): Promise<Announcement | undefined> {
+    const [updated] = await db
+      .update(announcements)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(announcements.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteAnnouncement(id: number): Promise<boolean> {
+    const result = await db.delete(announcements).where(eq(announcements.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getScheduledSessions(targetAudience?: string[], isActive?: boolean, upcoming?: boolean): Promise<ScheduledSession[]> {
+    const conditions = [];
+    const now = new Date();
+
+    if (isActive !== undefined) {
+      conditions.push(eq(scheduledSessions.isActive, isActive));
+    }
+
+    if (upcoming) {
+      conditions.push(sql`${scheduledSessions.startTime} >= ${now}`);
+    }
+
+    let query = db.select().from(scheduledSessions);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)!);
+    }
+
+    const allSessions = await query.orderBy(scheduledSessions.startTime);
+
+    if (targetAudience && targetAudience.length > 0) {
+      return allSessions.filter(session => 
+        session.targetAudience && session.targetAudience.some(aud => targetAudience.includes(aud))
+      );
+    }
+
+    return allSessions;
+  }
+
+  async createScheduledSession(session: InsertScheduledSession): Promise<ScheduledSession> {
+    const [created] = await db.insert(scheduledSessions).values(session).returning();
+    return created;
+  }
+
+  async updateScheduledSession(id: number, updates: Partial<InsertScheduledSession>): Promise<ScheduledSession | undefined> {
+    const [updated] = await db
+      .update(scheduledSessions)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(scheduledSessions.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteScheduledSession(id: number): Promise<boolean> {
+    const result = await db.delete(scheduledSessions).where(eq(scheduledSessions.id, id));
+    return result.rowCount > 0;
+  }
+
+  async getExhibitorAccessCode(code: string): Promise<ExhibitorAccessCode | undefined> {
+    const [accessCode] = await db
+      .select()
+      .from(exhibitorAccessCodes)
+      .where(eq(exhibitorAccessCodes.code, code))
+      .limit(1);
+    return accessCode;
+  }
+
+  async createExhibitorAccessCode(accessCode: InsertExhibitorAccessCode): Promise<ExhibitorAccessCode> {
+    const [created] = await db.insert(exhibitorAccessCodes).values(accessCode).returning();
+    return created;
+  }
+
+  async validateAndUseAccessCode(code: string): Promise<ExhibitorAccessCode | null> {
+    const accessCode = await this.getExhibitorAccessCode(code);
+    
+    if (!accessCode) {
+      return null;
+    }
+
+    if (!accessCode.isActive) {
+      return null;
+    }
+
+    if (accessCode.expiresAt && new Date(accessCode.expiresAt) < new Date()) {
+      return null;
+    }
+
+    const [updated] = await db
+      .update(exhibitorAccessCodes)
+      .set({ usedAt: new Date() })
+      .where(eq(exhibitorAccessCodes.id, accessCode.id))
+      .returning();
+
+    return updated;
+  }
+
+  async getOrganizerByEmail(email: string): Promise<Organizer | undefined> {
+    const [organizer] = await db
+      .select()
+      .from(organizers)
+      .where(eq(organizers.email, email))
+      .limit(1);
+    return organizer;
+  }
+
+  async createOrganizer(organizer: InsertOrganizer): Promise<Organizer> {
+    const [created] = await db.insert(organizers).values(organizer).returning();
+    return created;
+  }
+
+  async updateOrganizerLastLogin(email: string): Promise<void> {
+    await db
+      .update(organizers)
+      .set({ lastLogin: new Date() })
+      .where(eq(organizers.email, email));
   }
 }
 

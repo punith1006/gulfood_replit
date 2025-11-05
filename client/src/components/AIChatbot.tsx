@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useRole, type UserRole } from "@/contexts/RoleContext";
@@ -83,6 +84,7 @@ export default function AIChatbot() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [activeTab, setActiveTab] = useState("chat");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
@@ -638,6 +640,29 @@ export default function AIChatbot() {
             <Send className="w-4 h-4" />
           </Button>
         </div>
+        
+        {userRole && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+              <TabsTrigger 
+                value="chat" 
+                className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                data-testid="tab-chat"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                Chat
+              </TabsTrigger>
+              <TabsTrigger 
+                value="rightnow" 
+                className="gap-1.5 data-[state=active]:bg-orange-500/10 data-[state=active]:text-orange-600"
+                data-testid="tab-rightnow"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                Right Now
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
       </div>
 
       <Dialog open={showContactSales} onOpenChange={setShowContactSales}>

@@ -132,6 +132,65 @@ export const referrals = pgTable("referrals", {
   userAgent: text("user_agent")
 });
 
+export const announcements = pgTable("announcements", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  category: text("category").notNull(),
+  priority: text("priority").notNull().default("normal"),
+  isActive: boolean("is_active").notNull().default(true),
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+  targetAudience: text("target_audience").array().notNull().default(["visitor", "exhibitor", "organizer"]),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const scheduledSessions = pgTable("scheduled_sessions", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  sessionType: text("session_type").notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  venue: text("venue").notNull(),
+  hall: text("hall"),
+  speaker: text("speaker"),
+  maxAttendees: integer("max_attendees"),
+  currentAttendees: integer("current_attendees").notNull().default(0),
+  registrationRequired: boolean("registration_required").notNull().default(false),
+  targetAudience: text("target_audience").array().notNull().default(["visitor", "exhibitor", "organizer"]),
+  tags: text("tags").array(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const exhibitorAccessCodes = pgTable("exhibitor_access_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  exhibitorId: integer("exhibitor_id"),
+  companyName: text("company_name").notNull(),
+  email: text("email").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  usedAt: timestamp("used_at"),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const organizers = pgTable("organizers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  role: text("role").notNull().default("staff"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
@@ -208,6 +267,55 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({
   userAgent: z.string().optional()
 });
 
+export const insertAnnouncementSchema = createInsertSchema(announcements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  title: z.string().min(1, "Title is required").max(200),
+  message: z.string().min(1, "Message is required"),
+  category: z.enum(["general", "event", "emergency", "update", "promo"], {
+    errorMap: () => ({ message: "Invalid category" })
+  }),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
+  targetAudience: z.array(z.enum(["visitor", "exhibitor", "organizer"])).default(["visitor", "exhibitor", "organizer"])
+});
+
+export const insertScheduledSessionSchema = createInsertSchema(scheduledSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  currentAttendees: true
+}).extend({
+  title: z.string().min(1, "Title is required").max(200),
+  description: z.string().min(1, "Description is required"),
+  sessionType: z.enum(["conference", "workshop", "networking", "demo", "panel", "other"], {
+    errorMap: () => ({ message: "Invalid session type" })
+  }),
+  venue: z.string().min(1, "Venue is required"),
+  targetAudience: z.array(z.enum(["visitor", "exhibitor", "organizer"])).default(["visitor", "exhibitor", "organizer"])
+});
+
+export const insertExhibitorAccessCodeSchema = createInsertSchema(exhibitorAccessCodes).omit({
+  id: true,
+  createdAt: true,
+  usedAt: true
+}).extend({
+  code: z.string().min(6, "Code must be at least 6 characters").max(50),
+  companyName: z.string().min(1, "Company name is required"),
+  email: z.string().email("Invalid email address")
+});
+
+export const insertOrganizerSchema = createInsertSchema(organizers).omit({
+  id: true,
+  createdAt: true,
+  lastLogin: true
+}).extend({
+  email: z.string().email("Invalid email address"),
+  name: z.string().min(1, "Name is required"),
+  role: z.enum(["staff", "admin", "super_admin"]).default("staff")
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -237,3 +345,15 @@ export type InsertLead = z.infer<typeof insertLeadSchema>;
 
 export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
+
+export type Announcement = typeof announcements.$inferSelect;
+export type InsertAnnouncement = z.infer<typeof insertAnnouncementSchema>;
+
+export type ScheduledSession = typeof scheduledSessions.$inferSelect;
+export type InsertScheduledSession = z.infer<typeof insertScheduledSessionSchema>;
+
+export type ExhibitorAccessCode = typeof exhibitorAccessCodes.$inferSelect;
+export type InsertExhibitorAccessCode = z.infer<typeof insertExhibitorAccessCodeSchema>;
+
+export type Organizer = typeof organizers.$inferSelect;
+export type InsertOrganizer = z.infer<typeof insertOrganizerSchema>;

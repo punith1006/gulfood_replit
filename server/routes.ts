@@ -1,10 +1,11 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
+import bcrypt from "bcryptjs";
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -854,6 +855,249 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     } catch (error) {
       console.error("Error fetching venue traffic:", error);
       res.status(500).json({ error: "Failed to fetch venue traffic data" });
+    }
+  });
+
+  app.get("/api/announcements", async (req, res) => {
+    try {
+      const { targetAudience, isActive } = req.query;
+      const audienceArray = targetAudience 
+        ? (targetAudience as string).split(',').map(a => a.trim())
+        : undefined;
+      const active = isActive === 'true' ? true : isActive === 'false' ? false : undefined;
+      
+      const announcements = await storage.getAnnouncements(audienceArray, active);
+      res.json(announcements);
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+      res.status(500).json({ error: "Failed to fetch announcements" });
+    }
+  });
+
+  app.post("/api/announcements", async (req, res) => {
+    try {
+      const validatedData = insertAnnouncementSchema.parse(req.body);
+      const announcement = await storage.createAnnouncement(validatedData);
+      res.json(announcement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid announcement data", details: error.errors });
+      }
+      console.error("Error creating announcement:", error);
+      res.status(500).json({ error: "Failed to create announcement" });
+    }
+  });
+
+  app.patch("/api/announcements/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const announcement = await storage.updateAnnouncement(id, updates);
+      
+      if (!announcement) {
+        return res.status(404).json({ error: "Announcement not found" });
+      }
+      
+      res.json(announcement);
+    } catch (error) {
+      console.error("Error updating announcement:", error);
+      res.status(500).json({ error: "Failed to update announcement" });
+    }
+  });
+
+  app.delete("/api/announcements/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteAnnouncement(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Announcement not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting announcement:", error);
+      res.status(500).json({ error: "Failed to delete announcement" });
+    }
+  });
+
+  app.get("/api/sessions", async (req, res) => {
+    try {
+      const { targetAudience, isActive, upcoming } = req.query;
+      const audienceArray = targetAudience 
+        ? (targetAudience as string).split(',').map(a => a.trim())
+        : undefined;
+      const active = isActive === 'true' ? true : isActive === 'false' ? false : undefined;
+      const upcomingOnly = upcoming === 'true';
+      
+      const sessions = await storage.getScheduledSessions(audienceArray, active, upcomingOnly);
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+      res.status(500).json({ error: "Failed to fetch sessions" });
+    }
+  });
+
+  app.post("/api/sessions", async (req, res) => {
+    try {
+      const validatedData = insertScheduledSessionSchema.parse(req.body);
+      const session = await storage.createScheduledSession(validatedData);
+      res.json(session);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid session data", details: error.errors });
+      }
+      console.error("Error creating session:", error);
+      res.status(500).json({ error: "Failed to create session" });
+    }
+  });
+
+  app.patch("/api/sessions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const session = await storage.updateScheduledSession(id, updates);
+      
+      if (!session) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      res.json(session);
+    } catch (error) {
+      console.error("Error updating session:", error);
+      res.status(500).json({ error: "Failed to update session" });
+    }
+  });
+
+  app.delete("/api/sessions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteScheduledSession(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      res.status(500).json({ error: "Failed to delete session" });
+    }
+  });
+
+  app.post("/api/exhibitor/verify-code", async (req, res) => {
+    try {
+      const { code } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ error: "Access code is required" });
+      }
+      
+      const accessCode = await storage.validateAndUseAccessCode(code);
+      
+      if (!accessCode) {
+        return res.status(401).json({ error: "Invalid or expired access code" });
+      }
+      
+      res.json({ 
+        success: true,
+        companyName: accessCode.companyName,
+        email: accessCode.email
+      });
+    } catch (error) {
+      console.error("Error verifying exhibitor code:", error);
+      res.status(500).json({ error: "Failed to verify access code" });
+    }
+  });
+
+  app.post("/api/exhibitor/access-codes", async (req, res) => {
+    try {
+      const validatedData = insertExhibitorAccessCodeSchema.parse(req.body);
+      const accessCode = await storage.createExhibitorAccessCode(validatedData);
+      res.json(accessCode);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid access code data", details: error.errors });
+      }
+      console.error("Error creating access code:", error);
+      res.status(500).json({ error: "Failed to create access code" });
+    }
+  });
+
+  app.post("/api/organizer/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      const organizer = await storage.getOrganizerByEmail(email);
+      
+      if (!organizer) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      if (!organizer.isActive) {
+        return res.status(403).json({ error: "Account is inactive" });
+      }
+      
+      const isValid = await bcrypt.compare(password, organizer.passwordHash);
+      
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      await storage.updateOrganizerLastLogin(email);
+      
+      res.json({ 
+        success: true,
+        organizer: {
+          email: organizer.email,
+          name: organizer.name,
+          role: organizer.role
+        }
+      });
+    } catch (error) {
+      console.error("Error during organizer login:", error);
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/organizer/register", async (req, res) => {
+    try {
+      const { email, password, name } = req.body;
+      
+      if (!email || !password || !name) {
+        return res.status(400).json({ error: "Email, password, and name are required" });
+      }
+      
+      const existing = await storage.getOrganizerByEmail(email);
+      if (existing) {
+        return res.status(409).json({ error: "Organizer already exists" });
+      }
+      
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      const organizer = await storage.createOrganizer({
+        email,
+        passwordHash,
+        name,
+        role: "staff",
+        isActive: true
+      });
+      
+      res.json({ 
+        success: true,
+        organizer: {
+          email: organizer.email,
+          name: organizer.name,
+          role: organizer.role
+        }
+      });
+    } catch (error) {
+      console.error("Error registering organizer:", error);
+      res.status(500).json({ error: "Failed to register organizer" });
     }
   });
 
