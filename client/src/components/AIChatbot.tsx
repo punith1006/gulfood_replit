@@ -1517,7 +1517,7 @@ export default function AIChatbot() {
                       finalIntents[index] = journeyFormData.otherIntent;
                     }
                     
-                    const response = await apiRequest('/api/journey/generate', 'POST', {
+                    const response = await apiRequest('POST', '/api/journey/generate', {
                       ...journeyFormData,
                       attendanceIntents: finalIntents,
                       sessionId: sessionManager.getOrCreateSessionId()
