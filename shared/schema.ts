@@ -107,10 +107,16 @@ export const salesContacts = pgTable("sales_contacts", {
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
-  category: text("category").notNull(),
-  message: text("message"),
-  sessionId: text("session_id"),
+  email: text("email").notNull().unique(),
+  company: text("company"),
+  role: text("role"),
+  phone: text("phone"),
+  capturedAt: timestamp("captured_at").defaultNow().notNull(),
+  capturedVia: text("captured_via").notNull(),
+  conversationId: text("conversation_id"),
+  userType: text("user_type"),
+  leadCategory: text("lead_category"),
+  sourcePage: text("source_page"),
   status: text("status").notNull().default("new"),
   assignedTo: text("assigned_to"),
   notes: text("notes"),
@@ -224,15 +230,25 @@ export const insertGeneratedReportSchema = createInsertSchema(generatedReports).
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   createdAt: true,
+  capturedAt: true,
   status: true
 }).extend({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
-  category: z.enum(["Visitor", "Exhibitor", "Organizer", "Media", "Other"], {
-    errorMap: () => ({ message: "Invalid category selected" })
+  company: z.string().optional(),
+  role: z.enum(["Visitor", "Exhibitor"], {
+    errorMap: () => ({ message: "Invalid role selected" })
+  }).optional(),
+  phone: z.string().optional(),
+  capturedVia: z.enum(["direct", "conversational", "contextual"], {
+    errorMap: () => ({ message: "Invalid capture method" })
   }),
-  message: z.string().optional(),
-  sessionId: z.string().optional(),
+  conversationId: z.string().optional(),
+  userType: z.string().optional(),
+  leadCategory: z.enum(["registration_interest", "exhibitor_interest", "content_interest", "sponsorship_interest", "general_inquiry"], {
+    errorMap: () => ({ message: "Invalid lead category" })
+  }).optional(),
+  sourcePage: z.string().optional(),
   assignedTo: z.string().optional(),
   notes: z.string().optional()
 });

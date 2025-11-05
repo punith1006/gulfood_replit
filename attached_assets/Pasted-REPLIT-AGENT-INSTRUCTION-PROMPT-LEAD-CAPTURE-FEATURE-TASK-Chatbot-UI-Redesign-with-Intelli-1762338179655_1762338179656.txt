@@ -1,0 +1,182 @@
+REPLIT AGENT INSTRUCTION PROMPT - LEAD CAPTURE FEATURE
+
+=== TASK: Chatbot UI Redesign with Intelligent Lead Capture System ===
+
+PHASE 1: UI RESTRUCTURING
+
+1. REMOVE the "Organizer" button from the initial chatbot view
+
+2. ADD TAB NAVIGATION at the top of chat interface (below "Faris - Your Event Guide" header):
+   - Create 4 horizontal tabs: Chat 💬 | Journey 🗺️ | Referral 🤝 | Radar 📡
+   - Make Chat tab active by default
+   - Add visual indicator for active tab (colored underline or background)
+   - Other tabs show "Coming Soon" message when clicked
+   - Ensure responsive design for mobile/desktop
+
+3. RELOCATE "Visitor" and "Exhibitor" buttons to appear AFTER the greeting message, not before
+
+PHASE 2: LEAD CAPTURE FLOW
+
+INITIAL GREETING (when chatbot opens):
+Display this message:
+"Hi there! 👋 Welcome to [Event Name]! I'm Faris, your event guide.
+
+To help me assist you better, may I know your name and email address? This way I can provide you with personalized recommendations and keep you updated about the event.
+
+You can share it like: 'I'm John from john@example.com' or simply type your details below."
+
+Add two action buttons:
+- "Share My Details" button
+- "Skip for Now" button
+
+LEAD CAPTURE METHODS:
+
+METHOD 1 - Direct Capture (when "Share My Details" clicked):
+Show inline form in chat with fields:
+- Name* (text input, required)
+- Email* (email input, required) 
+- Company (text input, optional)
+- Role (dropdown: Visitor/Exhibitor, optional)
+- Submit button
+Add disclaimer: "We respect your privacy. Your information will only be used for event-related communication."
+
+METHOD 2 - Conversational Capture (during chat):
+Implement NLP to detect when users naturally share information:
+- Pattern: "I'm [Name]" or "My name is [Name]"
+- Pattern: "My email is [email]" or "[email address]"
+- Pattern: "I work at [Company]" or "I'm from [Company]"
+Extract and parse this information automatically
+
+METHOD 3 - Contextual Trigger:
+When user asks about: registration, booking, exhibitor details, scheduling, ticket purchase
+Trigger message: "I'd love to help you with that! To send you the details and keep you updated, could you share your name and email address?"
+
+PHASE 3: DATA VALIDATION & STORAGE
+
+EMAIL VALIDATION:
+- Use regex to validate email format: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+- Show error if invalid: "That doesn't look like a valid email. Could you check and try again?"
+- After successful capture, confirm: "Got it! I've saved your details as [Name] - [Email]. Is this correct?"
+- Allow user to edit if incorrect
+
+DATABASE SCHEMA:
+Create table/collection named "leads" with these fields:
+{
+  id: UUID (auto-generated primary key),
+  name: STRING (required),
+  email: STRING (required, unique),
+  company: STRING (nullable),
+  role: STRING (nullable, values: "Visitor" or "Exhibitor"),
+  captured_at: TIMESTAMP (auto-generated),
+  captured_via: STRING (values: "direct", "conversational", "contextual"),
+  conversation_id: STRING (link to chat session ID),
+  user_type: STRING (from Visitor/Exhibitor selection),
+  lead_category: STRING (nullable),
+  source_page: STRING (track originating page URL)
+}
+
+DUPLICATE HANDLING:
+- Before saving, check if email exists in database
+- If exists: Display "Welcome back, [Name]! I remember you. How can I help you today?"
+- If new: Save lead and show confirmation message
+
+PHASE 4: BACKEND API ENDPOINTS
+
+Create these endpoints:
+
+POST /api/leads
+Body: { name, email, company?, role?, phone?, captured_via, conversation_id, user_type?, source_page? }
+Response: { success: true, lead: {...} } or { success: false, error: "message" }
+
+GET /api/leads/check/:email
+Response: { exists: true/false, lead: {...} or null }
+
+PUT /api/leads/:id
+Body: { name?, email?, company?, role?, phone? }
+Response: { success: true, lead: {...} }
+
+GET /api/leads (admin only - add authentication)
+Response: { leads: [...], count: number }
+
+PHASE 5: AUTO-CATEGORIZATION LOGIC
+
+Implement conversation analysis to tag leads based on topics discussed:
+- If asks about registration/tickets → lead_category: "registration_interest"
+- If asks about exhibiting/booth → lead_category: "exhibitor_interest"
+- If asks about sessions/speakers → lead_category: "content_interest"  
+- If asks about sponsorship → lead_category: "sponsorship_interest"
+- If asks about general info → lead_category: "general_inquiry"
+
+Update lead_category field in database when category is detected
+
+PHASE 6: USER FLOW SCENARIOS
+
+SCENARIO 1 - Immediate Capture:
+User opens chat → Sees greeting → Clicks "Share My Details" → Fills form → Submits → Sees confirmation → Continues to normal chat
+
+SCENARIO 2 - Skip Initially:
+User opens chat → Sees greeting → Clicks "Skip for Now" → Starts asking questions → High-intent detected → Contextual prompt appears → User shares details → Continues chat
+
+SCENARIO 3 - Natural Conversation:
+User opens chat → Clicks "Skip for Now" → Types "Hi I'm Sarah from sarah@company.com" → Bot detects and extracts info → Confirms with user → Saves to database
+
+SCENARIO 4 - Returning User:
+User opens chat with same browser/device → System checks for existing conversation_id or prompts for email → Finds existing lead → Shows "Welcome back, [Name]!" → Skips lead capture
+
+PHASE 7: ERROR HANDLING
+
+Handle these cases gracefully:
+- Invalid email format → Show friendly error and request correction
+- Database connection failure → Show "Having trouble saving your info. You can continue chatting and we'll try again later."
+- User refuses to share info → Allow chat to continue normally with limited functionality
+- Duplicate email submission → Recognize returning user instead of showing error
+- Empty required fields → Show validation message: "Please fill in your name and email to continue"
+
+PHASE 8: PRIVACY & COMPLIANCE
+
+Add these elements:
+- Privacy disclaimer below lead capture form
+- Optional checkbox: "I agree to receive event updates via email"
+- Link to privacy policy (if available)
+- Allow users to opt-out or delete their data (implement in future admin panel)
+
+DESIGN REQUIREMENTS:
+
+- Keep existing chat bubble styling and color scheme
+- Tab navigation should be clean and not cluttered
+- Lead capture form should feel native to the chat interface (chat-style, not popup)
+- Use smooth transitions and animations
+- Maintain mobile responsiveness
+- Keep input field and action buttons at bottom of screen
+- Ensure proper spacing and readability
+
+TESTING CHECKLIST:
+
+Test these before marking complete:
+□ Tab navigation works and Chat tab is default
+□ Greeting message appears when chat opens
+□ "Share My Details" button shows inline form
+□ "Skip for Now" button allows user to continue chatting
+□ Email validation works correctly
+□ Lead data saves to database successfully
+□ Duplicate email detection works
+□ Conversational NLP extraction works for name/email
+□ Contextual trigger appears at appropriate times
+□ Returning user recognition works
+□ Form displays correctly on mobile and desktop
+□ All API endpoints return correct responses
+□ Error handling works for all edge cases
+
+IMPLEMENTATION PRIORITY:
+This is PRIORITY 1 feature. Complete and test thoroughly before implementing Journey, Referral, or Radar tabs.
+
+DELIVERABLES:
+1. Updated chatbot UI with tab navigation
+2. Working lead capture with all 3 methods (direct, conversational, contextual)
+3. Database table/collection with proper schema
+4. API endpoints for lead management
+5. Email validation and duplicate checking
+6. Confirmation messages and error handling
+7. Mobile-responsive design
+
+Start implementation now and show progress updates after each phase completion.

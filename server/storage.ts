@@ -74,9 +74,10 @@ export interface IStorage {
   getSalesContacts(): Promise<SalesContact[]>;
   createSalesContact(contact: InsertSalesContact): Promise<SalesContact>;
   
-  getLeads(status?: string, category?: string): Promise<Lead[]>;
+  getLeads(status?: string, leadCategory?: string): Promise<Lead[]>;
+  getLeadByEmail(email: string): Promise<Lead | undefined>;
   createLead(lead: InsertLead): Promise<Lead>;
-  updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined>;
+  updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined>;
   
   getReferrals(platform?: string, startDate?: Date, endDate?: Date): Promise<Referral[]>;
   createReferral(referral: InsertReferral): Promise<Referral>;
@@ -298,15 +299,15 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getLeads(status?: string, category?: string): Promise<Lead[]> {
+  async getLeads(status?: string, leadCategory?: string): Promise<Lead[]> {
     const conditions = [];
     
     if (status) {
       conditions.push(eq(leads.status, status));
     }
     
-    if (category) {
-      conditions.push(eq(leads.category, category));
+    if (leadCategory) {
+      conditions.push(eq(leads.leadCategory, leadCategory));
     }
     
     if (conditions.length > 0) {
@@ -316,12 +317,17 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(leads).orderBy(desc(leads.createdAt));
   }
 
+  async getLeadByEmail(email: string): Promise<Lead | undefined> {
+    const result = await db.select().from(leads).where(eq(leads.email, email)).limit(1);
+    return result[0];
+  }
+
   async createLead(lead: InsertLead): Promise<Lead> {
     const result = await db.insert(leads).values(lead).returning();
     return result[0];
   }
 
-  async updateLead(id: number, updates: { status?: string; assignedTo?: string; notes?: string }): Promise<Lead | undefined> {
+  async updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined> {
     const result = await db
       .update(leads)
       .set(updates)
