@@ -15,6 +15,7 @@ import {
   scheduledSessions,
   exhibitorAccessCodes,
   organizers,
+  journeyPlans,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -117,6 +118,10 @@ export interface IStorage {
   getOrganizerByEmail(email: string): Promise<Organizer | undefined>;
   createOrganizer(organizer: InsertOrganizer): Promise<Organizer>;
   updateOrganizerLastLogin(email: string): Promise<void>;
+  
+  getJourneyPlanByEmail(email: string): Promise<any | undefined>;
+  createJourneyPlan(plan: any): Promise<any>;
+  getJourneyPlans(sessionId?: string): Promise<any[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -646,6 +651,35 @@ export class DatabaseStorage implements IStorage {
       .update(organizers)
       .set({ lastLogin: new Date() })
       .where(eq(organizers.email, email));
+  }
+
+  async getJourneyPlanByEmail(email: string): Promise<any | undefined> {
+    const [plan] = await db
+      .select()
+      .from(journeyPlans)
+      .where(eq(journeyPlans.email, email))
+      .orderBy(desc(journeyPlans.createdAt))
+      .limit(1);
+    return plan;
+  }
+
+  async createJourneyPlan(plan: any): Promise<any> {
+    const [created] = await db.insert(journeyPlans).values(plan).returning();
+    return created;
+  }
+
+  async getJourneyPlans(sessionId?: string): Promise<any[]> {
+    if (sessionId) {
+      return db
+        .select()
+        .from(journeyPlans)
+        .where(eq(journeyPlans.sessionId, sessionId))
+        .orderBy(desc(journeyPlans.createdAt));
+    }
+    return db
+      .select()
+      .from(journeyPlans)
+      .orderBy(desc(journeyPlans.createdAt));
   }
 }
 

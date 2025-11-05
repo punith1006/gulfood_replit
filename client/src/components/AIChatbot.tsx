@@ -32,6 +32,26 @@ import { useToast } from "@/hooks/use-toast";
 import farisAvatar from "@assets/generated_images/Circular_bot_head_portrait_241be4f6.png";
 import ReferralWidget from "@/components/ReferralWidget";
 import RegistrationShareWidget from "@/components/RegistrationShareWidget";
+import { sessionManager } from "@/lib/sessionManager";
+import { GULFOOD_CATEGORIES } from "@shared/schema";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const ATTENDANCE_INTENTS = [
+  "Discover new products and innovations",
+  "Meet potential suppliers and partners",
+  "Network with industry professionals",
+  "Learn about market trends",
+  "Source ingredients or products",
+  "Find new distribution channels",
+  "Attend conferences and seminars",
+  "Explore investment opportunities",
+  "Conduct competitor analysis",
+  "Launch or promote new products",
+  "Secure international buyers",
+  "Research packaging solutions",
+  "Explore sustainability initiatives",
+  "Other"
+] as const;
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
@@ -310,6 +330,25 @@ export default function AIChatbot() {
   
   // Track if journey tab should be highlighted
   const [highlightJourneyTab, setHighlightJourneyTab] = useState(false);
+  
+  // Journey form state
+  const [journeyFormData, setJourneyFormData] = useState({
+    name: '',
+    email: '',
+    organization: '',
+    role: '',
+    interestCategories: [] as string[],
+    attendanceIntents: [] as string[],
+    otherIntent: ''
+  });
+  const [isExistingLead, setIsExistingLead] = useState(false);
+  const [isCheckingLead, setIsCheckingLead] = useState(false);
+  const [isGeneratingJourney, setIsGeneratingJourney] = useState(false);
+  const [journeyPlan, setJourneyPlan] = useState<any>(null);
+  const [showCategorySearch, setShowCategorySearch] = useState(false);
+  const [categorySearchTerm, setCategorySearchTerm] = useState('');
+  const [showIntentSearch, setShowIntentSearch] = useState(false);
+  const [intentSearchTerm, setIntentSearchTerm] = useState('');
   
   // Fetch announcements and sessions for notification badge
   const { data: announcements } = useQuery<any[]>({
@@ -1437,18 +1476,328 @@ export default function AIChatbot() {
 
       {/* Journey Tab Content */}
       {mainTab === "journey" && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4 max-w-md">
-            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-              <Globe className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">Journey Planning</h3>
-            <p className="text-sm text-muted-foreground">
-              Plan your personalized journey across both venues with AI-powered recommendations, venue navigation, and route optimization.
-            </p>
-            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
+        <ScrollArea className="flex-1">
+          <div className="p-6 max-w-2xl mx-auto space-y-6">
+            {!journeyPlan ? (
+              <>
+                <div className="text-center space-y-2">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                    <Globe className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground">Plan Your Journey</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Get AI-powered recommendations tailored to your interests and goals for Gulfood 2026.
+                  </p>
+                </div>
+
+                <form className="space-y-4" onSubmit={async (e) => {
+                  e.preventDefault();
+                  
+                  if (!journeyFormData.organization || !journeyFormData.role) {
+                    toast({ title: "Please fill in all required fields", variant: "destructive" });
+                    return;
+                  }
+                  
+                  if (journeyFormData.interestCategories.length === 0) {
+                    toast({ title: "Please select at least one category of interest", variant: "destructive" });
+                    return;
+                  }
+                  
+                  if (journeyFormData.attendanceIntents.length === 0) {
+                    toast({ title: "Please select at least one intent", variant: "destructive" });
+                    return;
+                  }
+                  
+                  setIsGeneratingJourney(true);
+                  try {
+                    const finalIntents = [...journeyFormData.attendanceIntents];
+                    if (journeyFormData.otherIntent && finalIntents.includes('Other')) {
+                      const index = finalIntents.indexOf('Other');
+                      finalIntents[index] = journeyFormData.otherIntent;
+                    }
+                    
+                    const response = await apiRequest('/api/journey/generate', 'POST', {
+                      ...journeyFormData,
+                      attendanceIntents: finalIntents,
+                      sessionId: sessionManager.getOrCreateSessionId()
+                    });
+                    
+                    setJourneyPlan(response);
+                    toast({ title: "Journey plan generated successfully!" });
+                  } catch (error) {
+                    console.error('Failed to generate journey:', error);
+                    toast({ title: "Failed to generate journey plan", variant: "destructive" });
+                  } finally {
+                    setIsGeneratingJourney(false);
+                  }
+                }}>
+                  {!isExistingLead && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="journey-name">Name *</Label>
+                        <Input
+                          id="journey-name"
+                          value={journeyFormData.name}
+                          onChange={(e) => setJourneyFormData(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Your full name"
+                          required
+                          data-testid="input-journey-name"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="journey-email">Email *</Label>
+                        <Input
+                          id="journey-email"
+                          type="email"
+                          value={journeyFormData.email}
+                          onChange={(e) => setJourneyFormData(prev => ({ ...prev, email: e.target.value }))}
+                          onBlur={async (e) => {
+                            const email = e.target.value.trim();
+                            if (email && email.includes('@')) {
+                              setIsCheckingLead(true);
+                              const leadInfo = await sessionManager.checkLeadExists(email);
+                              if (leadInfo?.exists) {
+                                setIsExistingLead(true);
+                                setJourneyFormData(prev => ({
+                                  ...prev,
+                                  name: leadInfo.name,
+                                  email: leadInfo.email
+                                }));
+                                toast({ title: "Welcome back!", description: "We found your information." });
+                              }
+                              setIsCheckingLead(false);
+                            }
+                          }}
+                          placeholder="your.email@example.com"
+                          required
+                          data-testid="input-journey-email"
+                        />
+                        {isCheckingLead && (
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Checking...
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {isExistingLead && (
+                    <Card className="p-4 bg-muted/50">
+                      <p className="text-sm font-medium text-foreground">Welcome back, {journeyFormData.name}!</p>
+                      <p className="text-xs text-muted-foreground mt-1">{journeyFormData.email}</p>
+                    </Card>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="journey-organization">Organization *</Label>
+                    <Input
+                      id="journey-organization"
+                      value={journeyFormData.organization}
+                      onChange={(e) => setJourneyFormData(prev => ({ ...prev, organization: e.target.value }))}
+                      placeholder="Your company or organization"
+                      required
+                      data-testid="input-journey-organization"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="journey-role">Your Role *</Label>
+                    <Input
+                      id="journey-role"
+                      value={journeyFormData.role}
+                      onChange={(e) => setJourneyFormData(prev => ({ ...prev, role: e.target.value }))}
+                      placeholder="e.g., Buyer, Distributor, Chef, Product Manager"
+                      required
+                      data-testid="input-journey-role"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Categories of Interest * ({journeyFormData.interestCategories.length} selected)</Label>
+                    <div className="space-y-2">
+                      <Input
+                        value={categorySearchTerm}
+                        onChange={(e) => setCategorySearchTerm(e.target.value)}
+                        placeholder="Search categories..."
+                        onFocus={() => setShowCategorySearch(true)}
+                        data-testid="input-category-search"
+                      />
+                      {showCategorySearch && (
+                        <Card className="max-h-64 overflow-auto p-3 space-y-2">
+                          {GULFOOD_CATEGORIES
+                            .filter(cat => cat.toLowerCase().includes(categorySearchTerm.toLowerCase()))
+                            .map(category => (
+                              <label
+                                key={category}
+                                className="flex items-center gap-2 cursor-pointer hover-elevate p-2 rounded"
+                                data-testid={`checkbox-category-${category}`}
+                              >
+                                <Checkbox
+                                  checked={journeyFormData.interestCategories.includes(category)}
+                                  onCheckedChange={(checked) => {
+                                    setJourneyFormData(prev => ({
+                                      ...prev,
+                                      interestCategories: checked
+                                        ? [...prev.interestCategories, category]
+                                        : prev.interestCategories.filter(c => c !== category)
+                                    }));
+                                  }}
+                                />
+                                <span className="text-sm">{category}</span>
+                              </label>
+                            ))}
+                        </Card>
+                      )}
+                      {journeyFormData.interestCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {journeyFormData.interestCategories.map(cat => (
+                            <Badge key={cat} variant="secondary" className="gap-1">
+                              {cat}
+                              <button
+                                type="button"
+                                onClick={() => setJourneyFormData(prev => ({
+                                  ...prev,
+                                  interestCategories: prev.interestCategories.filter(c => c !== cat)
+                                }))}
+                                className="ml-1 hover-elevate rounded-full"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Intent of Attending * ({journeyFormData.attendanceIntents.length} selected)</Label>
+                    <div className="space-y-2">
+                      <Input
+                        value={intentSearchTerm}
+                        onChange={(e) => setIntentSearchTerm(e.target.value)}
+                        placeholder="Search intents..."
+                        onFocus={() => setShowIntentSearch(true)}
+                        data-testid="input-intent-search"
+                      />
+                      {showIntentSearch && (
+                        <Card className="max-h-64 overflow-auto p-3 space-y-2">
+                          {ATTENDANCE_INTENTS
+                            .filter(intent => intent.toLowerCase().includes(intentSearchTerm.toLowerCase()))
+                            .map(intent => (
+                              <label
+                                key={intent}
+                                className="flex items-center gap-2 cursor-pointer hover-elevate p-2 rounded"
+                                data-testid={`checkbox-intent-${intent}`}
+                              >
+                                <Checkbox
+                                  checked={journeyFormData.attendanceIntents.includes(intent)}
+                                  onCheckedChange={(checked) => {
+                                    setJourneyFormData(prev => ({
+                                      ...prev,
+                                      attendanceIntents: checked
+                                        ? [...prev.attendanceIntents, intent]
+                                        : prev.attendanceIntents.filter(i => i !== intent)
+                                    }));
+                                  }}
+                                />
+                                <span className="text-sm">{intent}</span>
+                              </label>
+                            ))}
+                        </Card>
+                      )}
+                      {journeyFormData.attendanceIntents.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {journeyFormData.attendanceIntents.map(intent => (
+                            <Badge key={intent} variant="secondary" className="gap-1">
+                              {intent}
+                              <button
+                                type="button"
+                                onClick={() => setJourneyFormData(prev => ({
+                                  ...prev,
+                                  attendanceIntents: prev.attendanceIntents.filter(i => i !== intent)
+                                }))}
+                                className="ml-1 hover-elevate rounded-full"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {journeyFormData.attendanceIntents.includes('Other') && (
+                    <div className="space-y-2">
+                      <Label htmlFor="other-intent">Please specify your other intent</Label>
+                      <Input
+                        id="other-intent"
+                        value={journeyFormData.otherIntent}
+                        onChange={(e) => setJourneyFormData(prev => ({ ...prev, otherIntent: e.target.value }))}
+                        placeholder="Your specific reason for attending"
+                        data-testid="input-other-intent"
+                      />
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    className="w-full gap-2"
+                    disabled={isGeneratingJourney}
+                    data-testid="button-generate-journey"
+                  >
+                    {isGeneratingJourney ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating Your Journey...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Generate My Journey Plan
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground">Your Personalized Journey</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Here's your customized plan for Gulfood 2026
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setJourneyPlan(null);
+                      setJourneyFormData({
+                        name: '',
+                        email: '',
+                        organization: '',
+                        role: '',
+                        interestCategories: [],
+                        attendanceIntents: [],
+                        otherIntent: ''
+                      });
+                      setIsExistingLead(false);
+                    }}
+                    data-testid="button-create-new-journey"
+                  >
+                    Create New Journey
+                  </Button>
+                </div>
+                <Card className="p-6">
+                  <p className="text-sm text-muted-foreground">Journey plan will be displayed here with AI-generated recommendations, matched exhibitors, and sessions.</p>
+                </Card>
+              </div>
+            )}
           </div>
-        </div>
+        </ScrollArea>
       )}
 
       {/* Referral Tab Content */}

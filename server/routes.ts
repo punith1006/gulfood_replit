@@ -1199,7 +1199,291 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  app.post("/api/journey/generate", async (req, res) => {
+    try {
+      const {
+        name,
+        email,
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        sessionId
+      } = req.body;
+
+      if (!email || !organization || !role || !interestCategories || !attendanceIntents) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      let leadId: number | null = null;
+      const existingLead = await storage.getLeadByEmail(email);
+      if (existingLead) {
+        leadId = existingLead.id;
+      } else if (name) {
+        const newLead = await storage.createLead({
+          name,
+          email,
+          company: organization,
+          role,
+          category: "Visitor",
+          capturedVia: "direct",
+          sessionId,
+          message: "Journey planning lead capture"
+        });
+        leadId = newLead.id;
+      }
+
+      const relevanceScore = calculateRelevanceScore({
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents
+      });
+
+      const exhibitors = await storage.getExhibitors();
+      const matchedExhibitors = matchExhibitors(exhibitors, {
+        interestCategories,
+        attendanceIntents,
+        organization,
+        role
+      });
+
+      const sessions = await storage.getScheduledSessions();
+      const matchedSessions = matchSessions(sessions, {
+        interestCategories,
+        attendanceIntents,
+        role
+      });
+
+      const aiContent = await generateJourneyContent({
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        relevanceScore,
+        matchedExhibitors: matchedExhibitors.slice(0, 5),
+        matchedSessions: matchedSessions.slice(0, 3)
+      });
+
+      const journeyPlan = await storage.createJourneyPlan({
+        leadId,
+        sessionId,
+        name: name || existingLead?.name || "Guest",
+        email,
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        relevanceScore,
+        generalOverview: aiContent.overview,
+        scoreJustification: aiContent.justification,
+        benefits: aiContent.benefits,
+        recommendations: aiContent.recommendations,
+        matchedExhibitorIds: matchedExhibitors.slice(0, 10).map(e => e.id),
+        matchedSessionIds: matchedSessions.slice(0, 5).map(s => s.id),
+        reportData: {
+          matchedExhibitors: matchedExhibitors.slice(0, 10),
+          matchedSessions: matchedSessions.slice(0, 5)
+        }
+      });
+
+      res.json({
+        ...journeyPlan,
+        matchedExhibitors: matchedExhibitors.slice(0, 10),
+        matchedSessions: matchedSessions.slice(0, 5)
+      });
+    } catch (error) {
+      console.error("Error generating journey:", error);
+      res.status(500).json({ error: "Failed to generate journey plan" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
+}
+
+function calculateRelevanceScore(data: {
+  organization: string;
+  role: string;
+  interestCategories: string[];
+  attendanceIntents: string[];
+}): number {
+  let score = 0;
+
+  const organizationMatch = data.organization.length > 2 ? 40 : 0;
+  score += organizationMatch;
+
+  const roleKeywords = ['buyer', 'distributor', 'chef', 'manager', 'director', 'owner', 'procurement'];
+  const roleRelevance = roleKeywords.some(kw => 
+    data.role.toLowerCase().includes(kw)
+  ) ? 25 : 15;
+  score += roleRelevance;
+
+  const categoryMatch = Math.min(data.interestCategories.length * 5, 20);
+  score += categoryMatch;
+
+  const intentClarity = data.attendanceIntents.length > 0 ? 15 : 0;
+  score += intentClarity;
+
+  return Math.min(score, 100);
+}
+
+function matchExhibitors(exhibitors: any[], criteria: {
+  interestCategories: string[];
+  attendanceIntents: string[];
+  organization: string;
+  role: string;
+}): any[] {
+  return exhibitors
+    .map(exhibitor => {
+      let matchScore = 0;
+
+      const categoryMatch = criteria.interestCategories.some(cat =>
+        exhibitor.sector?.toLowerCase().includes(cat.toLowerCase()) ||
+        exhibitor.productCategories?.some((pc: string) => pc.toLowerCase().includes(cat.toLowerCase()))
+      );
+      if (categoryMatch) matchScore += 40;
+
+      const keywordMatch = criteria.attendanceIntents.some(intent =>
+        exhibitor.description?.toLowerCase().includes(intent.toLowerCase().split(' ').slice(0, 2).join(' '))
+      );
+      if (keywordMatch) matchScore += 30;
+
+      if (exhibitor.country && exhibitor.country !== 'UAE') {
+        matchScore += 15;
+      }
+
+      const roleMatch = ['buyer', 'distributor', 'procurement'].some(kw =>
+        criteria.role.toLowerCase().includes(kw)
+      );
+      if (roleMatch && exhibitor.sector) matchScore += 15;
+
+      return {
+        ...exhibitor,
+        matchScore,
+        relevancePercentage: matchScore
+      };
+    })
+    .filter(e => e.matchScore > 20)
+    .sort((a, b) => b.matchScore - a.matchScore);
+}
+
+function matchSessions(sessions: any[], criteria: {
+  interestCategories: string[];
+  attendanceIntents: string[];
+  role: string;
+}): any[] {
+  return sessions
+    .map(session => {
+      let matchScore = 0;
+
+      const topicMatch = criteria.interestCategories.some(cat =>
+        session.title?.toLowerCase().includes(cat.toLowerCase()) ||
+        session.description?.toLowerCase().includes(cat.toLowerCase())
+      );
+      if (topicMatch) matchScore += 50;
+
+      const intentMatch = criteria.attendanceIntents.some(intent =>
+        session.description?.toLowerCase().includes(intent.toLowerCase().split(' ').slice(0, 2).join(' '))
+      );
+      if (intentMatch) matchScore += 30;
+
+      if (session.sessionDate) {
+        const sessionDate = new Date(session.sessionDate);
+        if (sessionDate >= new Date()) matchScore += 20;
+      }
+
+      return {
+        ...session,
+        matchScore,
+        relevancePercentage: matchScore
+      };
+    })
+    .filter(s => s.matchScore > 30)
+    .sort((a, b) => b.matchScore - a.matchScore);
+}
+
+async function generateJourneyContent(data: {
+  organization: string;
+  role: string;
+  interestCategories: string[];
+  attendanceIntents: string[];
+  relevanceScore: number;
+  matchedExhibitors: any[];
+  matchedSessions: any[];
+}): Promise<{
+  overview: string;
+  justification: string;
+  benefits: string[];
+  recommendations: string[];
+}> {
+  try {
+    const prompt = `You are an AI assistant for Gulfood 2026, the world's largest annual food and beverage trade show in Dubai (January 26-30, 2026).
+
+User Profile:
+- Organization: ${data.organization}
+- Role: ${data.role}
+- Interest Categories: ${data.interestCategories.join(', ')}
+- Attendance Intents: ${data.attendanceIntents.join(', ')}
+- Relevance Score: ${data.relevanceScore}/100
+
+Matched Exhibitors: ${data.matchedExhibitors.length} companies
+Matched Sessions: ${data.matchedSessions.length} events
+
+Generate a personalized journey plan with:
+1. A brief overview (2-3 sentences) of why Gulfood 2026 is perfect for them
+2. Score justification (1-2 sentences) explaining their ${data.relevanceScore}/100 relevance score
+3. Three key benefits they'll gain from attending (array of strings)
+4. Three actionable recommendations for maximizing their experience (array of strings)
+
+Return ONLY a valid JSON object with keys: overview, justification, benefits, recommendations`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant that generates personalized event recommendations in JSON format.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('OpenAI API request failed');
+    }
+
+    const result = await response.json();
+    const content = JSON.parse(result.choices[0].message.content);
+
+    return {
+      overview: content.overview || "Gulfood 2026 offers unparalleled opportunities for your organization.",
+      justification: content.justification || "Your profile aligns well with the event's offerings.",
+      benefits: content.benefits || ["Network with industry leaders", "Discover innovative products", "Expand your business reach"],
+      recommendations: content.recommendations || ["Visit top-matched exhibitors", "Attend relevant sessions", "Plan your itinerary in advance"]
+    };
+  } catch (error) {
+    console.error('Error generating AI content:', error);
+    return {
+      overview: "Gulfood 2026 brings together the global food and beverage industry under one roof, offering you direct access to innovations, suppliers, and networking opportunities that align with your professional goals.",
+      justification: `Your relevance score of ${data.relevanceScore}/100 reflects strong alignment between your interests and Gulfood's exhibitor base and program content.`,
+      benefits: [
+        "Access to over 5,000+ exhibitors across your categories of interest",
+        "Networking opportunities with industry professionals in your role",
+        "Insights into the latest market trends and innovations"
+      ],
+      recommendations: [
+        "Focus on the matched exhibitors we've identified for maximum ROI",
+        "Attend sessions that align with your attendance intents",
+        "Plan your journey across both Dubai World Trade Centre and Expo City venues"
+      ]
+    };
+  }
 }
