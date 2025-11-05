@@ -1319,60 +1319,72 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       }
 
       const exhibitors = await storage.getExhibitors();
-      console.log(`Analyzing user profile against ${exhibitors.length} exhibitors using AI evaluation...`);
       
-      const exhibitorSummaries = exhibitors.slice(0, 50).map(e => 
+      const userOrgLower = organization.toLowerCase();
+      const filteredExhibitors = exhibitors.filter(e => {
+        const exhibitorName = e.name.toLowerCase();
+        return !exhibitorName.includes(userOrgLower) && !userOrgLower.includes(exhibitorName);
+      });
+      
+      console.log(`Analyzing user profile against ${filteredExhibitors.length} exhibitors (excluded user's company) using AI evaluation...`);
+      
+      const exhibitorSummaries = filteredExhibitors.slice(0, 50).map(e => 
         `ID ${e.id}: ${e.name} - ${e.sector} - ${e.description?.substring(0, 100) || 'No description'}`
       ).join('\n');
 
-      const prompt = `You are evaluating visitor relevance for Gulfood 2026, the world's largest FOOD & BEVERAGE trade show.
+      const prompt = `You are creating a personalized event journey for Gulfood 2026, the world's largest FOOD & BEVERAGE exhibition.
 
 VISITOR PROFILE:
 - Organization: ${organization}
 - Role: ${role}
-- Interest Categories: ${interestCategories.join(', ') || 'None specified'}
-- Attendance Intents: ${attendanceIntents.join(', ') || 'None specified'}
+- Interest Categories: ${interestCategories.join(', ') || 'Not specified'}
+- Attendance Intents: ${attendanceIntents.join(', ') || 'Not specified'}
 
-EXHIBITORS AVAILABLE (first 50 of ${exhibitors.length}):
+AVAILABLE EXHIBITORS (sample of ${filteredExhibitors.length}):
 ${exhibitorSummaries}
 
-CRITICAL SCORING RULES - FOLLOW THESE EXACTLY:
+YOUR TASK:
+Create a high-quality, personalized journey report with:
 
-1. ORGANIZATION INDUSTRY (Primary Factor):
-   - Is ${organization} a FOOD or BEVERAGE company? (dairy, beverages, food manufacturing, restaurants, catering, food distribution)
-     → YES = 80-100% base score
-     → FOOD-RELATED (packaging, food tech, food equipment, food logistics, hospitality) = 50-79% base score
-     → TANGENTIALLY RELATED (agriculture, retail selling food, F&B consulting) = 20-49% base score
-     → NOT FOOD/BEVERAGE = 0-19% maximum score
+1. OVERALL RELEVANCE SCORE (0-100) based on these strict rules:
+   - Is ${organization} a FOOD/BEVERAGE company? (dairy, food manufacturing, beverages, restaurants, catering, distribution)
+     → YES = 80-100% score
+   - Food-related industry? (packaging, food tech, equipment, logistics, hospitality)
+     → 50-79% score
+   - Tangentially related? (agriculture, retail, F&B consulting)
+     → 20-49% score
+   - Not F&B industry? (tech, finance, real estate)
+     → 0-19% score maximum
 
-2. ROLE RELEVANCE (Secondary Factor):
-   - Is ${role} directly involved in food/beverage operations? (procurement, supply chain, distributor, manufacturer, chef, F&B manager)
-     → Can boost score +10-15% if organization is already F&B-related
-     → CANNOT save score if organization is wrong industry
+   Examples: "Al Rawabi Dairy" + "Procurement Manager" = 85-95% | "Tech Company" + "Engineer" = 5-15%
 
-EXAMPLES TO CALIBRATE YOUR SCORING:
-- "Al Rawabi Dairy" + "Procurement Manager" = 85-95% (Direct dairy manufacturer)
-- "Nestlé" + "Supply Chain Director" = 90-95% (Major F&B company)
-- "Food Packaging Co" + "Sales Manager" = 55-70% (Food-related industry)
-- "Tech Startup" + "AI Engineer" = 5-15% (Not F&B industry)
-- "Investment Firm" + "Analyst" = 5-10% (Not F&B industry)
+2. SCORE REASONING: 2-3 sentences explaining the score based on industry + role alignment
 
-TASK:
-1. Determine if ${organization} is a FOOD/BEVERAGE company (yes/no)
-2. Assign relevance score based on the rules above
-3. Select top 5 most relevant exhibitors for this visitor
-4. Explain your score in 2-3 sentences
+3. TOP HIGHLIGHTS (4-5 items): Specific Gulfood 2026 event features/zones/areas that are highly relevant to this visitor
+   Format: { "icon": "🎯", "title": "Feature Name", "description": "Why this matters for ${role} at ${organization}" }
+   Make these specific to Gulfood 2026 event features (e.g., "Dairy & Cheese Zone", "Beverage Innovation Hall", "Food Tech Stage")
 
-Respond with valid JSON only (no markdown, no explanations outside JSON):
+4. TOP EXHIBITORS (exactly 10): Select the 10 MOST relevant exhibitors from the list above
+   For EACH exhibitor provide:
+   - exhibitorId (from list above)
+   - matchScore (0-100): How well this specific exhibitor matches the visitor's needs
+   - personalizedReason: ONE sentence explaining "WHY this exhibitor matters specifically to ${role} at ${organization}"
+   
+   IMPORTANT: Make the personalizedReason hyper-specific. Not generic.
+   Bad: "They offer dairy products"
+   Good: "Their advanced pasteurization technology can help ${organization} improve production efficiency and product quality"
+
+Respond with valid JSON only (no markdown):
 {
   "overallRelevanceScore": <number 0-100>,
-  "scoreReasoning": "<explain why you gave this score based on organization industry and role>",
+  "scoreReasoning": "<2-3 sentences>",
+  "highlights": [
+    { "icon": "🎯", "title": "...", "description": "..." },
+    ...4-5 items total
+  ],
   "topExhibitors": [
-    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
-    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
-    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
-    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" },
-    { "exhibitorId": <number>, "matchScore": <number 0-100>, "reason": "<why this exhibitor matches>" }
+    { "exhibitorId": <number>, "matchScore": <number 0-100>, "personalizedReason": "<hyper-specific reason>" },
+    ...exactly 10 exhibitors
   ]
 }`;
 
@@ -1393,15 +1405,20 @@ Respond with valid JSON only (no markdown, no explanations outside JSON):
 
       const relevanceScore = Math.max(0, Math.min(100, aiEvaluation.overallRelevanceScore || 50));
       const scoreReasoning = aiEvaluation.scoreReasoning || "Score based on industry alignment with Gulfood 2026.";
+      const highlights = aiEvaluation.highlights || [];
       
       console.log(`AI Evaluation - Relevance Score: ${relevanceScore}%`);
       console.log(`Score Reasoning: ${scoreReasoning}`);
+      console.log(`Highlights: ${highlights.length} items`);
 
       const matchedExhibitors = [];
+      const exhibitorCategories = new Set();
+      
       if (aiEvaluation.topExhibitors && Array.isArray(aiEvaluation.topExhibitors)) {
-        for (const match of aiEvaluation.topExhibitors.slice(0, 5)) {
-          const exhibitor = exhibitors.find(e => e.id === match.exhibitorId);
+        for (const match of aiEvaluation.topExhibitors.slice(0, 10)) {
+          const exhibitor = filteredExhibitors.find(e => e.id === match.exhibitorId);
           if (exhibitor) {
+            exhibitorCategories.add(exhibitor.sector);
             matchedExhibitors.push({
               id: exhibitor.id,
               companyName: exhibitor.name,
@@ -1411,15 +1428,20 @@ Respond with valid JSON only (no markdown, no explanations outside JSON):
               country: exhibitor.country,
               boothNumber: exhibitor.booth,
               productCategories: exhibitor.products || [],
-              relevancePercentage: Math.max(0, Math.min(100, match.matchScore || 50))
+              relevancePercentage: Math.max(0, Math.min(100, match.matchScore || 50)),
+              personalizedReason: match.personalizedReason || "Relevant to your industry focus"
             });
           }
         }
       }
 
-      console.log('Top 5 matched exhibitors:', matchedExhibitors.map(e => ({
+      const categories = Array.from(exhibitorCategories);
+
+      console.log(`Matched ${matchedExhibitors.length} exhibitors with ${categories.length} unique categories`);
+      console.log('Top exhibitors:', matchedExhibitors.slice(0, 3).map(e => ({
         name: e.name,
-        relevance: `${e.relevancePercentage}%`
+        match: `${e.relevancePercentage}%`,
+        sector: e.sector
       })));
 
       const matchedSessions: any[] = [];
@@ -1460,6 +1482,8 @@ Respond with valid JSON only (no markdown, no explanations outside JSON):
 
       res.json({
         ...journeyPlan,
+        highlights,
+        categories,
         matchedExhibitors,
         matchedSessions
       });
