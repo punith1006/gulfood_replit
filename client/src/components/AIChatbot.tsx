@@ -1486,26 +1486,29 @@ export default function AIChatbot() {
                     <Globe className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="text-xl font-semibold text-foreground">Plan Your Journey</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Get AI-powered recommendations tailored to your interests and goals for Gulfood 2026.
-                  </p>
+                  {sessionManager.hasLeadInfo() ? (
+                    <p className="text-sm text-muted-foreground">
+                      Great! Let's personalize your event experience, <span className="font-semibold text-foreground">{sessionManager.getLeadInfo().name}</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      To create your personalized journey, please share some details
+                    </p>
+                  )}
                 </div>
 
                 <form className="space-y-4" onSubmit={async (e) => {
                   e.preventDefault();
                   
+                  // Check if we have lead info in session, if not require name/email
+                  const hasSessionLead = sessionManager.hasLeadInfo();
+                  if (!hasSessionLead && (!journeyFormData.name || !journeyFormData.email)) {
+                    toast({ title: "Please provide your name and email", variant: "destructive" });
+                    return;
+                  }
+                  
                   if (!journeyFormData.organization || !journeyFormData.role) {
                     toast({ title: "Please fill in all required fields", variant: "destructive" });
-                    return;
-                  }
-                  
-                  if (journeyFormData.interestCategories.length === 0) {
-                    toast({ title: "Please select at least one category of interest", variant: "destructive" });
-                    return;
-                  }
-                  
-                  if (journeyFormData.attendanceIntents.length === 0) {
-                    toast({ title: "Please select at least one intent", variant: "destructive" });
                     return;
                   }
                   
@@ -1517,16 +1520,21 @@ export default function AIChatbot() {
                       finalIntents[index] = journeyFormData.otherIntent;
                     }
                     
-                    console.log('🚀 Generating journey with data:', {
-                      ...journeyFormData,
-                      attendanceIntents: finalIntents
-                    });
-                    
-                    const res = await apiRequest('POST', '/api/journey/generate', {
-                      ...journeyFormData,
+                    // Use session lead info if available
+                    const sessionLead = sessionManager.getLeadInfo();
+                    const submissionData = {
+                      name: sessionLead.name || journeyFormData.name,
+                      email: sessionLead.email || journeyFormData.email,
+                      organization: journeyFormData.organization,
+                      role: journeyFormData.role,
+                      interestCategories: journeyFormData.interestCategories,
                       attendanceIntents: finalIntents,
                       sessionId: sessionManager.getOrCreateSessionId()
-                    });
+                    };
+                    
+                    console.log('🚀 Generating journey with data:', submissionData);
+                    
+                    const res = await apiRequest('POST', '/api/journey/generate', submissionData);
                     
                     const response = await res.json();
                     
@@ -1550,7 +1558,7 @@ export default function AIChatbot() {
                     setIsGeneratingJourney(false);
                   }
                 }}>
-                  {!isExistingLead && (
+                  {!sessionManager.hasLeadInfo() && (
                     <>
                       <div className="space-y-2">
                         <Label htmlFor="journey-name">Name *</Label>
@@ -1571,23 +1579,6 @@ export default function AIChatbot() {
                           type="email"
                           value={journeyFormData.email}
                           onChange={(e) => setJourneyFormData(prev => ({ ...prev, email: e.target.value }))}
-                          onBlur={async (e) => {
-                            const email = e.target.value.trim();
-                            if (email && email.includes('@')) {
-                              setIsCheckingLead(true);
-                              const leadInfo = await sessionManager.checkLeadExists(email);
-                              if (leadInfo?.exists) {
-                                setIsExistingLead(true);
-                                setJourneyFormData(prev => ({
-                                  ...prev,
-                                  name: leadInfo.name,
-                                  email: leadInfo.email
-                                }));
-                                toast({ title: "Welcome back!", description: "We found your information." });
-                              }
-                              setIsCheckingLead(false);
-                            }
-                          }}
                           placeholder="your.email@example.com"
                           required
                           data-testid="input-journey-email"
@@ -1634,7 +1625,7 @@ export default function AIChatbot() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Categories of Interest * ({journeyFormData.interestCategories.length} selected)</Label>
+                    <Label>Categories of Interest ({journeyFormData.interestCategories.length} selected)</Label>
                     <div className="space-y-2">
                       <Input
                         value={categorySearchTerm}
@@ -1692,7 +1683,7 @@ export default function AIChatbot() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Intent of Attending * ({journeyFormData.attendanceIntents.length} selected)</Label>
+                    <Label>Intent of Attending ({journeyFormData.attendanceIntents.length} selected)</Label>
                     <div className="space-y-2">
                       <Input
                         value={intentSearchTerm}

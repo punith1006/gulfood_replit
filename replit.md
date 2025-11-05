@@ -4,6 +4,11 @@
 The Gulfood 2026 AI Event Assistant is a web application designed to enhance the experience for visitors, exhibitors, and event organizers at the Gulfood 2026 trade show. It offers AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. The platform is freely accessible without registration, aiming to maximize engagement by providing immediate access to its features, including an AI chatbot named "Faris." The application supports three user groups: Visitors, Exhibitors, and Event Organizers, with role-based access to specialized functionalities like the Analytics Dashboard.
 
 ## Recent Updates (November 2025)
+- **Journey Planning Feature**: Complete rework with 4-factor relevance scoring (Organization 40%, Role 25%, Category 20%, Intent 15%), AI-generated personalized content, matched exhibitors/sessions, and PDF export
+  - Session-based lead detection: If lead info already captured in current session (via Chat tab), Journey form skips name/email fields
+  - Conditional form display: Shows personalized welcome message "Great! Let's personalize your event experience, [Name]" when lead exists in session
+  - Optional fields: Interest Categories and Intent of Attending are truly optional (no minimum selection required)
+  - PDF export: Fixed to generate comprehensive journey plan PDF with all sections (overview, score, benefits, recommendations, exhibitors, sessions)
 - **JWT-based Authentication System**: Implemented secure authentication for organizers and exhibitors with token-based session management stored in localStorage
 - **Chatbot Tabs**: Added "Chat" and "Right Now" tabs to the AI chatbot, with the "Right Now" tab displaying live announcements and upcoming sessions
 - **Announcements System**: Organizers can create, edit, and delete announcements with priority levels (normal, high, urgent) and target audiences (All, Visitor, Exhibitor, Organizer)
