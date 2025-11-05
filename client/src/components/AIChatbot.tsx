@@ -65,6 +65,31 @@ interface Message {
   content: string;
 }
 
+// Helper functions for NLP extraction
+const extractEmail = (text: string): string | null => {
+  const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
+  const match = text.match(emailRegex);
+  return match ? match[0] : null;
+};
+
+const extractName = (text: string): string | null => {
+  // Pattern 1: "I'm [Name]" or "I am [Name]"
+  const pattern1 = /(?:I'm|I am|My name is|This is)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i;
+  const match1 = text.match(pattern1);
+  if (match1 && match1[1]) {
+    return match1[1].trim();
+  }
+  
+  // Pattern 2: Sentence starting with a capitalized name
+  const pattern2 = /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:here|speaking)/i;
+  const match2 = text.match(pattern2);
+  if (match2 && match2[1]) {
+    return match2[1].trim();
+  }
+  
+  return null;
+};
+
 const getRoleWelcomeMessage = (role: UserRole): string => {
   if (!role) return "Ask me anything.....";
   
@@ -194,6 +219,9 @@ export default function AIChatbot() {
   const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
   const [hasSkippedInitialLeadCapture, setHasSkippedInitialLeadCapture] = useState(false);
   const [leadCaptured, setLeadCaptured] = useState(false);
+  const [detectedEmail, setDetectedEmail] = useState<string | null>(null);
+  const [detectedName, setDetectedName] = useState<string | null>(null);
+  const [showNLPConfirmation, setShowNLPConfirmation] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   
   // Derive user message count from messages array (single source of truth)
@@ -302,6 +330,19 @@ export default function AIChatbot() {
 
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
+    
+    // NLP extraction - detect email and name patterns
+    if (!leadCaptured && userRole) {
+      const extractedEmail = extractEmail(input);
+      const extractedName = extractName(input);
+      
+      if (extractedEmail || extractedName) {
+        setDetectedEmail(extractedEmail);
+        setDetectedName(extractedName);
+        setShowNLPConfirmation(true);
+      }
+    }
+    
     chatMutation.mutate({ message: input, role: userRole });
     setInput("");
   };
@@ -848,6 +889,104 @@ export default function AIChatbot() {
                       </div>
                     </div>
                   </Card>
+                </div>
+              )}
+              {/* NLP detection confirmation */}
+              {showNLPConfirmation && !leadCaptured && (detectedEmail || detectedName) && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950 dark:to-amber-950 rounded-2xl px-4 py-3 text-sm border border-orange-200 dark:border-orange-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-4 h-4 text-orange-600" />
+                      <div className="text-xs font-semibold text-orange-900 dark:text-orange-100">I noticed you shared some details!</div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {detectedName && `Name: ${detectedName}`}
+                      {detectedName && detectedEmail && <br />}
+                      {detectedEmail && `Email: ${detectedEmail}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3">Would you like me to save these details so we can stay connected?</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white no-default-hover-elevate"
+                        onClick={async () => {
+                          if (detectedEmail) {
+                            // Check if email already exists
+                            try {
+                              const checkResponse = await fetch(`/api/leads/check/${encodeURIComponent(detectedEmail)}`);
+                              const checkData = await checkResponse.json();
+                              
+                              if (checkData.exists) {
+                                setLeadCaptured(true);
+                                setShowNLPConfirmation(false);
+                                toast({
+                                  title: `Welcome back, ${checkData.lead.name}! 👋`,
+                                  description: "Great to see you again!"
+                                });
+                                setMessages(prev => [...prev, {
+                                  role: "assistant",
+                                  content: `Welcome back, ${checkData.lead.name}! 👋 Great to see you again.`
+                                }]);
+                                setDetectedEmail(null);
+                                setDetectedName(null);
+                                return;
+                              }
+                              
+                              // Save new lead
+                              await apiRequest("POST", "/api/leads", {
+                                name: detectedName || "Unknown",
+                                email: detectedEmail,
+                                capturedVia: "conversational",
+                                conversationId: sessionId,
+                                sourcePage: "chatbot"
+                              });
+                              setLeadCaptured(true);
+                              setShowNLPConfirmation(false);
+                              toast({
+                                title: "Details saved!",
+                                description: "Thank you for sharing your information."
+                              });
+                              setMessages(prev => [...prev, {
+                                role: "assistant",
+                                content: `Perfect! I've saved your details. Thanks for sharing!`
+                              }]);
+                              setDetectedEmail(null);
+                              setDetectedName(null);
+                            } catch (error) {
+                              toast({
+                                title: "Error",
+                                description: "Failed to save your details. Please try again.",
+                                variant: "destructive"
+                              });
+                            }
+                          } else {
+                            // Only name detected, show full form
+                            setShowInlineLeadForm(true);
+                            setShowNLPConfirmation(false);
+                            if (detectedName) {
+                              setLeadForm(prev => ({ ...prev, name: detectedName }));
+                            }
+                          }
+                        }}
+                        data-testid="button-confirm-nlp"
+                      >
+                        Yes, save my details
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full px-3 py-1.5 h-auto no-default-hover-elevate"
+                        onClick={() => {
+                          setShowNLPConfirmation(false);
+                          setDetectedEmail(null);
+                          setDetectedName(null);
+                        }}
+                        data-testid="button-decline-nlp"
+                      >
+                        No, thanks
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
               {/* Role selection buttons in message stream */}
