@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Map, Share2, Radar } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -112,7 +112,7 @@ function RightNowContent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-h-64 overflow-y-auto">
       {activeAnnouncements.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
@@ -191,8 +191,6 @@ export default function AIChatbot() {
   const [hasTriggeredLeadCapture, setHasTriggeredLeadCapture] = useState(false);
   const [hasTriggeredRegistrationShare, setHasTriggeredRegistrationShare] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
-  const [leadCaptureSkipped, setLeadCaptureSkipped] = useState(false);
-  const [showLeadCaptureForm, setShowLeadCaptureForm] = useState(false);
   
   // Derive user message count from messages array (single source of truth)
   const userMessageCount = useMemo(() => {
@@ -218,42 +216,23 @@ export default function AIChatbot() {
     }
   }, [messages]);
 
-  // Track previous role to detect role changes
-  const prevRoleRef = useRef<string | null>(null);
-
   useEffect(() => {
-    // Check if role has actually changed (including null → role transition)
-    const roleChanged = prevRoleRef.current !== userRole && userRole !== null;
-    
-    // Reset chat when role changes (including first-time role selection)
-    if (roleChanged) {
+    if (userRole) {
       setMessages([
         {
           role: "assistant",
           content: getRoleWelcomeMessage(userRole)
         }
       ]);
-      setFeedbackGiven({});
-      setShowRegistrationShare(false);
-      setShowLeadCapture(false);
-      setHasTriggeredLeadCapture(false);
-      setHasTriggeredRegistrationShare(false);
+    } else {
+      setMessages([]);
     }
-    // Initialize greeting when Chat tab is active for the first time
-    else if (activeTab === "chat" && messages.length === 0 && !userRole) {
-      if (!leadCaptureSkipped) {
-        setMessages([
-          {
-            role: "assistant",
-            content: "Hi there! 👋 Welcome to Gulfood 2026! I'm Faris, your event guide.\n\nTo help me assist you better, may I know your name and email address? This way I can provide you with personalized recommendations and keep you updated about the event.\n\nYou can share it like: 'I'm John from john@example.com' or simply type your details below."
-          }
-        ]);
-      }
-    }
-    
-    // Update previous role reference
-    prevRoleRef.current = userRole;
-  }, [userRole, leadCaptureSkipped, activeTab, messages.length]);
+    setFeedbackGiven({});
+    setShowRegistrationShare(false);
+    setShowLeadCapture(false);
+    setHasTriggeredLeadCapture(false);
+    setHasTriggeredRegistrationShare(false);
+  }, [userRole]);
   
   // Trigger widgets when user sends 3rd message
   useEffect(() => {
@@ -548,58 +527,21 @@ export default function AIChatbot() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-4 bg-muted/50 mx-2 mt-2">
-          <TabsTrigger 
-            value="chat" 
-            className="gap-1 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-            data-testid="tab-chat"
-          >
-            <MessageSquare className="w-3 h-3" />
-            Chat
-          </TabsTrigger>
-          <TabsTrigger 
-            value="journey" 
-            className="gap-1 text-xs data-[state=active]:bg-blue-500/10 data-[state=active]:text-blue-600"
-            data-testid="tab-journey"
-          >
-            <Map className="w-3 h-3" />
-            Journey
-          </TabsTrigger>
-          <TabsTrigger 
-            value="referral" 
-            className="gap-1 text-xs data-[state=active]:bg-green-500/10 data-[state=active]:text-green-600"
-            data-testid="tab-referral"
-          >
-            <Share2 className="w-3 h-3" />
-            Referral
-          </TabsTrigger>
-          <TabsTrigger 
-            value="radar" 
-            className="gap-1 text-xs data-[state=active]:bg-purple-500/10 data-[state=active]:text-purple-600"
-            data-testid="tab-radar"
-          >
-            <Radar className="w-3 h-3" />
-            Radar
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="chat" className="flex-1 flex flex-col mt-0">
-          <ScrollArea className="flex-1">
-            <div className="space-y-4 p-4">
-              {messages.map((message, idx) => (
-                <div
-                  key={idx}
-                  className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
-                    data-testid={`message-${idx}`}
-                  >
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          {messages.map((message, idx) => (
+            <div
+              key={idx}
+              className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-foreground"
+                }`}
+                data-testid={`message-${idx}`}
+              >
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -664,125 +606,6 @@ export default function AIChatbot() {
               )}
             </div>
           ))}
-          {!userRole && !leadCaptureSkipped && messages.length > 0 && !showLeadCaptureForm && (
-            <div className="flex justify-start mt-4">
-              <div className="bg-muted/60 rounded-2xl px-4 py-3 space-y-2">
-                <div className="flex gap-2">
-                  <Button
-                    className="rounded-full px-4 py-2 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-2"
-                    onClick={() => setShowLeadCaptureForm(true)}
-                    data-testid="button-share-details"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    <span className="text-sm font-medium">Share My Details</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="rounded-full px-4 py-2 h-auto flex items-center gap-2"
-                    onClick={() => setLeadCaptureSkipped(true)}
-                    data-testid="button-skip-lead-capture"
-                  >
-                    <X className="w-4 h-4" />
-                    <span className="text-sm font-medium">Skip for Now</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          {showLeadCaptureForm && !userRole && (
-            <div className="flex justify-start mt-4">
-              <Card className="p-4 max-w-md">
-                <h3 className="text-sm font-semibold mb-3">Share Your Details</h3>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="lead-name" className="text-xs">Name *</Label>
-                    <Input
-                      id="lead-name"
-                      placeholder="Your full name"
-                      className="mt-1"
-                      data-testid="input-lead-name"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lead-email" className="text-xs">Email *</Label>
-                    <Input
-                      id="lead-email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      className="mt-1"
-                      data-testid="input-lead-email"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lead-company" className="text-xs">Company (optional)</Label>
-                    <Input
-                      id="lead-company"
-                      placeholder="Your company name"
-                      className="mt-1"
-                      data-testid="input-lead-company"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lead-role" className="text-xs">I am a (optional)</Label>
-                    <Select>
-                      <SelectTrigger id="lead-role" className="mt-1" data-testid="select-lead-role">
-                        <SelectValue placeholder="Select your role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Visitor">Visitor</SelectItem>
-                        <SelectItem value="Exhibitor">Exhibitor</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    We respect your privacy. Your information will only be used for event-related communication.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      data-testid="button-submit-lead"
-                    >
-                      Submit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowLeadCaptureForm(false)}
-                      data-testid="button-cancel-lead"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-          {!userRole && leadCaptureSkipped && messages.length > 0 && (
-            <div className="flex justify-start mt-4">
-              <div className="bg-muted/60 rounded-2xl px-4 py-3 space-y-2">
-                <div className="text-xs font-semibold text-muted-foreground">I am a...</div>
-                <div className="flex gap-2">
-                  <Button
-                    className="rounded-full px-4 py-2 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-2"
-                    onClick={() => setUserRole("visitor")}
-                    data-testid="button-role-visitor"
-                  >
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm font-medium">Visitor</span>
-                  </Button>
-                  <Button
-                    className="rounded-full px-4 py-2 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-2"
-                    onClick={() => setUserRole("exhibitor")}
-                    data-testid="button-role-exhibitor"
-                  >
-                    <Building2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">Exhibitor</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
           {chatMutation.isPending && (
             <div className="flex justify-start">
               <div className="bg-muted text-foreground rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
@@ -796,6 +619,37 @@ export default function AIChatbot() {
       </ScrollArea>
 
       <div className="p-2 border-t border-border space-y-2">
+        {!userRole && (
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-semibold whitespace-nowrap">I am a...</div>
+            <div className="flex gap-1.5 flex-1">
+              <Button
+                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
+                onClick={() => setUserRole("visitor")}
+                data-testid="button-role-visitor"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Visitor</span>
+              </Button>
+              <Button
+                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
+                onClick={() => setUserRole("exhibitor")}
+                data-testid="button-role-exhibitor"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Exhibitor</span>
+              </Button>
+              <Button
+                className="rounded-full px-3 py-1.5 h-auto bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary/80 text-primary-foreground shadow-md no-default-hover-elevate flex items-center gap-1.5"
+                onClick={() => setUserRole("organizer")}
+                data-testid="button-role-organizer"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Organizer</span>
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex gap-2">
           <Input
             placeholder="Ask me anything..."
@@ -816,102 +670,103 @@ export default function AIChatbot() {
         </div>
         
         {userRole && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">Quick actions:</div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs h-auto py-1"
-                onClick={() => setUserRole(null)}
-                data-testid="button-change-role"
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+              <TabsTrigger 
+                value="chat" 
+                className="gap-1.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
+                data-testid="tab-chat"
               >
-                Change role
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {roleQuickActions[userRole].map((action, idx) => (
-                <Badge
-                  key={idx}
-                  variant="secondary"
-                  className="cursor-pointer hover-elevate text-xs"
-                  onClick={() => handleQuickAction(action)}
-                  data-testid={`badge-quick-action-${idx}`}
+                <MessageSquare className="w-3.5 h-3.5" />
+                Chat
+              </TabsTrigger>
+              <TabsTrigger 
+                value="rightnow" 
+                className="gap-1.5 data-[state=active]:bg-orange-500/10 data-[state=active]:text-orange-600"
+                data-testid="tab-rightnow"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                Right Now
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="chat" className="mt-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-muted-foreground">Quick actions:</div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs h-auto py-1"
+                  onClick={() => setUserRole(null)}
+                  data-testid="button-change-role"
                 >
-                  {action}
-                </Badge>
-              ))}
-            </div>
-            {userRole === "visitor" && messages.length > 2 && (
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => downloadReportMutation.mutate()}
-                disabled={downloadReportMutation.isPending}
-                data-testid="button-download-journey-report"
-              >
-                <Download className="w-4 h-4" />
-                {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
-              </Button>
-            )}
-            {userRole === "exhibitor" && (
-              <Button
-                className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
-                onClick={() => setShowContactSales(true)}
-                data-testid="button-contact-sales"
-              >
-                <UserPlus className="w-4 h-4" />
-                Contact Sales
-              </Button>
-            )}
-            {userRole === "visitor" && showRegistrationShare && hasRegistered && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowRegistrationShare(false)}
-                  className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
-                  data-testid="button-close-registration-share"
-                  aria-label="Close registration share widget"
+                  Change role
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {roleQuickActions[userRole].map((action, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="secondary"
+                    className="cursor-pointer hover-elevate text-xs"
+                    onClick={() => handleQuickAction(action)}
+                    data-testid={`badge-quick-action-${idx}`}
+                  >
+                    {action}
+                  </Badge>
+                ))}
+              </div>
+              {userRole === "visitor" && messages.length > 2 && (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => downloadReportMutation.mutate()}
+                  disabled={downloadReportMutation.isPending}
+                  data-testid="button-download-journey-report"
                 >
-                  <X className="w-3 h-3" />
-                </button>
-                <RegistrationShareWidget compact={true} />
-              </div>
-            )}
-            {messages.length > 2 && userRole && hasRegistered && (
-              <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
-                <ReferralWidget 
-                  sessionId={sessionId}
-                  compact={true}
-                />
-              </div>
-            )}
-          </div>
+                  <Download className="w-4 h-4" />
+                  {downloadReportMutation.isPending ? "Generating..." : "Download Journey Report"}
+                </Button>
+              )}
+              {userRole === "exhibitor" && (
+                <Button
+                  className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                  onClick={() => setShowContactSales(true)}
+                  data-testid="button-contact-sales"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Contact Sales
+                </Button>
+              )}
+              {userRole === "visitor" && showRegistrationShare && hasRegistered && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowRegistrationShare(false)}
+                    className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                    data-testid="button-close-registration-share"
+                    aria-label="Close registration share widget"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <RegistrationShareWidget compact={true} />
+                </div>
+              )}
+              {messages.length > 2 && userRole && hasRegistered && (
+                <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
+                  <ReferralWidget 
+                    sessionId={sessionId}
+                    compact={true}
+                  />
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="rightnow" className="mt-3" data-testid="tab-content-rightnow">
+              <RightNowContent />
+            </TabsContent>
+          </Tabs>
         )}
       </div>
-    </TabsContent>
-
-    <TabsContent value="journey" className="flex-1 p-4 text-center flex flex-col items-center justify-center mt-0" data-testid="tab-content-journey">
-      <Map className="w-12 h-12 mb-3 text-muted-foreground opacity-50" />
-      <h3 className="font-semibold text-sm mb-1">Journey Planning</h3>
-      <p className="text-xs text-muted-foreground">Coming Soon</p>
-      <p className="text-xs text-muted-foreground mt-1">Plan your perfect event journey</p>
-    </TabsContent>
-    
-    <TabsContent value="referral" className="flex-1 p-4 text-center flex flex-col items-center justify-center mt-0" data-testid="tab-content-referral">
-      <Share2 className="w-12 h-12 mb-3 text-muted-foreground opacity-50" />
-      <h3 className="font-semibold text-sm mb-1">Referral Program</h3>
-      <p className="text-xs text-muted-foreground">Coming Soon</p>
-      <p className="text-xs text-muted-foreground mt-1">Invite friends and earn rewards</p>
-    </TabsContent>
-
-    <TabsContent value="radar" className="flex-1 flex flex-col mt-0" data-testid="tab-content-radar">
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          <RightNowContent />
-        </div>
-      </ScrollArea>
-    </TabsContent>
-  </Tabs>
 
       <Dialog open={showContactSales} onOpenChange={setShowContactSales}>
         <DialogContent className="sm:max-w-md" data-testid="dialog-contact-sales">

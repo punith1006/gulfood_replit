@@ -325,26 +325,12 @@ Format as valid JSON only, no markdown.`;
     }
   });
 
-  app.get("/api/leads/check/:email", async (req, res) => {
+  app.get("/api/leads", async (req, res) => {
     try {
-      const email = req.params.email;
-      const lead = await storage.getLeadByEmail(email);
-      res.json({ 
-        exists: !!lead, 
-        lead: lead || null 
-      });
-    } catch (error) {
-      console.error("Error checking lead:", error);
-      res.status(500).json({ error: "Failed to check lead" });
-    }
-  });
-
-  app.get("/api/leads", requireOrganizerAuth, async (req, res) => {
-    try {
-      const { status, leadCategory } = req.query;
+      const { status, category } = req.query;
       const leads = await storage.getLeads(
         status as string | undefined,
-        leadCategory as string | undefined
+        category as string | undefined
       );
       res.json(leads);
     } catch (error) {
@@ -356,13 +342,14 @@ Format as valid JSON only, no markdown.`;
   app.patch("/api/leads/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const lead = await storage.updateLead(id, req.body);
+      const { status, assignedTo, notes } = req.body;
+      const lead = await storage.updateLead(id, { status, assignedTo, notes });
       
       if (!lead) {
         return res.status(404).json({ error: "Lead not found" });
       }
       
-      res.json({ success: true, lead });
+      res.json(lead);
     } catch (error) {
       console.error("Error updating lead:", error);
       res.status(500).json({ error: "Failed to update lead" });
