@@ -571,6 +571,8 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       res.json({ message: assistantMessage });
     } catch (error) {
       console.error("Error processing chat:", error);
+      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
+      console.error("Error message:", error instanceof Error ? error.message : String(error));
       res.status(500).json({ error: "Failed to process chat message" });
     }
   });

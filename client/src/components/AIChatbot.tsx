@@ -167,7 +167,13 @@ export default function AIChatbot() {
     onSuccess: (data) => {
       setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Chat mutation error:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status
+      });
       setMessages(prev => [...prev, {
         role: "assistant",
         content: "I'm sorry, I'm having trouble processing that right now. Please try again."
