@@ -1672,9 +1672,10 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         timezone: appointmentData.timezone || 'Asia/Dubai'
       });
 
-      // Save appointment to database
+      // Save appointment to database (use Date object, not string)
       const appointment = await storage.createAppointment({
         ...appointmentData,
+        scheduledTime, // Use the Date object we created, not the string from appointmentData
         googleCalendarEventId: calendarEvent.eventId,
         googleMeetLink: calendarEvent.meetLink
       });

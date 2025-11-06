@@ -264,16 +264,21 @@ class GoogleCalendarService {
 
     const slots = await this.getAvailableSlots(startOfDay, endOfDay);
     
-    // Convert to the format expected by the frontend
-    return slots.map(slot => ({
-      time: slot.start.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false,
-        timeZone: 'Asia/Dubai'
-      }),
-      available: slot.available
-    }));
+    // Get current time in Dubai timezone
+    const nowInDubai = new Date();
+    
+    // Convert to the format expected by the frontend, filtering out past slots
+    return slots
+      .filter(slot => slot.start.getTime() > nowInDubai.getTime()) // Only show future slots
+      .map(slot => ({
+        time: slot.start.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          hour12: false,
+          timeZone: 'Asia/Dubai'
+        }),
+        available: slot.available
+      }));
   }
 
   // Helper method to check if a specific time slot is available
