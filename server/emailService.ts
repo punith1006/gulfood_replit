@@ -139,6 +139,8 @@ export async function sendAppointmentConfirmation(params: EmailParams): Promise<
 
     const htmlContent = generateEmailHTML(params);
 
+    console.log('📧 Attempting to send appointment confirmation email to:', params.to);
+    
     const result = await resend.emails.send({
       from: 'Gulfood 2026 <onboarding@resend.dev>',
       to: params.to,
@@ -152,7 +154,17 @@ export async function sendAppointmentConfirmation(params: EmailParams): Promise<
       ]
     });
 
-    console.log('✅ Appointment confirmation email sent successfully');
+    console.log('📧 Resend API response:', JSON.stringify(result, null, 2));
+
+    if (result.error) {
+      console.error('❌ Resend API returned an error:', result.error);
+      return { 
+        success: false, 
+        error: result.error.message || 'Email send failed' 
+      };
+    }
+
+    console.log('✅ Appointment confirmation email sent successfully. Email ID:', result.data?.id);
     return { success: true };
   } catch (error) {
     console.error('❌ Failed to send appointment confirmation email:', error);
