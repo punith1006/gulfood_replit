@@ -13,6 +13,19 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 }) : null;
 
+const chatTranscriptDownloadSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string()
+  })).min(1),
+  sessionId: z.string().regex(/^session_\d+_[a-zA-Z0-9]+$/, 'Invalid sessionId format'),
+  userRole: z.string().nullable().optional(),
+  leadInfo: z.object({
+    name: z.string().nullable().optional(),
+    email: z.string().nullable().optional()
+  }).optional()
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   await seedDatabase();
 
@@ -843,6 +856,58 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     } catch (error) {
       console.error("Error downloading report:", error);
       res.status(500).json({ error: "Failed to download report" });
+    }
+  });
+
+  app.post("/api/chat/download-transcript", async (req, res) => {
+    try {
+      const validationResult = chatTranscriptDownloadSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        console.error('Chat transcript validation failed:', validationResult.error);
+        return res.status(400).json({ 
+          error: "Invalid request format. Please check your input and try again."
+        });
+      }
+      
+      const { messages, sessionId, userRole, leadInfo } = validationResult.data;
+      
+      let sessionTimestamp: number;
+      try {
+        const timestampStr = sessionId.split('_')[1];
+        sessionTimestamp = parseInt(timestampStr, 10);
+        
+        // Clamp to reasonable range: Jan 1, 2020 to 100 years in future
+        const MIN_TIMESTAMP = new Date('2020-01-01').getTime();
+        const MAX_TIMESTAMP = Date.now() + (100 * 365 * 24 * 60 * 60 * 1000);
+        
+        if (isNaN(sessionTimestamp) || sessionTimestamp < MIN_TIMESTAMP || sessionTimestamp > MAX_TIMESTAMP) {
+          sessionTimestamp = Date.now();
+        }
+      } catch (error) {
+        sessionTimestamp = Date.now();
+      }
+      
+      const { generateChatTranscriptPDF } = await import('./pdfGenerator.js');
+      const pdfBuffer = await generateChatTranscriptPDF(
+        messages,
+        sessionId,
+        userRole || null,
+        leadInfo || {},
+        sessionTimestamp
+      );
+      
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0];
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '');
+      const filename = `Gulfood_2026_Chat_${dateStr}_${timeStr}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating chat transcript PDF:", error);
+      res.status(500).json({ error: "Failed to generate chat transcript" });
     }
   });
 

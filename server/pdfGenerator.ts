@@ -271,6 +271,244 @@ export async function generateOrganizerAnalyticsPDF(analytics: Analytics): Promi
   });
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface LeadInfo {
+  name?: string;
+  email?: string;
+}
+
+export async function generateChatTranscriptPDF(
+  messages: ChatMessage[],
+  sessionId: string,
+  userRole: string | null,
+  leadInfo: LeadInfo,
+  sessionTimestamp: number
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const now = new Date();
+    let firstMessageTime = new Date(sessionTimestamp);
+    
+    if (isNaN(firstMessageTime.getTime())) {
+      firstMessageTime = new Date();
+    }
+    
+    const lastMessageTime = now;
+    const duration = Math.round((lastMessageTime.getTime() - firstMessageTime.getTime()) / 60000);
+    
+    const botMessageCount = messages.filter(m => m.role === 'assistant').length;
+    const userMessageCount = messages.filter(m => m.role === 'user').length;
+    
+    const safeFormatDate = (date: Date, options: Intl.DateTimeFormatOptions): string => {
+      try {
+        if (isNaN(date.getTime())) {
+          return 'N/A';
+        }
+        return date.toLocaleDateString('en-US', options);
+      } catch (error) {
+        return 'N/A';
+      }
+    };
+    
+    const safeFormatTime = (date: Date, options: Intl.DateTimeFormatOptions): string => {
+      try {
+        if (isNaN(date.getTime())) {
+          return 'N/A';
+        }
+        return date.toLocaleTimeString('en-US', options);
+      } catch (error) {
+        return 'N/A';
+      }
+    };
+    
+    const stripMarkdown = (text: string): string => {
+      return text
+        .replace(/\*\*(.*?)\*\*/g, '$1')
+        .replace(/\*(.*?)\*/g, '$1')
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+        .replace(/\p{Extended_Pictographic}/gu, '')
+        .trim();
+    };
+    
+    const getMessageTimestamp = (index: number): Date => {
+      if (messages.length <= 1) return firstMessageTime;
+      const totalDuration = lastMessageTime.getTime() - firstMessageTime.getTime();
+      const timePerMessage = totalDuration / (messages.length - 1);
+      return new Date(firstMessageTime.getTime() + (timePerMessage * index));
+    };
+
+    const content: Content[] = [];
+    
+    // Cover Page
+    content.push({ text: 'Gulfood 2026', fontSize: 24, bold: true, alignment: 'center', margin: [0, 100, 0, 20] });
+    content.push({ text: 'Chat Transcript', fontSize: 16, alignment: 'center', margin: [0, 0, 0, 40] });
+    content.push({ text: 'With: Faris (Your Event Guide)', fontSize: 11, alignment: 'center', margin: [0, 5, 0, 5] });
+    content.push({
+      text: `Conversation Started: ${safeFormatDate(firstMessageTime, { year: 'numeric', month: 'long', day: 'numeric' })} at ${safeFormatTime(firstMessageTime, { hour: '2-digit', minute: '2-digit' })}`,
+      fontSize: 11,
+      alignment: 'center',
+      margin: [0, 5, 0, 5]
+    });
+    content.push({
+      text: `PDF Generated: ${safeFormatDate(now, { year: 'numeric', month: 'long', day: 'numeric' })} at ${safeFormatTime(now, { hour: '2-digit', minute: '2-digit' })}`,
+      fontSize: 11,
+      alignment: 'center',
+      margin: [0, 5, 0, 5]
+    });
+
+    if (leadInfo.name && leadInfo.email) {
+      content.push({ text: '', margin: [0, 20, 0, 0] });
+      content.push({ text: `User: ${leadInfo.name}`, fontSize: 11, alignment: 'center', margin: [0, 5, 0, 5] });
+      content.push({ text: `Email: ${leadInfo.email}`, fontSize: 11, alignment: 'center', margin: [0, 5, 0, 5] });
+    }
+
+    content.push({ text: '', margin: [0, 20, 0, 0] });
+    content.push({ text: `Total Messages: ${messages.length}`, fontSize: 11, alignment: 'center', margin: [0, 5, 0, 5] });
+    content.push({
+      text: `Conversation Duration: ${duration > 0 ? duration : '< 1'} mins`,
+      fontSize: 11,
+      alignment: 'center',
+      margin: [0, 5, 0, 5]
+    });
+    content.push({ text: '', pageBreak: 'after' });
+
+    // Conversation Messages
+    messages.forEach((message, idx) => {
+      const messageTime = getMessageTimestamp(idx);
+      const timestamp = safeFormatTime(messageTime, { hour: '2-digit', minute: '2-digit' });
+      const cleanContent = stripMarkdown(message.content);
+
+      if (message.role === 'assistant') {
+        // Bot message - light gray background with left border
+        content.push({
+          table: {
+            widths: ['*'],
+            body: [[
+              {
+                stack: [
+                  { text: `Faris • ${timestamp}`, fontSize: 8, color: '#666666', margin: [0, 0, 0, 5] },
+                  { text: cleanContent, fontSize: 10, margin: [0, 0, 0, 10] }
+                ],
+                fillColor: '#F5F5F5',
+                margin: [8, 8, 8, 8]
+              }
+            ]]
+          },
+          layout: {
+            hLineWidth: () => 0,
+            vLineWidth: (i: number) => i === 0 ? 3 : 0,
+            vLineColor: () => '#FF6B35',
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 8,
+            paddingBottom: () => 8
+          },
+          margin: [0, 0, 0, 10]
+        });
+      } else if (message.role === 'user') {
+        // User message - right aligned with right border
+        content.push({
+          table: {
+            widths: ['*'],
+            body: [[
+              {
+                stack: [
+                  { text: `${timestamp} • You`, fontSize: 8, color: '#666666', alignment: 'right', margin: [0, 0, 0, 5] },
+                  { text: cleanContent, fontSize: 10, alignment: 'right', margin: [0, 0, 0, 10] }
+                ],
+                fillColor: '#FFFFFF',
+                margin: [8, 8, 8, 8]
+              }
+            ]]
+          },
+          layout: {
+            hLineWidth: () => 1,
+            vLineWidth: (i: number) => i === 1 ? 3 : 0,
+            vLineColor: () => '#4A90E2',
+            hLineColor: () => '#E0E0E0',
+            paddingLeft: () => 8,
+            paddingRight: () => 8,
+            paddingTop: () => 8,
+            paddingBottom: () => 8
+          },
+          margin: [0, 0, 0, 10]
+        });
+      }
+    });
+
+    // Summary Page
+    content.push({ text: '', pageBreak: 'before' });
+    content.push({ text: 'Conversation Summary', fontSize: 16, bold: true, margin: [0, 20, 0, 15] });
+    content.push({ text: `Messages from Faris: ${botMessageCount}`, fontSize: 10, margin: [0, 3, 0, 3] });
+    content.push({ text: `Messages from User: ${userMessageCount}`, fontSize: 10, margin: [0, 3, 0, 3] });
+    content.push({ text: '', margin: [0, 15, 0, 10] });
+    content.push({ text: 'Session Information:', fontSize: 10, bold: true, margin: [0, 3, 0, 3] });
+    content.push({ text: `Session ID: ${sessionId}`, fontSize: 10, margin: [0, 3, 0, 3] });
+    content.push({ text: `User Role: ${userRole || 'Not specified'}`, fontSize: 10, margin: [0, 3, 0, 3] });
+
+    if (leadInfo.name && leadInfo.email) {
+      content.push({ text: '', margin: [0, 15, 0, 10] });
+      content.push({ text: 'Contact Information:', fontSize: 10, bold: true, margin: [0, 3, 0, 3] });
+      content.push({ text: `Name: ${leadInfo.name}`, fontSize: 10, margin: [0, 3, 0, 3] });
+      content.push({ text: `Email: ${leadInfo.email}`, fontSize: 10, margin: [0, 3, 0, 3] });
+    }
+
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      info: {
+        title: 'Gulfood 2026 Chat Transcript',
+        author: 'Gulfood Event AI Assistant',
+        subject: 'Chat conversation with Faris at Gulfood 2026',
+        keywords: 'Gulfood 2026, Dubai, Trade Show, Event, Chat Transcript',
+        creator: 'Gulfood Event Platform',
+        producer: 'pdfMake',
+        creationDate: now,
+        modDate: now
+      },
+      header: (currentPage: number, pageCount: number) => {
+        if (currentPage === 1) return null;
+        return {
+          margin: [40, 20, 40, 20],
+          columns: [
+            { text: 'Gulfood 2026 Chat Transcript', fontSize: 9, color: '#666666' },
+            { text: `Page ${currentPage} of ${pageCount}`, fontSize: 9, color: '#666666', alignment: 'right' }
+          ]
+        };
+      },
+      footer: (currentPage: number) => {
+        if (currentPage === 1) return null;
+        return {
+          margin: [40, 20, 40, 20],
+          columns: [
+            { text: 'Generated by Gulfood Event AI', fontSize: 8, color: '#999999' },
+            { text: now.toLocaleDateString(), fontSize: 8, color: '#999999', alignment: 'right' }
+          ]
+        };
+      },
+      content,
+      defaultStyle: {
+        font: 'Helvetica',
+        fontSize: 10,
+        color: '#374151'
+      }
+    };
+
+    const printer = new PdfPrinter(fonts);
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    
+    const chunks: Buffer[] = [];
+    pdfDoc.on('data', (chunk) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    
+    pdfDoc.end();
+  });
+}
+
 function parseMarkdownTable(markdown: string): any[] {
   const tables: any[] = [];
   const lines = markdown.split('\n');
