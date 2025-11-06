@@ -4,7 +4,15 @@
 The Gulfood 2026 AI Event Assistant is a web application designed to enhance the experience for visitors, exhibitors, and event organizers at the Gulfood 2026 trade show. It offers AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. The platform is freely accessible without registration, aiming to maximize engagement by providing immediate access to its features, including an AI chatbot named "Faris." The application supports three user groups: Visitors, Exhibitors, and Event Organizers, with role-based access to specialized functionalities like the Analytics Dashboard.
 
 ## Recent Updates (November 2025)
-- **Enhanced Journey Planning - Exhibitly-Quality Reports (LATEST)**: Premium journey reports with rich personalization
+- **Chat PDF Export Migration (LATEST)**: Server-side PDF generation to eliminate antivirus warnings
+  - **Server-Side Generation**: Chat transcripts now generated server-side using PdfPrinter (same approach as Journey PDFs)
+  - **Proper HTTP Headers**: PDFs served with correct Content-Type, Content-Disposition, and Content-Length headers
+  - **Robust Validation**: Zod schema validation with role whitelisting, timestamp clamping, and sanitized error responses
+  - **Safe Date Formatting**: Defensive guards against invalid dates and malformed input
+  - **Emoji Removal**: Complete Unicode-aware emoji stripping using `/\p{Extended_Pictographic}/gu`
+  - **No Antivirus Warnings**: Server-generated PDFs avoid false positives from browser-based generation
+  - **UI Cleanup**: Removed redundant "Download Journey Report" button from Chat tab
+- **Enhanced Journey Planning - Exhibitly-Quality Reports**: Premium journey reports with rich personalization
   - **Critical Fix**: User's own company now excluded from exhibitor recommendations using case-insensitive filtering
   - **10 Matched Exhibitors**: Expanded from 5 to 10 exhibitors with individual match scores (0-100%)
   - **Hyper-Personalized Reasons**: Each exhibitor includes a "Why this matters to you" explanation tailored to user's organization + role
