@@ -874,11 +874,24 @@ export default function AIChatbot() {
     }
   });
 
-  const handleAppointmentSlotSelected = (date: Date, time: string) => {
-    setAppointmentFormData(prev => ({
-      ...prev,
-      scheduledTime: date.toISOString()
-    }));
+  const handleAppointmentSlotSelected = (bookingData: {
+    scheduledTime: Date;
+    name: string;
+    email: string;
+    organization: string;
+    role: string;
+    meetingPurpose: string;
+  }) => {
+    // Submit the appointment booking with all the collected data
+    appointmentBookingMutation.mutate({
+      name: bookingData.name,
+      email: bookingData.email,
+      organization: bookingData.organization,
+      role: bookingData.role,
+      meetingPurpose: bookingData.meetingPurpose,
+      scheduledTime: bookingData.scheduledTime.toISOString(),
+      timezone: 'Asia/Dubai'
+    });
   };
 
   const downloadReportMutation = useMutation({
@@ -2491,21 +2504,12 @@ export default function AIChatbot() {
               </DialogDescription>
             </DialogHeader>
             <AppointmentSlotPicker
-              onSlotSelected={(date, time) => {
-                handleAppointmentSlotSelected(date, time);
-                // Show form to collect appointment details
-                const form = appointmentFormData;
-                if (form.name && form.email && form.organization && form.role && form.meetingPurpose) {
-                  appointmentBookingMutation.mutate(form);
-                } else {
-                  toast({
-                    title: "Additional Information Required",
-                    description: "Please provide your details to complete the booking",
-                    variant: "destructive"
-                  });
-                }
-              }}
+              onSlotSelected={handleAppointmentSlotSelected}
               onCancel={() => setShowAppointmentBooking(false)}
+              leadData={{
+                name: sessionManager.getLeadInfo().name || undefined,
+                email: sessionManager.getLeadInfo().email || undefined
+              }}
             />
           </DialogContent>
         </Dialog>
