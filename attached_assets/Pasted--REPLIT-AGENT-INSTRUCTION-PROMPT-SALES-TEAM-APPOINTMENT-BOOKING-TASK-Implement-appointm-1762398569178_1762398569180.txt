@@ -1,0 +1,224 @@
+=== REPLIT AGENT INSTRUCTION PROMPT - SALES TEAM APPOINTMENT BOOKING ===
+
+TASK: Implement appointment booking system in Chat tab using Google Calendar integration for 30-minute consultation slots with sales team.
+
+===============================================
+CORE FUNCTIONALITY OUTLINE
+===============================================
+
+FEATURE: Book Sales Consultation
+LOCATION: Chat tab only
+AVAILABLE TO: Both Visitors and Exhibitors
+SLOT DURATION: 30 minutes
+CALENDAR: Google Calendar integration (use Replit connector)
+
+===============================================
+TRIGGER & FLOW
+===============================================
+
+ACTIVATION TRIGGERS:
+- User asks: "book appointment", "schedule meeting", "talk to sales", "consultation", "speak with team"
+- Quick action button: "Schedule Consultation" (add to quick actions at bottom)
+
+CONVERSATION FLOW:
+
+SCENARIO 1 - Lead info already captured:
+Bot: "I'd be happy to schedule a consultation with our sales team! What would you like to discuss?"
+[User provides reason]
+Bot: "Great! Let me show you available time slots."
+[Display calendar with available slots]
+
+SCENARIO 2 - No lead info captured:
+Bot: "I'd be happy to schedule a consultation! First, I need a few details."
+[Collect: Name, Email, Organization, Role]
+Bot: "Thanks! What would you like to discuss in this meeting?"
+[User provides reason]
+Bot: "Perfect! Here are available time slots."
+[Display calendar with available slots]
+
+===============================================
+DATA COLLECTION REQUIREMENTS
+===============================================
+
+REQUIRED FIELDS:
+- Name (from lead capture or ask)
+- Email (from lead capture or ask)
+- Organization (from lead capture or ask)
+- Role (from lead capture or ask)
+- Meeting Purpose/Reason (always ask)
+
+STORE IN DATABASE:
+Table: "appointments"
+Fields:
+- id (UUID)
+- lead_id (link to leads table)
+- name, email, organization, role
+- meeting_purpose (TEXT)
+- scheduled_time (TIMESTAMP)
+- duration_minutes (default: 30)
+- status ("scheduled", "completed", "cancelled", "no_show")
+- google_calendar_event_id (STRING)
+- created_at (TIMESTAMP)
+
+===============================================
+GOOGLE CALENDAR INTEGRATION
+===============================================
+
+SETUP:
+1. Use Replit Google Calendar connector
+2. Connect to sales team calendar
+3. Set working hours: 9 AM - 5 PM (or configurable)
+4. Set timezone: Event location timezone
+
+FETCH AVAILABLE SLOTS:
+- Query next 14 days
+- Check for existing events (blocked times)
+- Generate 30-min slots from available time
+- Show only business hours
+- Exclude weekends (optional)
+
+BOOKING LOGIC:
+- Create Google Calendar event with:
+  * Title: "Sales Consultation - [User Name]"
+  * Description: Include user details + meeting purpose
+  * Duration: 30 minutes
+  * Attendees: User email + sales team email
+  * Location: Virtual/Video call link (Google Meet if available)
+  * Reminders: 30 mins before, 1 day before
+
+CONFLICT PREVENTION:
+- Real-time check before confirming booking
+- Lock slot temporarily while user confirms (2 min timeout)
+- Recheck availability before final confirmation
+- Show error if slot taken: "Sorry, this slot was just booked. Please select another."
+
+===============================================
+UI/UX DESIGN
+===============================================
+
+CALENDAR DISPLAY:
+- Embed mini calendar in chat (not full modal)
+- Show 7 days at a time with navigation arrows
+- Display available slots as buttons/chips per day
+- Format: "Wed, Mar 15 - 10:00 AM", "10:30 AM", "2:00 PM"
+- Disable/gray out unavailable times
+- Highlight selected slot
+
+SLOT SELECTION:
+User clicks slot → Show confirmation:
+"Confirm your appointment:
+📅 Wednesday, March 15, 2025
+🕐 10:00 AM - 10:30 AM (30 mins)
+📍 Google Meet (link will be sent)
+👤 With: Sales Team
+
+[Cancel] [Confirm Booking]"
+
+CONFIRMATION MESSAGE:
+"✅ Appointment confirmed!
+
+Your consultation is scheduled for:
+📅 Wednesday, March 15, 2025 at 10:00 AM
+
+📧 Calendar invite sent to [email]
+🔗 Meeting link: [Google Meet URL]
+
+What you'll discuss: [meeting purpose]
+
+You'll receive a reminder 30 minutes before the meeting.
+
+[Add to Calendar] [View Details]"
+
+===============================================
+IMPLEMENTATION STEPS
+===============================================
+
+1. Add quick action button: "Schedule Consultation"
+
+2. Create appointment booking intent detection in chatbot
+
+3. Set up Google Calendar API connection using Replit connector
+
+4. Build function to fetch available slots:
+   - Query calendar for next 14 days
+   - Filter business hours only
+   - Exclude booked slots
+   - Return array of available times
+
+5. Create UI component for slot display in chat
+
+6. Implement booking function:
+   - Validate slot availability
+   - Create Google Calendar event
+   - Send email confirmation
+   - Save to database
+
+7. Add confirmation and reminder system
+
+8. Handle edge cases:
+   - No available slots
+   - Booking conflicts
+   - Cancellation requests
+   - Rescheduling
+
+===============================================
+API ENDPOINTS NEEDED
+===============================================
+
+GET /api/appointments/available-slots
+- Query params: start_date, end_date
+- Returns: Array of available time slots
+
+POST /api/appointments/book
+- Body: { lead_id, scheduled_time, meeting_purpose }
+- Returns: Appointment details + calendar event
+
+GET /api/appointments/:id
+- Returns: Appointment details
+
+PUT /api/appointments/:id/cancel
+- Cancels appointment + removes from calendar
+
+===============================================
+ADDITIONAL FEATURES
+===============================================
+
+OPTIONAL ENHANCEMENTS:
+- Allow user to reschedule within chat
+- Show "My Appointments" link in chat
+- Send reminder messages via chat 1 day before
+- Allow timezone selection for international users
+- Show sales team member availability (if multiple team members)
+
+ERROR HANDLING:
+- Calendar API failure → Offer manual booking via email
+- No slots available → Suggest email contact instead
+- Timezone issues → Clearly display timezone in all communications
+
+===============================================
+TESTING CHECKLIST
+===============================================
+
+□ Calendar integration connects successfully
+□ Available slots display correctly
+□ Booking creates calendar event
+□ Email confirmation sent
+□ Database record created
+□ Lead info pre-fills when available
+□ Conflict detection works
+□ Confirmation message displays properly
+□ Calendar invite includes correct details
+□ Works for both Visitors and Exhibitors
+□ Mobile responsive display
+
+===============================================
+START IMPLEMENTATION
+===============================================
+
+Focus on core functionality first:
+1. Calendar connection
+2. Slot availability check
+3. Booking creation
+4. Confirmation flow
+
+Then add enhancements and polish UX.
