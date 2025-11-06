@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -69,8 +69,9 @@ END:VCALENDAR`;
 }
 
 function generateEmailHTML(params: EmailParams): string {
-  const formattedDateTime = format(
+  const formattedDateTime = formatInTimeZone(
     params.scheduledTime, 
+    'Asia/Dubai',
     "EEEE, MMMM d, yyyy 'at' h:mm a 'GST'"
   );
   
