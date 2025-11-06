@@ -4,7 +4,16 @@
 The Gulfood 2026 AI Event Assistant is a web application designed to enhance the experience for visitors, exhibitors, and event organizers at the Gulfood 2026 trade show. It offers AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. The platform is freely accessible without registration, aiming to maximize engagement by providing immediate access to its features, including an AI chatbot named "Faris." The application supports three user groups: Visitors, Exhibitors, and Event Organizers, with role-based access to specialized functionalities like the Analytics Dashboard.
 
 ## Recent Updates (November 2025)
-- **Chat PDF Export with IDM Compatibility (LATEST)**: Iframe-based download system for seamless download manager integration
+- **Appointment Booking System with Email Confirmations (LATEST)**: Fully functional consultation scheduling with automated email notifications
+  - **Two-Step Wizard**: Step 1 for date/time selection, Step 2 for contact details with form validation
+  - **Google Calendar Integration**: Appointments created in sales team calendar with auto-generated Google Meet links
+  - **Email Confirmations**: Professional branded emails sent via Resend with meeting details and calendar attachment
+  - **Timezone Handling**: All dates/times properly handled in Dubai timezone (GST, UTC+4) throughout the system
+  - **Calendar Attachments**: .ics files included in emails for easy calendar import
+  - **Session Integration**: Pre-fills name/email from chat session if lead data already captured
+  - **Error Handling**: Graceful degradation if email service unavailable, doesn't break booking flow
+  - **Business Hours**: Enforces 9 AM - 5 PM Dubai time with proper slot validation
+- **Chat PDF Export with IDM Compatibility**: Iframe-based download system for seamless download manager integration
   - **Server-Side Generation**: Chat transcripts generated server-side using PdfPrinter (same approach as Journey PDFs)
   - **Proper HTTP Headers**: PDFs served with correct Content-Type, Content-Disposition, and Content-Length headers
   - **Robust Validation**: Zod schema validation with role whitelisting, timestamp clamping, and sanitized error responses
