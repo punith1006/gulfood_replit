@@ -1680,27 +1680,25 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
       });
 
       // Send confirmation email with calendar invite (don't fail booking if email fails)
-      if (calendarEvent.meetLink) {
-        try {
-          const emailResult = await sendAppointmentConfirmation({
-            to: appointmentData.email,
-            name: appointmentData.name,
-            organization: appointmentData.organization,
-            role: appointmentData.role,
-            meetingPurpose: appointmentData.meetingPurpose,
-            scheduledTime,
-            googleMeetLink: calendarEvent.meetLink,
-            durationMinutes: appointmentData.durationMinutes || 30
-          });
+      try {
+        const emailResult = await sendAppointmentConfirmation({
+          to: appointmentData.email,
+          name: appointmentData.name,
+          organization: appointmentData.organization,
+          role: appointmentData.role,
+          meetingPurpose: appointmentData.meetingPurpose,
+          scheduledTime,
+          googleMeetLink: calendarEvent.meetLink,
+          durationMinutes: appointmentData.durationMinutes || 30
+        });
 
-          if (emailResult.success) {
-            console.log('✅ Confirmation email sent successfully to:', appointmentData.email);
-          } else {
-            console.warn('⚠️  Failed to send confirmation email:', emailResult.error);
-          }
-        } catch (emailError) {
-          console.error('❌ Error sending confirmation email:', emailError);
+        if (emailResult.success) {
+          console.log('✅ Confirmation email sent successfully to:', appointmentData.email);
+        } else {
+          console.warn('⚠️  Failed to send confirmation email:', emailResult.error);
         }
+      } catch (emailError) {
+        console.error('❌ Error sending confirmation email:', emailError);
       }
 
       res.json({
