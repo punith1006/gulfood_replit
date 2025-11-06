@@ -886,6 +886,16 @@ export default function AIChatbot() {
       const docDefinition: any = {
         pageSize: 'A4',
         pageMargins: [40, 60, 40, 60],
+        info: {
+          title: 'Gulfood 2026 Chat Transcript',
+          author: 'Gulfood Event AI Assistant',
+          subject: 'Chat conversation with Faris at Gulfood 2026',
+          keywords: 'Gulfood 2026, Dubai, Trade Show, Event, Chat Transcript',
+          creator: 'Gulfood Event Platform',
+          producer: 'pdfMake',
+          creationDate: now,
+          modDate: now
+        },
         header: (currentPage: number, pageCount: number) => {
           if (currentPage === 1) return null;
           return {
@@ -1062,8 +1072,11 @@ export default function AIChatbot() {
         docDefinition.content.push({ text: `Email: ${leadInfo.email}`, style: 'summaryText' });
       }
 
-      // Generate PDF
-      pdfMake.createPdf(docDefinition).download(`Gulfood2026_Chat_${now.toISOString().split('T')[0]}.pdf`);
+      // Generate PDF with improved filename format
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, ''); // HHMMSS
+      const filename = `Gulfood_2026_Chat_${dateStr}_${timeStr}.pdf`;
+      pdfMake.createPdf(docDefinition).download(filename);
       
       setDownloadStatus('success');
       toast({
