@@ -1065,17 +1065,17 @@ export default function AIChatbot() {
   }
 
   return (
-    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[480px] md:w-[520px] h-[90vh] sm:h-[600px] md:h-[650px] max-h-screen shadow-2xl z-50 flex flex-col sm:rounded-xl border-2" data-testid="card-chatbot">
-      <div className="p-2.5 border-b border-border bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[480px] md:w-[520px] h-[90vh] sm:h-[600px] md:h-[650px] max-h-screen shadow-2xl z-50 flex flex-col rounded-xl border-2" data-testid="card-chatbot">
+      <div className="p-2.5 border-b border-[#F7931E]/20 bg-[#F7931E] rounded-t-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg ring-2 ring-primary/20 ring-offset-2 overflow-hidden">
+            <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg overflow-hidden">
               <img src={farisAvatar} alt="Faris AI" className="w-full h-full object-cover scale-150" />
             </div>
             <div className="flex items-center gap-2">
-              <div className="font-bold text-base bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Faris</div>
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-chart-3 animate-pulse shadow-sm shadow-chart-3" />
+              <div className="font-bold text-base text-white">Faris</div>
+              <div className="text-xs text-white/80 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-sm" />
                 Your Event Guide
               </div>
             </div>
@@ -1084,17 +1084,17 @@ export default function AIChatbot() {
             <Button
               variant="ghost"
               size="icon"
-              className="hover-elevate h-7 w-7"
+              className="hover:bg-white/20 active:bg-white/30 h-7 w-7 no-default-hover-elevate no-default-active-elevate"
               title="English | العربية | 中文 | हिन्दी"
               data-testid="button-language-selector"
               aria-label="Language selector"
             >
-              <Globe className="w-4 h-4 text-muted-foreground" />
+              <Globe className="w-4 h-4 text-white" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="hover-elevate h-7 w-7"
+              className="hover:bg-white/20 active:bg-white/30 h-7 w-7 no-default-hover-elevate no-default-active-elevate"
               onClick={handleDownloadChat}
               disabled={messages.length === 0 || downloadStatus === 'loading'}
               title={messages.length === 0 ? "No conversation to download" : "Download conversation as PDF"}
@@ -1102,11 +1102,11 @@ export default function AIChatbot() {
               aria-label="Download conversation as PDF"
             >
               {downloadStatus === 'loading' ? (
-                <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+                <Loader2 className="w-4 h-4 text-white animate-spin" />
               ) : downloadStatus === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-chart-3" />
+                <CheckCircle2 className="w-4 h-4 text-white" />
               ) : (
-                <FileDown className="w-4 h-4 text-muted-foreground" />
+                <FileDown className="w-4 h-4 text-white" />
               )}
             </Button>
             <Button
@@ -1115,9 +1115,9 @@ export default function AIChatbot() {
               onClick={closeChatbot}
               data-testid="button-close-chatbot"
               aria-label="Close chatbot"
-              className="hover-elevate h-7 w-7"
+              className="hover:bg-white/20 active:bg-white/30 h-7 w-7 no-default-hover-elevate no-default-active-elevate"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 text-white" />
             </Button>
           </div>
         </div>
