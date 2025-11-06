@@ -852,7 +852,7 @@ export default function AIChatbot() {
     onSuccess: () => {
       toast({
         title: "Appointment Confirmed",
-        description: "You will receive a calendar invitation at your email with the meeting details.",
+        description: "You will receive a confirmation email with meeting details. Your appointment is scheduled in Dubai Time (GST, UTC+4).",
       });
       setShowAppointmentBooking(false);
       setAppointmentFormData({
