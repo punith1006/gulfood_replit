@@ -64,6 +64,10 @@ class GoogleCalendarService {
     return this.initialized;
   }
 
+  isConfigured(): boolean {
+    return this.initialized;
+  }
+
   async getAvailableSlots(
     startDate: Date,
     endDate: Date,
@@ -89,30 +93,36 @@ class GoogleCalendarService {
     const busyPeriods = response.data.calendars?.[calendarId]?.busy || [];
 
     // Generate all possible time slots within business hours
+    // All times are in Dubai timezone (GST, UTC+4)
     const allSlots: CalendarSlot[] = [];
-    const currentDate = new Date(startDate);
+    let current = new Date(startDate);
 
-    while (currentDate < endDate) {
-      const dayOfWeek = currentDate.getDay();
+    while (current < endDate) {
+      // Get the date in Dubai timezone
+      const dubaiDateStr = current.toLocaleDateString('en-CA', { timeZone: 'Asia/Dubai' }); // YYYY-MM-DD
+      const dayOfWeek = new Date(`${dubaiDateStr}T12:00:00+04:00`).getDay();
       
       // Skip weekends (0 = Sunday, 6 = Saturday)
       if (dayOfWeek === 0 || dayOfWeek === 6) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(0, 0, 0, 0);
+        current = new Date(current.getTime() + 24 * 60 * 60 * 1000); // Add 1 day
         continue;
       }
 
-      // Generate slots for this day
+      // Create the exact end of business hours for this day in Dubai timezone
+      const dayEnd = new Date(`${dubaiDateStr}T${String(workingHoursEnd).padStart(2, '0')}:00:00+04:00`);
+      
+      // Generate slots for this day in Dubai timezone
       for (let hour = workingHoursStart; hour < workingHoursEnd; hour++) {
         for (let minute = 0; minute < 60; minute += 15) {
-          const slotStart = new Date(currentDate);
-          slotStart.setHours(hour, minute, 0, 0);
+          // Create slot times with explicit Dubai timezone offset
+          const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`;
+          const slotStart = new Date(`${dubaiDateStr}T${timeStr}+04:00`);
           
-          const slotEnd = new Date(slotStart);
-          slotEnd.setMinutes(slotEnd.getMinutes() + slotDurationMinutes);
+          const slotEnd = new Date(slotStart.getTime() + slotDurationMinutes * 60 * 1000);
 
-          // Check if slot end is still within working hours
-          if (slotEnd.getHours() <= workingHoursEnd) {
+          // Check if slot end is still within working hours (in Dubai time)
+          // Compare full datetime, not just hours, to prevent slots ending after 17:00
+          if (slotEnd <= dayEnd) {
             // Check if slot overlaps with any busy period
             const isAvailable = !busyPeriods.some((busy: any) => {
               const busyStart = new Date(busy.start);
@@ -132,8 +142,7 @@ class GoogleCalendarService {
       }
 
       // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
-      currentDate.setHours(0, 0, 0, 0);
+      current = new Date(current.getTime() + 24 * 60 * 60 * 1000);
     }
 
     // Filter to only return available slots
@@ -256,6 +265,86 @@ class GoogleCalendarService {
       meetLink: response.data.hangoutLink,
       htmlLink: response.data.htmlLink!
     };
+  }
+
+  // Helper method to get available slots for a specific date in the format expected by the API
+  async getAvailableSlotsForDate(dateString: string): Promise<{ time: string; available: boolean }[]> {
+    // Parse the date string and create Dubai timezone bounds
+    // Input format: YYYY-MM-DD
+    const startOfDay = new Date(`${dateString}T00:00:00+04:00`); // Start of day in Dubai (GST)
+    const endOfDay = new Date(`${dateString}T23:59:59+04:00`); // End of day in Dubai (GST)
+
+    const slots = await this.getAvailableSlots(startOfDay, endOfDay);
+    
+    // Convert to the format expected by the frontend
+    return slots.map(slot => ({
+      time: slot.start.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: false,
+        timeZone: 'Asia/Dubai'
+      }),
+      available: slot.available
+    }));
+  }
+
+  // Helper method to check if a specific time slot is available
+  async isSlotAvailable(scheduledTime: Date, durationMinutes: number = 30): Promise<boolean> {
+    const endTime = new Date(scheduledTime);
+    endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+
+    const slots = await this.getAvailableSlots(scheduledTime, endTime);
+    
+    // Check if there's an available slot that matches this time
+    return slots.some(slot => 
+      slot.start.getTime() === scheduledTime.getTime() && 
+      slot.available
+    );
+  }
+
+  // Helper method to create an appointment with the expected parameters
+  async createAppointment(params: {
+    attendeeName: string;
+    attendeeEmail: string;
+    organization: string;
+    role: string;
+    purpose: string;
+    scheduledTime: Date;
+    durationMinutes: number;
+    timezone: string;
+  }): Promise<{ eventId: string; meetLink?: string }> {
+    const endTime = new Date(params.scheduledTime);
+    endTime.setMinutes(endTime.getMinutes() + params.durationMinutes);
+
+    const summary = `Gulfood 2026 Consultation - ${params.attendeeName}`;
+    const description = `
+Sales Consultation Meeting
+
+Organization: ${params.organization}
+Role: ${params.role}
+Purpose: ${params.purpose}
+
+This is a scheduled 30-minute consultation with the Gulfood 2026 sales team.
+    `.trim();
+
+    const event = await this.createEvent({
+      summary,
+      description,
+      start: params.scheduledTime,
+      end: endTime,
+      attendeeEmail: params.attendeeEmail,
+      timezone: params.timezone
+    });
+
+    return {
+      eventId: event.id,
+      meetLink: event.meetLink
+    };
+  }
+
+  // Helper method to cancel an event
+  async cancelEvent(eventId: string): Promise<void> {
+    return this.deleteEvent(eventId);
   }
 }
 

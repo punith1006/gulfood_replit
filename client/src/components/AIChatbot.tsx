@@ -36,6 +36,7 @@ import { sessionManager } from "@/lib/sessionManager";
 import { GULFOOD_CATEGORIES } from "@shared/schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import AppointmentSlotPicker from "@/components/AppointmentSlotPicker";
 
 const ATTENDANCE_INTENTS = [
   "Discover new products and innovations",
@@ -58,6 +59,7 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
     "Register Today",
     "Find exhibitors for me",
+    "Schedule Consultation",
     "Show travel & route options",
     "Plan my Journey",
     "Navigate the venue",
@@ -65,6 +67,7 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   ],
   exhibitor: [
     "Connect with potential buyers",
+    "Schedule Consultation",
     "Competitor analysis",
     "Booth location tips",
     "Marketing strategies",
@@ -348,6 +351,18 @@ export default function AIChatbot() {
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [showIntentSearch, setShowIntentSearch] = useState(false);
   const [intentSearchTerm, setIntentSearchTerm] = useState('');
+  
+  // Appointment booking state
+  const [showAppointmentBooking, setShowAppointmentBooking] = useState(false);
+  const [appointmentFormData, setAppointmentFormData] = useState({
+    name: '',
+    email: '',
+    organization: '',
+    role: '',
+    meetingPurpose: '',
+    scheduledTime: '',
+    timezone: 'Asia/Dubai'
+  });
   
   // Pre-fill organization and role from session lead when Journey tab opens
   useEffect(() => {
@@ -669,6 +684,21 @@ export default function AIChatbot() {
       return;
     }
     
+    // Handle "Schedule Consultation" action
+    if (action === "Schedule Consultation") {
+      // Pre-fill form with session lead info if available
+      const leadInfo = sessionManager.getLeadInfo();
+      if (leadInfo.email && leadInfo.name) {
+        setAppointmentFormData(prev => ({
+          ...prev,
+          name: leadInfo.name || '',
+          email: leadInfo.email || ''
+        }));
+      }
+      setShowAppointmentBooking(true);
+      return;
+    }
+    
     const userMessage: Message = { role: "user", content: action };
     setMessages(prev => [...prev, userMessage]);
     chatMutation.mutate({ message: action, role: userRole });
@@ -806,6 +836,50 @@ export default function AIChatbot() {
       });
     }
   });
+
+  const appointmentBookingMutation = useMutation({
+    mutationFn: async (formData: typeof appointmentFormData) => {
+      const res = await apiRequest("POST", "/api/appointments/book", {
+        ...formData,
+        sessionId
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to book appointment");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Appointment Confirmed",
+        description: "You will receive a calendar invitation at your email with the meeting details.",
+      });
+      setShowAppointmentBooking(false);
+      setAppointmentFormData({
+        name: '',
+        email: '',
+        organization: '',
+        role: '',
+        meetingPurpose: '',
+        scheduledTime: '',
+        timezone: 'Asia/Dubai'
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Booking Failed",
+        description: error.message || "Failed to schedule appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleAppointmentSlotSelected = (date: Date, time: string) => {
+    setAppointmentFormData(prev => ({
+      ...prev,
+      scheduledTime: date.toISOString()
+    }));
+  };
 
   const downloadReportMutation = useMutation({
     mutationFn: async () => {
@@ -2405,6 +2479,37 @@ export default function AIChatbot() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Appointment Booking Dialog */}
+      {showAppointmentBooking && (
+        <Dialog open={showAppointmentBooking} onOpenChange={setShowAppointmentBooking}>
+          <DialogContent className="sm:max-w-2xl" data-testid="dialog-appointment-booking">
+            <DialogHeader>
+              <DialogTitle>Schedule Your Consultation</DialogTitle>
+              <DialogDescription>
+                Book a 30-minute consultation with our sales team
+              </DialogDescription>
+            </DialogHeader>
+            <AppointmentSlotPicker
+              onSlotSelected={(date, time) => {
+                handleAppointmentSlotSelected(date, time);
+                // Show form to collect appointment details
+                const form = appointmentFormData;
+                if (form.name && form.email && form.organization && form.role && form.meetingPurpose) {
+                  appointmentBookingMutation.mutate(form);
+                } else {
+                  toast({
+                    title: "Additional Information Required",
+                    description: "Please provide your details to complete the booking",
+                    variant: "destructive"
+                  });
+                }
+              }}
+              onCancel={() => setShowAppointmentBooking(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }

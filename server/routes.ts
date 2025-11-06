@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema } from "@shared/schema";
+import { googleCalendar } from "./googleCalendar";
 import OpenAI from "openai";
 import { z } from "zod";
 import { seedDatabase } from "./seed";
@@ -1591,6 +1592,168 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
     } catch (error) {
       console.error("Error generating journey:", error);
       res.status(500).json({ error: "Failed to generate journey plan" });
+    }
+  });
+
+  // Appointment booking endpoints
+  app.get("/api/appointments/available-slots", async (req, res) => {
+    try {
+      const { date } = req.query;
+      
+      if (!date || typeof date !== 'string') {
+        return res.status(400).json({ error: "Date parameter is required (YYYY-MM-DD format)" });
+      }
+
+      // Validate date format
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(date)) {
+        return res.status(400).json({ error: "Invalid date format. Use YYYY-MM-DD" });
+      }
+
+      // Check if Google Calendar is configured
+      if (!googleCalendar.isConfigured()) {
+        return res.status(503).json({ 
+          error: "Appointment booking is temporarily unavailable. Please contact support.",
+          details: "Calendar service not configured" 
+        });
+      }
+
+      // Get available slots from Google Calendar
+      const slots = await googleCalendar.getAvailableSlotsForDate(date);
+      
+      res.json({ slots });
+    } catch (error) {
+      console.error("Error fetching available slots:", error);
+      res.status(500).json({ error: "Failed to fetch available appointment slots" });
+    }
+  });
+
+  app.post("/api/appointments/book", async (req, res) => {
+    try {
+      const validation = insertAppointmentSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Invalid appointment data", 
+          details: validation.error.errors 
+        });
+      }
+
+      const appointmentData = validation.data;
+
+      // Check if Google Calendar is configured
+      if (!googleCalendar.isConfigured()) {
+        return res.status(503).json({ 
+          error: "Appointment booking is temporarily unavailable. Please contact support.",
+          details: "Calendar service not configured" 
+        });
+      }
+
+      // Verify the slot is still available before booking
+      const scheduledTime = new Date(appointmentData.scheduledTime);
+      const isAvailable = await googleCalendar.isSlotAvailable(scheduledTime);
+      
+      if (!isAvailable) {
+        return res.status(409).json({ 
+          error: "This time slot is no longer available. Please choose another time." 
+        });
+      }
+
+      // Create Google Calendar event
+      const calendarEvent = await googleCalendar.createAppointment({
+        attendeeName: appointmentData.name,
+        attendeeEmail: appointmentData.email,
+        organization: appointmentData.organization,
+        role: appointmentData.role,
+        purpose: appointmentData.meetingPurpose,
+        scheduledTime,
+        durationMinutes: appointmentData.durationMinutes || 30,
+        timezone: appointmentData.timezone || 'Asia/Dubai'
+      });
+
+      // Save appointment to database
+      const appointment = await storage.createAppointment({
+        ...appointmentData,
+        googleCalendarEventId: calendarEvent.eventId,
+        googleMeetLink: calendarEvent.meetLink,
+        status: 'scheduled'
+      });
+
+      res.json({
+        ...appointment,
+        message: "Appointment successfully scheduled! You will receive a calendar invitation at your email."
+      });
+    } catch (error: any) {
+      console.error("Error booking appointment:", error);
+      
+      // Handle specific error types
+      if (error.message?.includes('already booked')) {
+        return res.status(409).json({ error: error.message });
+      }
+      
+      res.status(500).json({ error: "Failed to book appointment. Please try again." });
+    }
+  });
+
+  app.get("/api/appointments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid appointment ID" });
+      }
+
+      const appointment = await storage.getAppointment(id);
+      
+      if (!appointment) {
+        return res.status(404).json({ error: "Appointment not found" });
+      }
+
+      res.json(appointment);
+    } catch (error) {
+      console.error("Error fetching appointment:", error);
+      res.status(500).json({ error: "Failed to fetch appointment details" });
+    }
+  });
+
+  app.put("/api/appointments/:id/cancel", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid appointment ID" });
+      }
+
+      const appointment = await storage.getAppointment(id);
+      
+      if (!appointment) {
+        return res.status(404).json({ error: "Appointment not found" });
+      }
+
+      if (appointment.status === 'cancelled') {
+        return res.status(400).json({ error: "Appointment is already cancelled" });
+      }
+
+      // Cancel Google Calendar event if configured
+      if (googleCalendar.isConfigured() && appointment.googleCalendarEventId) {
+        try {
+          await googleCalendar.cancelEvent(appointment.googleCalendarEventId);
+        } catch (error) {
+          console.error("Error cancelling Google Calendar event:", error);
+          // Continue with database cancellation even if Google Calendar fails
+        }
+      }
+
+      // Update appointment status in database
+      const cancelledAppointment = await storage.cancelAppointment(id);
+
+      res.json({
+        ...cancelledAppointment,
+        message: "Appointment successfully cancelled. A cancellation notification will be sent to your email."
+      });
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      res.status(500).json({ error: "Failed to cancel appointment" });
     }
   });
 
