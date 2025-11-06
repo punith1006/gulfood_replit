@@ -861,7 +861,15 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
 
   app.post("/api/chat/download-transcript", async (req, res) => {
     try {
-      const validationResult = chatTranscriptDownloadSchema.safeParse(req.body);
+      // Handle both JSON and form-encoded data
+      let requestData = req.body;
+      if (req.body.data) {
+        // Form submission - parse JSON from 'data' field
+        requestData = JSON.parse(req.body.data);
+      }
+      
+      // Validate request body
+      const validationResult = chatTranscriptDownloadSchema.safeParse(requestData);
       if (!validationResult.success) {
         console.error('Chat transcript validation failed:', validationResult.error);
         return res.status(400).json({ 
@@ -892,7 +900,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         messages,
         sessionId,
         userRole || null,
-        leadInfo || {},
+        leadInfo ? { name: leadInfo.name || undefined, email: leadInfo.email || undefined } : {},
         sessionTimestamp
       );
       

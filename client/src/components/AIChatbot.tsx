@@ -847,49 +847,104 @@ export default function AIChatbot() {
       setDownloadStatus('loading');
       const leadInfo = sessionManager.getLeadInfo();
       
-      const response = await fetch('/api/chat/download-transcript', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages, 
-          sessionId, 
-          userRole, 
-          leadInfo 
-        })
-      });
+      // Create hidden iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.name = 'download-frame';
+      document.body.appendChild(iframe);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Download failed' }));
-        throw new Error(errorData.error || 'Download failed');
-      }
+      // Create form
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/chat/download-transcript';
+      form.target = 'download-frame';
+      form.style.display = 'none';
       
-      // Generate blob and download
-      const blob = await response.blob();
+      const dataInput = document.createElement('input');
+      dataInput.type = 'hidden';
+      dataInput.name = 'data';
+      dataInput.value = JSON.stringify({ messages, sessionId, userRole, leadInfo });
+      form.appendChild(dataInput);
       
-      // Simple filename with timestamp and random suffix to ensure uniqueness
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
-      const filename = `Gulfood_2026_Chat_${timestamp}_${randomSuffix}.pdf`;
+      let hasResponded = false;
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
+      // Timeout: if no response in 3 seconds, inform user download is in progress
+      const loadTimeout = setTimeout(() => {
+        if (!hasResponded) {
+          toast({ 
+            title: "Download In Progress", 
+            description: "Generating your PDF. This may take a moment." 
+          });
+        }
+      }, 3000);
       
-      // Cleanup
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      // Cleanup timeout: remove iframe after 5 minutes to prevent memory leaks
+      // This is a safety fallback - normal downloads complete much faster
+      // We use a long timeout to avoid cancelling legitimate slow downloads
+      const cleanupTimeout = setTimeout(() => {
+        if (!hasResponded && document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+          setDownloadStatus('idle');
+        }
+      }, 300000); // 5 minutes
       
-      // Show success
-      setDownloadStatus('success');
-      toast({ 
-        title: "PDF Downloaded Successfully", 
-        description: "Your chat transcript has been saved." 
-      });
-      setTimeout(() => setDownloadStatus('idle'), 2000);
+      // Handle iframe load
+      iframe.onload = () => {
+        if (hasResponded) return;
+        hasResponded = true;
+        clearTimeout(loadTimeout);
+        clearTimeout(cleanupTimeout);
+        
+        try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc && iframeDoc.body) {
+            const content = iframeDoc.body.textContent || '';
+            // Check if it's an error response (contains JSON error)
+            if (content.trim().startsWith('{') && (content.includes('"error"') || content.includes('error'))) {
+              throw new Error('Server returned an error');
+            }
+          }
+          
+          // Success - iframe loaded without error
+          document.body.removeChild(iframe);
+          setDownloadStatus('success');
+          toast({ 
+            title: "PDF Downloaded Successfully", 
+            description: "Your chat transcript has been saved." 
+          });
+          setTimeout(() => setDownloadStatus('idle'), 2000);
+        } catch (error) {
+          document.body.removeChild(iframe);
+          setDownloadStatus('error');
+          toast({ 
+            title: "Download Failed", 
+            description: "Failed to generate PDF. Please try again.",
+            variant: "destructive" 
+          });
+          setTimeout(() => setDownloadStatus('idle'), 3000);
+        }
+      };
+      
+      // Handle iframe error
+      iframe.onerror = () => {
+        if (hasResponded) return;
+        hasResponded = true;
+        clearTimeout(loadTimeout);
+        clearTimeout(cleanupTimeout);
+        document.body.removeChild(iframe);
+        setDownloadStatus('error');
+        toast({ 
+          title: "Download Failed", 
+          description: "Network error. Please check your connection and try again.",
+          variant: "destructive" 
+        });
+        setTimeout(() => setDownloadStatus('idle'), 3000);
+      };
+      
+      // Submit form
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
       
     } catch (error) {
       console.error('PDF download error:', error);
