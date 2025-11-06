@@ -866,9 +866,10 @@ export default function AIChatbot() {
       // Generate blob and download
       const blob = await response.blob();
       
-      // Simple filename with timestamp
+      // Simple filename with timestamp and random suffix to ensure uniqueness
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-      const filename = `Gulfood_2026_Chat_${timestamp}.pdf`;
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const filename = `Gulfood_2026_Chat_${timestamp}_${randomSuffix}.pdf`;
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
