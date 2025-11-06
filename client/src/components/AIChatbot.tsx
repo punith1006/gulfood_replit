@@ -859,32 +859,43 @@ export default function AIChatbot() {
       });
       
       if (!response.ok) {
-        throw new Error('Download failed');
+        const errorData = await response.json().catch(() => ({ error: 'Download failed' }));
+        throw new Error(errorData.error || 'Download failed');
       }
       
+      // Generate blob and download
       const blob = await response.blob();
+      
+      // Simple filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `Gulfood_2026_Chat_${timestamp}.pdf`;
+      
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const contentDisposition = response.headers.get('Content-Disposition');
-      a.download = contentDisposition?.split('filename=')[1]?.replace(/"/g, '') || 'chat.pdf';
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
+      
+      // Cleanup
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
+      // Show success
       setDownloadStatus('success');
       toast({ 
         title: "PDF Downloaded Successfully", 
         description: "Your chat transcript has been saved." 
       });
       setTimeout(() => setDownloadStatus('idle'), 2000);
+      
     } catch (error) {
       console.error('PDF download error:', error);
       setDownloadStatus('error');
       toast({ 
         title: "Download Failed", 
-        description: "Failed to generate PDF. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate PDF. Please try again.",
         variant: "destructive" 
       });
       setTimeout(() => setDownloadStatus('idle'), 3000);
