@@ -1,0 +1,209 @@
+TASK: Add PDF download functionality to Chat tab that exports the entire conversation with professional formatting
+
+===============================================
+PART 1: DOWNLOAD BUTTON PLACEMENT & UI
+===============================================
+
+BUTTON LOCATION OPTIONS (Choose best for UX):
+
+OPTION 1 - Header Action Button (RECOMMENDED):
+Place download button in the chat header area next to the close (×) button:
+
+┌─────────────────────────────────────────────┐
+│ 👤 Faris • Your Event Guide    [🌐] [📥] [×] │
+│ ─────────────────────────────────────────── │
+│ Chat | Journey | Referral | Radar          │
+└─────────────────────────────────────────────┘
+
+- Position: Top right corner, between language selector (🌐) and close button (×)
+- Icon: Download icon (📥) or document icon with down arrow
+- Tooltip on hover: "Download conversation as PDF"
+- Style: Icon button matching the header design
+- Size: Same as other header action buttons
+- Color: Subtle gray when inactive, brand color on hover
+
+OPTION 2 - Chat Footer Action (Alternative):
+Place button near the input area:
+
+┌─────────────────────────────────────────────┐
+│ [Ask me anything...]              [Send ➤] │
+│ ─────────────────────────────────────────── │
+│ Quick actions:                  [📥 Export] │
+│ [Register Today] [Find exhibitors] ...      │
+└─────────────────────────────────────────────┘
+
+OPTION 3 - Kebab Menu (Space-saving):
+Add three-dot menu in header with options:
+- 📥 Download conversation
+- 🗑️ Clear chat history
+- ⚙️ Chat settings
+
+RECOMMENDED: Use OPTION 1 (Header Action Button) for best visibility and accessibility
+
+BUTTON SPECIFICATIONS:
+
+Visual Design:
+- Icon: Use download/export icon (↓ with line underneath)
+- Label: Show "Download" text on desktop, icon-only on mobile
+- Style: Flat icon button with subtle background
+- Hover state: Slight background color change + tooltip
+- Active state: Brief loading animation while generating PDF
+- Disabled state: Grayed out if no conversation exists (show tooltip: "No conversation to download")
+
+Button States:
+1. DEFAULT: Enabled, ready to download
+2. LOADING: Spinning/pulsing animation with text "Generating PDF..."
+3. SUCCESS: Brief checkmark animation, then return to default
+4. ERROR: Red highlight with tooltip "Download failed, try again"
+5. DISABLED: When chat is empty or just opened
+
+===============================================
+PART 2: PDF GENERATION SPECIFICATIONS
+===============================================
+
+PDF FORMATTING REQUIREMENTS:
+
+DOCUMENT STRUCTURE:
+
+PAGE 1 - COVER PAGE:
+┌─────────────────────────────────────┐
+│                                     │
+│         [Event Logo]                │
+│                                     │
+│    Gulfood 2026 Chat Transcript    │
+│                                     │
+│    With: Faris (Your Event Guide)  │
+│                                     │
+│    Date: November 6, 2025          │
+│    Time: 2:30 PM - 2:45 PM         │
+│                                     │
+│    User: [Lead Name]                │
+│    Email: [Lead Email]              │
+│                                     │
+│    Total Messages: 24               │
+│    Conversation Duration: 15 mins   │
+│                                     │
+└─────────────────────────────────────┘
+
+PAGE 2+ - CONVERSATION TRANSCRIPT:
+
+Header on each page:
+┌─────────────────────────────────────┐
+│ Gulfood 2026 Chat | Page 2 of 5    │
+│ November 6, 2025                    │
+└─────────────────────────────────────┘
+
+Message Formatting:
+
+BOT MESSAGES (Faris):
+┌─────────────────────────────────────┐
+│ 🤖 Faris • 2:30 PM                  │
+│ ─────────────────────────────────── │
+│ Welcome! 👋 I'm here to help you    │
+│ discover the best exhibitors, plan  │
+│ your journey across both venues...  │
+│                                     │
+└─────────────────────────────────────┘
+
+Style:
+- Background: Light gray (#F5F5F5)
+- Border: Left border in brand color (3px)
+- Font: Sans-serif, 10pt for body text
+- Padding: 12px
+- Margin bottom: 10px
+- Avatar: Bot icon or Faris image on left
+- Timestamp: Small text (8pt), gray color
+
+USER MESSAGES:
+┌─────────────────────────────────────┐
+│                      2:31 PM • You │
+│ ─────────────────────────────────── │
+│           Tell me about exhibitors  │
+│           in the beverage category  │
+│                                     │
+└─────────────────────────────────────┘
+
+Style:
+- Background: White with subtle border
+- Border: Right border in secondary color (3px)
+- Alignment: Right-aligned
+- Font: Same as bot messages
+- Padding: 12px
+- Margin bottom: 10px
+- Avatar: User icon or initials on right
+
+SYSTEM MESSAGES (Lead capture forms, buttons clicked, etc.):
+┌─────────────────────────────────────┐
+│         [System Action] 2:32 PM     │
+│ ─────────────────────────────────── │
+│ 📝 User shared contact details:     │
+│    Name: John Doe                   │
+│    Email: john@example.com          │
+│    Company: ABC Corp                │
+│                                     │
+└─────────────────────────────────────┘
+
+Style:
+- Background: Light blue (#E3F2FD)
+- Centered text
+- Italic font
+- Smaller text (9pt)
+- Icon prefix for context
+
+FORMATTING RULES:
+
+1. PRESERVE RICH TEXT:
+   - Bold text: **text** → Bold in PDF
+   - Italic text: *text* → Italic in PDF
+   - Links: [text](url) → Underlined blue clickable links
+   - Lists: Maintain bullet points or numbers
+   - Line breaks: Preserve paragraph spacing
+
+2. HANDLE SPECIAL CONTENT:
+   - Code blocks: Monospace font with gray background
+   - Quotes: Indent with left border bar
+   - Emojis: Render properly (ensure emoji support in PDF library)
+   - Images: Include if any were shared (scale appropriately)
+
+3. LONG MESSAGES:
+   - No truncation - include full message content
+   - Break across pages naturally
+   - Don't split message boxes awkwardly
+   - Add "continued..." indicator if message spans pages
+
+4. TIMESTAMPS:
+   - Group messages by time if sent within 1 minute
+   - Show timestamp for first message in group
+   - Full timestamp format: "Nov 6, 2025 at 2:30 PM"
+
+LAST PAGE - SUMMARY:
+
+┌─────────────────────────────────────┐
+│ 📊 Conversation Summary              │
+│ ─────────────────────────────────── │
+│ Messages from Faris: 15             │
+│ Messages from User: 9               │
+│ System Actions: 3                   │
+│                                     │
+│ Topics Discussed:                   │
+│ • Exhibitor recommendations         │
+│ • Journey planning                  │
+│ • Travel & accommodation            │
+│                                     │
+│ Actions Taken:                      │
+│ ✓ Lead information captured         │
+│ ✓ 5 exhibitors bookmarked           │
+│ ✓ Journey plan created              │
+│                                     │
+│ Next Steps:                         │
+│ • Complete registration             │
+│ • Download event app                │
+│ • Book hotel accommodation          │
+│                                     │
+└─────────────────────────────────────┘
+
+FOOTER ON EACH PAGE:
+┌─────────────────────────────────────┐
+│ Generated by Gulfood Event AI       │
+│ www.gulfood.com | support@gulfood   │
+│ Page X of Y                         │
