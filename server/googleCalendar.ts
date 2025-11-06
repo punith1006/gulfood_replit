@@ -168,14 +168,6 @@ class GoogleCalendarService {
         dateTime: params.end.toISOString(),
         timeZone: timezone
       },
-      conferenceData: {
-        createRequest: {
-          requestId: `meet-${Date.now()}`,
-          conferenceSolutionKey: {
-            type: 'hangoutsMeet'
-          }
-        }
-      },
       reminders: {
         useDefault: false,
         overrides: [
@@ -188,13 +180,12 @@ class GoogleCalendarService {
     const response = await this.calendar.events.insert({
       calendarId,
       requestBody: event,
-      conferenceDataVersion: 1,
       sendUpdates: 'none'
     });
 
     return {
       id: response.data.id!,
-      meetLink: response.data.hangoutLink,
+      meetLink: undefined,
       htmlLink: response.data.htmlLink!
     };
   }
