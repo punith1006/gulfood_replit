@@ -243,6 +243,25 @@ export const journeyPlans = pgTable("journey_plans", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id"), // Link to leads table
+  sessionId: text("session_id"),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  organization: text("organization").notNull(),
+  role: text("role").notNull(),
+  meetingPurpose: text("meeting_purpose").notNull(),
+  scheduledTime: timestamp("scheduled_time").notNull(),
+  durationMinutes: integer("duration_minutes").notNull().default(30),
+  status: text("status").notNull().default("scheduled"), // scheduled, completed, cancelled, no_show
+  googleCalendarEventId: text("google_calendar_event_id"),
+  googleMeetLink: text("google_meet_link"),
+  timezone: text("timezone").notNull().default("Asia/Dubai"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
@@ -389,6 +408,26 @@ export const insertJourneyPlanSchema = createInsertSchema(journeyPlans).omit({
   leadId: z.number().optional()
 });
 
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true
+}).extend({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  organization: z.string().min(1, "Organization is required"),
+  role: z.string().min(1, "Role is required"),
+  meetingPurpose: z.string().min(5, "Please provide a meeting purpose"),
+  scheduledTime: z.string().or(z.date()),
+  durationMinutes: z.number().default(30),
+  leadId: z.number().optional(),
+  sessionId: z.string().optional(),
+  googleCalendarEventId: z.string().optional(),
+  googleMeetLink: z.string().optional(),
+  timezone: z.string().default("Asia/Dubai")
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -433,3 +472,6 @@ export type InsertOrganizer = z.infer<typeof insertOrganizerSchema>;
 
 export type JourneyPlan = typeof journeyPlans.$inferSelect;
 export type InsertJourneyPlan = z.infer<typeof insertJourneyPlanSchema>;
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
