@@ -313,6 +313,8 @@ Role: ${params.role}
 Purpose: ${params.purpose}
 
 This is a scheduled 30-minute consultation with the Gulfood 2026 sales team.
+
+Note: The meeting link will be provided by our team before the scheduled time.
     `.trim();
 
     const event = await this.createEvent({

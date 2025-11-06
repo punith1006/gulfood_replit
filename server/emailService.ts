@@ -9,7 +9,7 @@ interface AppointmentDetails {
   name: string;
   organization: string;
   meetingPurpose: string;
-  googleMeetLink: string;
+  googleMeetLink?: string;
 }
 
 interface EmailParams {
@@ -19,7 +19,7 @@ interface EmailParams {
   role: string;
   meetingPurpose: string;
   scheduledTime: Date;
-  googleMeetLink: string;
+  googleMeetLink?: string;
   durationMinutes: number;
 }
 
@@ -44,7 +44,7 @@ export function generateICSFile(appointment: AppointmentDetails): string {
   const dtstart = formatDateToICS(startDate);
   const dtend = formatDateToICS(endDate);
   
-  const description = `${appointment.meetingPurpose}\\n\\nGoogle Meet: ${appointment.googleMeetLink}`;
+  const description = `${appointment.meetingPurpose}\\n\\nNote: The meeting link will be provided by the Gulfood 2026 team before the scheduled time.`;
   
   const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -58,7 +58,6 @@ DTSTART:${dtstart}
 DTEND:${dtend}
 SUMMARY:Gulfood 2026 Consultation - ${appointment.name}
 DESCRIPTION:${description}
-LOCATION:${appointment.googleMeetLink}
 STATUS:CONFIRMED
 SEQUENCE:0
 TRANSP:OPAQUE
@@ -101,10 +100,9 @@ function generateEmailHTML(params: EmailParams): string {
       <p style="margin: 8px 0;"><strong>Purpose:</strong> ${params.meetingPurpose}</p>
     </div>
     
-    <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-      <p style="margin: 0 0 15px 0; font-size: 14px; color: #2e7d32;"><strong>Join via Google Meet</strong></p>
-      <a href="${params.googleMeetLink}" style="display: inline-block; background: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold;">Join Meeting</a>
-      <p style="margin: 15px 0 0 0; font-size: 12px; color: #666;">Or copy this link: ${params.googleMeetLink}</p>
+    <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
+      <p style="margin: 0; font-size: 14px; color: #e65100;"><strong>Meeting Link</strong></p>
+      <p style="margin: 10px 0 0 0; font-size: 14px; color: #666;">Our team will send you the meeting link before your scheduled consultation time. Please check your email closer to the meeting date.</p>
     </div>
     
     <p style="font-size: 14px; color: #666; margin-top: 20px;">A calendar invitation (.ics file) is attached to this email. Add it to your calendar so you don't miss the meeting!</p>
