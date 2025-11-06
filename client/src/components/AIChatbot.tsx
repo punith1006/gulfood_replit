@@ -1066,7 +1066,7 @@ export default function AIChatbot() {
 
   return (
     <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[480px] md:w-[520px] h-[90vh] sm:h-[600px] md:h-[650px] max-h-screen shadow-2xl z-50 flex flex-col rounded-xl border-2" data-testid="card-chatbot">
-      <div className="p-2.5 border-b border-[#F7931E]/20 bg-[#F7931E] rounded-t-xl">
+      <div className="p-2.5 border-b border-[#FFC107]/20 bg-[#FFC107] rounded-t-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg overflow-hidden">
