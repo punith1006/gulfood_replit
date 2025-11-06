@@ -168,9 +168,6 @@ class GoogleCalendarService {
         dateTime: params.end.toISOString(),
         timeZone: timezone
       },
-      attendees: [
-        { email: params.attendeeEmail }
-      ],
       conferenceData: {
         createRequest: {
           requestId: `meet-${Date.now()}`,
@@ -192,7 +189,7 @@ class GoogleCalendarService {
       calendarId,
       requestBody: event,
       conferenceDataVersion: 1,
-      sendUpdates: 'all'
+      sendUpdates: 'none'
     });
 
     return {
