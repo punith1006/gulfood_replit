@@ -18,8 +18,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Loader2, Clock, Calendar as CalendarIcon, ArrowLeft, User } from "lucide-react";
+import { Loader2, Clock, Calendar as CalendarIcon, ArrowLeft, User, Info } from "lucide-react";
 import { format, isBefore, startOfDay } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AppointmentSlotPickerProps {
   onSlotSelected: (bookingData: {
@@ -150,6 +151,13 @@ export default function AppointmentSlotPicker({ onSlotSelected, onCancel, leadDa
         </p>
       </div>
 
+      <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+          <strong>Dubai Time (GST, UTC+4):</strong> All times displayed are in Gulf Standard Time. Your meeting will be scheduled according to Dubai timezone.
+        </AlertDescription>
+      </Alert>
+
       {currentStep === 1 ? (
         <>
           <div className="grid md:grid-cols-2 gap-4">
@@ -173,7 +181,7 @@ export default function AppointmentSlotPicker({ onSlotSelected, onCancel, leadDa
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Available Time Slots
+                Available Time Slots (Dubai Time)
               </label>
               
               {isLoading ? (
@@ -233,7 +241,7 @@ export default function AppointmentSlotPicker({ onSlotSelected, onCancel, leadDa
           <div className="mb-4 p-3 bg-muted rounded-lg">
             <p className="text-sm">
               <span className="font-medium">Selected Time:</span>{" "}
-              {format(selectedDate, "MMMM d, yyyy")} at {selectedTime}
+              {format(selectedDate, "MMMM d, yyyy")} at {selectedTime} <span className="text-muted-foreground">(Dubai Time - GST)</span>
             </p>
           </div>
 
