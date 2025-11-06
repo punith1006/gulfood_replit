@@ -16,6 +16,7 @@ import {
   exhibitorAccessCodes,
   organizers,
   journeyPlans,
+  appointments,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -43,7 +44,9 @@ import {
   type ExhibitorAccessCode,
   type InsertExhibitorAccessCode,
   type Organizer,
-  type InsertOrganizer
+  type InsertOrganizer,
+  type Appointment,
+  type InsertAppointment
 } from "@shared/schema";
 
 export interface IStorage {
@@ -122,6 +125,14 @@ export interface IStorage {
   getJourneyPlanByEmail(email: string): Promise<any | undefined>;
   createJourneyPlan(plan: any): Promise<any>;
   getJourneyPlans(sessionId?: string): Promise<any[]>;
+  
+  getAppointments(status?: string): Promise<Appointment[]>;
+  getAppointment(id: number): Promise<Appointment | undefined>;
+  getAppointmentsByLead(leadId: number): Promise<Appointment[]>;
+  getAppointmentsByEmail(email: string): Promise<Appointment[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointmentStatus(id: number, status: string): Promise<Appointment | undefined>;
+  cancelAppointment(id: number): Promise<Appointment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -680,6 +691,60 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(journeyPlans)
       .orderBy(desc(journeyPlans.createdAt));
+  }
+
+  async getAppointments(status?: string): Promise<Appointment[]> {
+    if (status) {
+      return await db.select().from(appointments)
+        .where(eq(appointments.status, status))
+        .orderBy(desc(appointments.scheduledTime));
+    }
+    return await db.select().from(appointments).orderBy(desc(appointments.scheduledTime));
+  }
+
+  async getAppointment(id: number): Promise<Appointment | undefined> {
+    const [appointment] = await db.select().from(appointments).where(eq(appointments.id, id));
+    return appointment;
+  }
+
+  async getAppointmentsByLead(leadId: number): Promise<Appointment[]> {
+    return await db.select().from(appointments)
+      .where(eq(appointments.leadId, leadId))
+      .orderBy(desc(appointments.scheduledTime));
+  }
+
+  async getAppointmentsByEmail(email: string): Promise<Appointment[]> {
+    return await db.select().from(appointments)
+      .where(eq(appointments.email, email.toLowerCase()))
+      .orderBy(desc(appointments.scheduledTime));
+  }
+
+  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+    const normalizedAppointment = {
+      ...appointment,
+      email: appointment.email.toLowerCase()
+    };
+    
+    const [created] = await db.insert(appointments).values(normalizedAppointment).returning();
+    return created;
+  }
+
+  async updateAppointmentStatus(id: number, status: string): Promise<Appointment | undefined> {
+    const [updated] = await db
+      .update(appointments)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(appointments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async cancelAppointment(id: number): Promise<Appointment | undefined> {
+    const [cancelled] = await db
+      .update(appointments)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(eq(appointments.id, id))
+      .returning();
+    return cancelled;
   }
 }
 
