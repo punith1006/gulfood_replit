@@ -238,6 +238,10 @@ export const journeyPlans = pgTable("journey_plans", {
   role: text("role").notNull(),
   interestCategories: text("interest_categories").array().notNull().default([]),
   attendanceIntents: text("attendance_intents").array().notNull().default([]),
+  // Visit planning details
+  numberOfDays: integer("number_of_days").default(5), // How many days they plan to attend (1-5)
+  specificDates: text("specific_dates").array(), // Specific dates they'll attend (e.g., ['2026-01-26', '2026-01-27'])
+  preferredExhibitorIds: integer("preferred_exhibitor_ids").array(), // Exhibitors they're specifically interested in
   relevanceScore: integer("relevance_score").notNull(), // 0-100
   // AI-generated content
   generalOverview: text("general_overview"),
@@ -450,6 +454,9 @@ export const insertJourneyPlanSchema = createInsertSchema(journeyPlans).omit({
   role: z.string().min(1, "Role is required"),
   interestCategories: z.array(z.string()).default([]),
   attendanceIntents: z.array(z.string()).default([]),
+  numberOfDays: z.number().min(1).max(5).default(5).optional(),
+  specificDates: z.array(z.string()).optional(),
+  preferredExhibitorIds: z.array(z.number()).optional(),
   relevanceScore: z.number().min(0).max(100),
   sessionId: z.string(),
   leadId: z.number().optional()

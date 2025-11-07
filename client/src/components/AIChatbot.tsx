@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, ChevronDown } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, ChevronDown, Calendar, SlidersHorizontal } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -40,6 +40,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import AppointmentSlotPicker from "@/components/AppointmentSlotPicker";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { format } from "date-fns";
 
 const ATTENDANCE_INTENTS = [
   "Discover new products and innovations",
@@ -345,9 +349,12 @@ export default function AIChatbot() {
   const [journeyFormData, setJourneyFormData] = useState({
     organization: '',
     role: '',
+    numberOfDays: 5,
     interestCategories: [] as string[],
     attendanceIntents: [] as string[],
-    otherIntent: ''
+    otherIntent: '',
+    specificDates: [] as string[],
+    preferredExhibitorIds: [] as number[]
   });
   const [isGeneratingJourney, setIsGeneratingJourney] = useState(false);
   const [journeyPlan, setJourneyPlan] = useState<any>(null);
@@ -357,6 +364,13 @@ export default function AIChatbot() {
   const [showIntentSearch, setShowIntentSearch] = useState(false);
   const [intentSearchTerm, setIntentSearchTerm] = useState('');
   const [isScoreJustificationExpanded, setIsScoreJustificationExpanded] = useState(false);
+  
+  // Details Modal state
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [tempSpecificDates, setTempSpecificDates] = useState<Date[]>([]);
+  const [tempPreferredExhibitorIds, setTempPreferredExhibitorIds] = useState<number[]>([]);
+  const [exhibitorSearchTerm, setExhibitorSearchTerm] = useState('');
+  const [showExhibitorDropdown, setShowExhibitorDropdown] = useState(false);
   
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const intentDropdownRef = useRef<HTMLDivElement>(null);
@@ -429,6 +443,11 @@ export default function AIChatbot() {
   });
   const { data: sessions } = useQuery<any[]>({
     queryKey: ['/api/sessions'],
+  });
+  
+  // Fetch exhibitors for the Details Modal autocomplete
+  const { data: exhibitors } = useQuery<any[]>({
+    queryKey: ['/api/exhibitors'],
   });
 
   // Calculate unread count
@@ -1874,6 +1893,28 @@ export default function AIChatbot() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="journey-days" className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      How many days will you attend?
+                    </Label>
+                    <Select
+                      value={journeyFormData.numberOfDays.toString()}
+                      onValueChange={(value) => setJourneyFormData(prev => ({ ...prev, numberOfDays: parseInt(value) }))}
+                    >
+                      <SelectTrigger id="journey-days" data-testid="select-number-of-days">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 Day</SelectItem>
+                        <SelectItem value="2">2 Days</SelectItem>
+                        <SelectItem value="3">3 Days</SelectItem>
+                        <SelectItem value="4">4 Days</SelectItem>
+                        <SelectItem value="5">5 Days (All Days)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>Categories of Interest ({journeyFormData.interestCategories.length} selected)</Label>
                     <div className="space-y-2 relative" ref={categoryDropdownRef}>
                       <Input
@@ -2003,6 +2044,28 @@ export default function AIChatbot() {
                       />
                     </div>
                   )}
+
+                  <div className="relative">
+                    <Button
+                      type="button"
+                      variant={journeyFormData.specificDates.length > 0 || journeyFormData.preferredExhibitorIds.length > 0 ? "default" : "outline"}
+                      className="w-full gap-2 justify-center"
+                      onClick={() => {
+                        setTempSpecificDates(journeyFormData.specificDates.map(d => new Date(d)));
+                        setTempPreferredExhibitorIds(journeyFormData.preferredExhibitorIds);
+                        setShowDetailsModal(true);
+                      }}
+                      data-testid="button-more-details"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      Add More Details (Optional)
+                      {(journeyFormData.specificDates.length > 0 || journeyFormData.preferredExhibitorIds.length > 0) && (
+                        <Badge variant="secondary" className="ml-2">
+                          {journeyFormData.specificDates.length + journeyFormData.preferredExhibitorIds.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </div>
 
                   <Button
                     type="submit"
@@ -2643,6 +2706,199 @@ export default function AIChatbot() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Journey Details Customization Modal */}
+      <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-journey-details">
+          <DialogHeader>
+            <DialogTitle>Customize Your Visit</DialogTitle>
+            <DialogDescription>
+              Add specific dates and preferred exhibitors to personalize your journey
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Specific Dates Section */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-semibold">Select Specific Dates (Optional)</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose the exact dates you'll attend (Jan 26-30, 2026)
+                </p>
+              </div>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    data-testid="button-select-dates"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {tempSpecificDates.length > 0 
+                      ? `${tempSpecificDates.length} date${tempSpecificDates.length > 1 ? 's' : ''} selected`
+                      : "Pick dates"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="multiple"
+                    selected={tempSpecificDates}
+                    onSelect={(dates) => setTempSpecificDates(dates || [])}
+                    disabled={(date) => {
+                      const eventStart = new Date('2026-01-26');
+                      const eventEnd = new Date('2026-01-30');
+                      return date < eventStart || date > eventEnd;
+                    }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              {tempSpecificDates.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {tempSpecificDates.map((date, index) => (
+                    <Badge key={index} variant="secondary" className="gap-1">
+                      {format(date, 'MMM dd, yyyy')}
+                      <button
+                        type="button"
+                        onClick={() => setTempSpecificDates(tempSpecificDates.filter((_, i) => i !== index))}
+                        className="ml-1 hover-elevate rounded-full"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Preferred Exhibitors Section */}
+            <div className="space-y-3">
+              <div>
+                <Label className="text-sm font-semibold">Interested in Specific Exhibitors? (Optional)</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Search and select exhibitors you definitely want to visit
+                </p>
+              </div>
+              
+              <Popover open={showExhibitorDropdown} onOpenChange={setShowExhibitorDropdown}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={showExhibitorDropdown}
+                    className="w-full justify-start text-left font-normal"
+                    data-testid="button-select-exhibitors"
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    {tempPreferredExhibitorIds.length > 0
+                      ? `${tempPreferredExhibitorIds.length} exhibitor${tempPreferredExhibitorIds.length > 1 ? 's' : ''} selected`
+                      : "Search exhibitors..."}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[500px] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search exhibitors..." 
+                      value={exhibitorSearchTerm}
+                      onValueChange={setExhibitorSearchTerm}
+                    />
+                    <CommandEmpty>No exhibitor found.</CommandEmpty>
+                    <CommandGroup className="max-h-64 overflow-auto">
+                      {exhibitors
+                        ?.filter(exhibitor => 
+                          exhibitor.companyName.toLowerCase().includes(exhibitorSearchTerm.toLowerCase()) ||
+                          exhibitor.sector.toLowerCase().includes(exhibitorSearchTerm.toLowerCase()) ||
+                          exhibitor.boothNumber?.toLowerCase().includes(exhibitorSearchTerm.toLowerCase())
+                        )
+                        .map((exhibitor: any) => (
+                          <CommandItem
+                            key={exhibitor.id}
+                            onSelect={() => {
+                              setTempPreferredExhibitorIds(prev =>
+                                prev.includes(exhibitor.id)
+                                  ? prev.filter(id => id !== exhibitor.id)
+                                  : [...prev, exhibitor.id]
+                              );
+                            }}
+                            data-testid={`exhibitor-option-${exhibitor.id}`}
+                          >
+                            <div className="flex items-center gap-2 flex-1">
+                              <Checkbox
+                                checked={tempPreferredExhibitorIds.includes(exhibitor.id)}
+                                className="pointer-events-none"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{exhibitor.companyName}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {exhibitor.sector}
+                                  {exhibitor.boothNumber && ` • Booth: ${exhibitor.boothNumber}`}
+                                </div>
+                              </div>
+                            </div>
+                          </CommandItem>
+                        ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              
+              {tempPreferredExhibitorIds.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {tempPreferredExhibitorIds.map((exhibitorId) => {
+                    const exhibitor = exhibitors?.find(e => e.id === exhibitorId);
+                    return exhibitor ? (
+                      <Badge key={exhibitorId} variant="secondary" className="gap-1">
+                        {exhibitor.companyName}
+                        <button
+                          type="button"
+                          onClick={() => setTempPreferredExhibitorIds(prev => prev.filter(id => id !== exhibitorId))}
+                          className="ml-1 hover-elevate rounded-full"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDetailsModal(false);
+                setTempSpecificDates([]);
+                setTempPreferredExhibitorIds([]);
+                setExhibitorSearchTerm('');
+              }}
+              data-testid="button-cancel-details"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setJourneyFormData(prev => ({
+                  ...prev,
+                  specificDates: tempSpecificDates.map(d => format(d, 'yyyy-MM-dd')),
+                  preferredExhibitorIds: tempPreferredExhibitorIds
+                }));
+                setShowDetailsModal(false);
+                toast({
+                  title: "Details Saved",
+                  description: `${tempSpecificDates.length + tempPreferredExhibitorIds.length} customization${tempSpecificDates.length + tempPreferredExhibitorIds.length !== 1 ? 's' : ''} added to your journey.`
+                });
+              }}
+              data-testid="button-save-details"
+            >
+              Save Details
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -1482,7 +1482,10 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         role,
         interestCategories,
         attendanceIntents,
-        sessionId
+        sessionId,
+        numberOfDays,
+        specificDates,
+        preferredExhibitorIds
       } = req.body;
 
       if (!email || !organization || !role || !interestCategories || !attendanceIntents) {
@@ -1490,7 +1493,11 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       }
 
       console.log('=== AI-POWERED JOURNEY GENERATION ===');
-      console.log('User inputs:', { organization, role, interestCategories, attendanceIntents });
+      console.log('User inputs:', { 
+        organization, role, interestCategories, attendanceIntents,
+        numberOfDays, specificDates: specificDates?.length || 0, 
+        preferredExhibitors: preferredExhibitorIds?.length || 0 
+      });
 
       let leadId: number | null = null;
       const existingLead = await storage.getLeadByEmail(email);
@@ -1538,6 +1545,11 @@ VISITOR PROFILE:
 - Interest Categories: ${interestCategories.join(', ') || 'Not specified'}
 - Attendance Intents: ${attendanceIntents.join(', ') || 'Not specified'}
 
+VISIT PLANNING:
+- Planning to attend: ${numberOfDays || 5} day(s)
+${specificDates && specificDates.length > 0 ? `- Specific dates: ${specificDates.join(', ')}` : '- Dates: Not specified (all 5 days available)'}
+${preferredExhibitorIds && preferredExhibitorIds.length > 0 ? `- Specifically interested in exhibitors with IDs: ${preferredExhibitorIds.join(', ')} (MUST PRIORITIZE THESE)` : ''}
+
 AVAILABLE EXHIBITORS (sample of ${filteredExhibitors.length}):
 ${exhibitorSummaries}
 
@@ -1568,6 +1580,8 @@ Create a high-quality, personalized journey report with:
    - exhibitorId (from list above)
    - matchScore (0-100): How well this specific exhibitor matches the visitor's needs
    - personalizedReason: ONE sentence explaining "WHY this exhibitor matters specifically to ${role} at ${organization}"
+   
+   IMPORTANT: If preferred exhibitor IDs are specified, you MUST include those exhibitors in your top 10 list with HIGH match scores (85-100), even if they don't perfectly match the interest categories. These are exhibitors the visitor explicitly wants to visit.
    
    CRITICAL RULES for personalizedReason:
    - ALWAYS refer to the exhibitor by their COMPANY NAME (from the exhibitor list above), NEVER by their website URL
@@ -1670,6 +1684,58 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         }
       }
 
+      // Boost preferred exhibitors if they're missing from AI's list
+      if (preferredExhibitorIds && Array.isArray(preferredExhibitorIds) && preferredExhibitorIds.length > 0) {
+        const matchedIds = new Set(matchedExhibitors.map(e => e.id));
+        const allExhibitors = await storage.getExhibitors();
+        
+        for (const preferredId of preferredExhibitorIds) {
+          // Skip if already in the matched list or if it's the user's own company
+          if (matchedIds.has(preferredId)) continue;
+          
+          // Try to find in filteredExhibitors first, then in all exhibitors
+          let exhibitor = filteredExhibitors.find(e => e.id === preferredId);
+          if (!exhibitor) {
+            exhibitor = allExhibitors.find(e => e.id === preferredId);
+            // Skip if this is the user's own company
+            if (exhibitor) {
+              const exhibitorNameLower = exhibitor.name.toLowerCase();
+              if (exhibitorNameLower.includes(userOrgLower) || userOrgLower.includes(exhibitorNameLower)) {
+                continue;
+              }
+            }
+          }
+          
+          if (exhibitor) {
+            exhibitorCategories.add(exhibitor.sector);
+            // Add with boosted score (90-95) and clear personalized reason
+            const boostedScore = 90 + Math.floor(Math.random() * 6); // Random between 90-95
+            matchedExhibitors.push({
+              id: exhibitor.id,
+              companyName: exhibitor.name,
+              name: exhibitor.name,
+              sector: exhibitor.sector,
+              description: exhibitor.description,
+              country: exhibitor.country,
+              boothNumber: exhibitor.booth,
+              productCategories: exhibitor.products || [],
+              relevancePercentage: boostedScore,
+              personalizedReason: "You specifically selected this exhibitor as a visit priority"
+            });
+            matchedIds.add(preferredId);
+            
+            // Stop if we reach 20 total exhibitors
+            if (matchedExhibitors.length >= 20) break;
+          }
+        }
+      }
+
+      // Sort by relevance score (highest first) and limit to 20
+      matchedExhibitors.sort((a, b) => b.relevancePercentage - a.relevancePercentage);
+      if (matchedExhibitors.length > 20) {
+        matchedExhibitors.length = 20;
+      }
+
       const categories = Array.from(exhibitorCategories);
 
       console.log(`Matched ${matchedExhibitors.length} exhibitors with ${categories.length} unique categories`);
@@ -1700,6 +1766,9 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         role,
         interestCategories,
         attendanceIntents,
+        numberOfDays,
+        specificDates,
+        preferredExhibitorIds,
         relevanceScore,
         generalOverview: aiContent.overview,
         scoreJustification: aiContent.justification,
@@ -1769,6 +1838,10 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         reportData
       } = planData;
 
+      // Extract numberOfDays and specificDates from journey plan
+      const numberOfDays = planData.numberOfDays || 5;
+      const specificDates = planData.specificDates || [];
+
       // Fetch full exhibitor and session details
       const exhibitors = await storage.getExhibitors();
       const matchedExhibitors = exhibitors.filter(e => matchedExhibitorIds.includes(e.id));
@@ -1786,6 +1859,8 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
       console.log(`Generating itinerary for ${name} (${organization})`);
       console.log(`Matched exhibitors: ${matchedExhibitors.length}`);
       console.log(`Matched sessions: ${matchedSessions.length}`);
+      console.log(`Number of days: ${numberOfDays}`);
+      console.log(`Specific dates: ${specificDates.length > 0 ? specificDates.join(', ') : 'Using default dates'}`);
 
       // Generate itinerary using AI
       const itineraryData = await generateItineraryWithAI({
@@ -1795,7 +1870,9 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         interestCategories,
         attendanceIntents,
         matchedExhibitors,
-        matchedSessions
+        matchedSessions,
+        numberOfDays,
+        specificDates
       });
 
       // Save itinerary to database
@@ -2361,6 +2438,8 @@ async function generateItineraryWithAI(data: {
   attendanceIntents: string[];
   matchedExhibitors: any[];
   matchedSessions: any[];
+  numberOfDays: number;
+  specificDates: string[];
 }): Promise<{
   userId: string;
   name: string;
@@ -2410,9 +2489,45 @@ async function generateItineraryWithAI(data: {
    Description: ${session.description?.substring(0, 100) || 'Industry session'}`;
     }).join('\n');
 
-    const prompt = `You are creating a detailed 5-day itinerary for Gulfood 2026 (January 26-30, 2026).
+    // Generate date information based on numberOfDays and specificDates
+    const defaultDates = ['January 26, 2026', 'January 27, 2026', 'January 28, 2026', 'January 29, 2026', 'January 30, 2026'];
+    const defaultDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    let itineraryDates: string[] = [];
+    let dateRange = '';
+    
+    if (data.specificDates && data.specificDates.length > 0) {
+      // Use specific dates provided, limited to numberOfDays
+      const datesToUse = data.specificDates.slice(0, data.numberOfDays);
+      
+      // If we need more dates than provided, fill with sequential dates after the last one
+      if (datesToUse.length < data.numberOfDays) {
+        const lastDate = new Date(datesToUse[datesToUse.length - 1]);
+        for (let i = datesToUse.length; i < data.numberOfDays; i++) {
+          const nextDate = new Date(lastDate);
+          nextDate.setDate(lastDate.getDate() + (i - datesToUse.length + 1));
+          datesToUse.push(nextDate.toISOString().split('T')[0]);
+        }
+      }
+      
+      // Convert to readable format
+      itineraryDates = datesToUse.map(dateStr => {
+        const date = new Date(dateStr + 'T00:00:00Z');
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      });
+      
+      dateRange = `on these specific dates: ${datesToUse.join(', ')}`;
+    } else {
+      // Use default dates for the specified number of days
+      itineraryDates = defaultDates.slice(0, data.numberOfDays);
+      const lastDate = itineraryDates[itineraryDates.length - 1];
+      dateRange = data.numberOfDays === 1 ? itineraryDates[0] : `${itineraryDates[0]} to ${lastDate}`;
+    }
+
+    const prompt = `You are creating a detailed ${data.numberOfDays}-day itinerary for Gulfood 2026.
 
 EVENT DETAILS:
+- Event Dates: January 26-30, 2026
 - Event Hours: 10:00 AM - 6:00 PM daily
 - Location: Dubai World Trade Centre & Expo City Dubai
 - Halls: North Hall 1-13, Za'abeel Hall 1-6, Trade Centre Arena
@@ -2424,6 +2539,7 @@ USER PROFILE:
 - Role: ${data.role}
 - Interest Categories: ${data.interestCategories.join(', ')}
 - Attendance Goals: ${data.attendanceIntents.join(', ')}
+- Attendance Plan: ${data.numberOfDays} day${data.numberOfDays > 1 ? 's' : ''} ${dateRange}
 
 MATCHED EXHIBITORS (${data.matchedExhibitors.length} total):
 ${exhibitorsList}
@@ -2435,7 +2551,7 @@ INSTRUCTIONS:
 Create a detailed day-by-day itinerary following these rules:
 
 1. SCHEDULING CONSTRAINTS:
-   - Spread exhibitor visits across all 5 days (Jan 26-30, 2026)
+   - Spread exhibitor visits across all ${data.numberOfDays} day${data.numberOfDays > 1 ? 's' : ''} (${dateRange})
    - Each exhibitor visit: 20-30 minutes
    - Mandatory lunch break: 12:00 PM - 1:00 PM daily
    - Include 10-15 minute networking/coffee breaks mid-morning and mid-afternoon
@@ -2504,8 +2620,9 @@ IMPORTANT:
 - Use actual session times and locations from the list above
 - Generate unique activity IDs (e.g., "act_1_1" for day 1 activity 1)
 - If an exhibitor has no hall/stand info, use "TBA" and place in a logical day
-- Distribute exhibitors evenly across all 5 days
+- Distribute exhibitors evenly across all ${data.numberOfDays} day${data.numberOfDays > 1 ? 's' : ''}
 - Prioritize relevance scores when ordering daily activities
+- Use these exact dates for the itinerary: ${itineraryDates.join(', ')}
 
 Return ONLY valid JSON matching the structure above.`;
 
@@ -2553,15 +2670,50 @@ Return ONLY valid JSON matching the structure above.`;
   } catch (error) {
     console.error('Error generating AI itinerary:', error);
     
-    // Fallback: Create a basic itinerary structure
+    // Fallback: Create a basic itinerary structure using numberOfDays and specificDates
     const days = [];
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    const dates = ['January 26, 2026', 'January 27, 2026', 'January 28, 2026', 'January 29, 2026', 'January 30, 2026'];
     
-    // Distribute exhibitors across days
-    const exhibitorsPerDay = Math.ceil(data.matchedExhibitors.length / 5);
+    // Generate dates and day names based on numberOfDays and specificDates
+    const defaultDates = ['January 26, 2026', 'January 27, 2026', 'January 28, 2026', 'January 29, 2026', 'January 30, 2026'];
+    const defaultDayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     
-    for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+    let fallbackDates: string[] = [];
+    let fallbackDayNames: string[] = [];
+    
+    if (data.specificDates && data.specificDates.length > 0) {
+      // Use specific dates provided, limited to numberOfDays
+      const datesToUse = data.specificDates.slice(0, data.numberOfDays);
+      
+      // If we need more dates than provided, fill with sequential dates after the last one
+      if (datesToUse.length < data.numberOfDays) {
+        const lastDate = new Date(datesToUse[datesToUse.length - 1]);
+        for (let i = datesToUse.length; i < data.numberOfDays; i++) {
+          const nextDate = new Date(lastDate);
+          nextDate.setDate(lastDate.getDate() + (i - datesToUse.length + 1));
+          datesToUse.push(nextDate.toISOString().split('T')[0]);
+        }
+      }
+      
+      // Convert to readable format and get day names
+      fallbackDates = datesToUse.map(dateStr => {
+        const date = new Date(dateStr + 'T00:00:00Z');
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+      });
+      
+      fallbackDayNames = datesToUse.map(dateStr => {
+        const date = new Date(dateStr + 'T00:00:00Z');
+        return date.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+      });
+    } else {
+      // Use default dates for the specified number of days
+      fallbackDates = defaultDates.slice(0, data.numberOfDays);
+      fallbackDayNames = defaultDayNames.slice(0, data.numberOfDays);
+    }
+    
+    // Distribute exhibitors across the specified number of days
+    const exhibitorsPerDay = Math.ceil(data.matchedExhibitors.length / data.numberOfDays);
+    
+    for (let dayIndex = 0; dayIndex < data.numberOfDays; dayIndex++) {
       const dayExhibitors = data.matchedExhibitors.slice(
         dayIndex * exhibitorsPerDay,
         (dayIndex + 1) * exhibitorsPerDay
@@ -2613,10 +2765,23 @@ Return ONLY valid JSON matching the structure above.`;
       currentTime = 13 * 60; // 1:00 PM
       
       // Afternoon sessions (if any for this day)
-      const daySessions = data.matchedSessions.filter(s => {
-        const sessionDate = s.sessionDate ? new Date(s.sessionDate) : null;
-        return sessionDate && sessionDate.getDate() === 26 + dayIndex;
-      });
+      // Try to match sessions to the specific date if available
+      let daySessions = [];
+      if (data.specificDates && data.specificDates.length > dayIndex) {
+        const targetDate = new Date(data.specificDates[dayIndex]);
+        daySessions = data.matchedSessions.filter(s => {
+          const sessionDate = s.sessionDate ? new Date(s.sessionDate) : null;
+          return sessionDate && 
+                 sessionDate.getDate() === targetDate.getDate() &&
+                 sessionDate.getMonth() === targetDate.getMonth();
+        });
+      } else {
+        // Use default logic for sessions
+        daySessions = data.matchedSessions.filter(s => {
+          const sessionDate = s.sessionDate ? new Date(s.sessionDate) : null;
+          return sessionDate && sessionDate.getDate() === 26 + dayIndex;
+        });
+      }
       
       for (const session of daySessions) {
         activities.push({
@@ -2633,8 +2798,8 @@ Return ONLY valid JSON matching the structure above.`;
       }
       
       days.push({
-        date: dates[dayIndex],
-        dayOfWeek: dayNames[dayIndex],
+        date: fallbackDates[dayIndex],
+        dayOfWeek: fallbackDayNames[dayIndex],
         summary: `Day ${dayIndex + 1}: Focus on ${dayExhibitors.slice(0, 2).map(e => e.sector).join(' and ')}`,
         activities
       });
