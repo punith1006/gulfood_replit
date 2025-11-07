@@ -4,6 +4,9 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
+// Trust proxy so req.protocol is correct behind Replit's proxy
+app.set('trust proxy', 1);
+
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
@@ -15,6 +18,44 @@ app.use(express.json({
   }
 }));
 app.use(express.urlencoded({ extended: false }));
+
+// Middleware to inject dynamic base URL into HTML meta tags for social sharing
+app.use((req, res, next) => {
+  const originalSend = res.send;
+  const originalEnd = res.end;
+  
+  res.send = function(data) {
+    const contentType = res.get('Content-Type') || '';
+    if (contentType.includes('text/html') && data) {
+      const protocol = req.protocol || 'https';
+      const host = req.get('host') || 'localhost:5000';
+      const baseUrl = `${protocol}://${host}`;
+      
+      let html = typeof data === 'string' ? data : data.toString();
+      html = html.replace(/\{\{BASE_URL\}\}/g, baseUrl);
+      
+      return originalSend.call(this, html);
+    }
+    return originalSend.call(this, data);
+  };
+  
+  res.end = function(data, ...args: any[]) {
+    const contentType = res.get('Content-Type') || '';
+    if (contentType.includes('text/html') && data && (typeof data === 'string' || Buffer.isBuffer(data))) {
+      const protocol = req.protocol || 'https';
+      const host = req.get('host') || 'localhost:5000';
+      const baseUrl = `${protocol}://${host}`;
+      
+      let html = typeof data === 'string' ? data : data.toString();
+      html = html.replace(/\{\{BASE_URL\}\}/g, baseUrl);
+      
+      return originalEnd.call(this, html, ...args);
+    }
+    return originalEnd.call(this, data, ...args);
+  };
+  
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
