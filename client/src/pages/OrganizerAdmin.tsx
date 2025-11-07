@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users } from "lucide-react";
+import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users, Share2, TrendingUp, MousePointerClick } from "lucide-react";
 
 export default function OrganizerAdmin() {
   const [, setLocation] = useLocation();
@@ -57,7 +57,7 @@ export default function OrganizerAdmin() {
         </div>
 
         <Tabs defaultValue="announcements" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="announcements" data-testid="tab-announcements">
               <Bell className="w-4 h-4 mr-2" />
               Announcements
@@ -69,6 +69,10 @@ export default function OrganizerAdmin() {
             <TabsTrigger value="access-codes" data-testid="tab-access-codes">
               <Key className="w-4 h-4 mr-2" />
               Access Codes
+            </TabsTrigger>
+            <TabsTrigger value="referrals" data-testid="tab-referrals">
+              <Share2 className="w-4 h-4 mr-2" />
+              Referrals
             </TabsTrigger>
           </TabsList>
 
@@ -82,6 +86,10 @@ export default function OrganizerAdmin() {
 
           <TabsContent value="access-codes">
             <AccessCodesManager />
+          </TabsContent>
+
+          <TabsContent value="referrals">
+            <ReferralsAnalytics />
           </TabsContent>
         </Tabs>
       </div>
@@ -785,3 +793,175 @@ function AccessCodesManager() {
     </div>
   );
 }
+
+
+function ReferralsAnalytics() {
+  const { toast } = useToast();
+
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({
+    queryKey: ["/api/referrals/stats"],
+  });
+
+  const { data: referrals, isLoading: referralsLoading } = useQuery<any[]>({
+    queryKey: ["/api/referrals"],
+  });
+
+  if (statsLoading || referralsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const platformStats = stats?.platformBreakdown || [];
+  const totalClicks = stats?.totalClicks || 0;
+  const totalConversions = stats?.totalConversions || 0;
+  const conversionRate = stats?.conversionRate || 0;
+
+  const platformColors: Record<string, string> = {
+    linkedin: "bg-[#0077B5]",
+    facebook: "bg-[#1877F2]",
+    x: "bg-black",
+    whatsapp: "bg-[#25D366]",
+    email: "bg-gray-600",
+    copy_link: "bg-primary"
+  };
+
+  const platformLabels: Record<string, string> = {
+    linkedin: "LinkedIn",
+    facebook: "Facebook",
+    x: "X (Twitter)",
+    whatsapp: "WhatsApp",
+    email: "Email",
+    copy_link: "Copy Link"
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Referral Clicks</CardTitle>
+            <MousePointerClick className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalClicks.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              Across all platforms
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Conversions</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalConversions.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              Users who registered
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{conversionRate.toFixed(1)}%</div>
+            <p className="text-xs text-muted-foreground">
+              Click to registration
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Platform Breakdown</CardTitle>
+          <CardDescription>Referral activity by social media platform</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {platformStats.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No referral data available yet
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {platformStats
+                .sort((a: any, b: any) => b.clicks - a.clicks)
+                .map((platform: any) => {
+                  const percentage = totalClicks > 0 ? (platform.clicks / totalClicks) * 100 : 0;
+                  return (
+                    <div key={platform.platform} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${platformColors[platform.platform] || "bg-gray-400"}`} />
+                          <span className="font-medium">{platformLabels[platform.platform] || platform.platform}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-muted-foreground">{platform.clicks} clicks</span>
+                          <span className="font-medium">{percentage.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${platformColors[platform.platform] || "bg-gray-400"}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Referral Activity</CardTitle>
+          <CardDescription>Latest referral link clicks and shares</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!referrals || referrals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No referral activity yet
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {referrals.slice(0, 20).map((referral: any) => (
+                <div key={referral.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover-elevate">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${platformColors[referral.platform] || "bg-gray-400"}`} />
+                    <div>
+                      <p className="font-medium text-sm">
+                        {referral.referrerName || "Anonymous"}
+                      </p>
+                      {referral.referrerEmail && (
+                        <p className="text-xs text-muted-foreground">{referral.referrerEmail}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="outline">
+                      {platformLabels[referral.platform] || referral.platform}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(referral.clickedAt).toLocaleDateString()} {new Date(referral.clickedAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
