@@ -342,6 +342,66 @@ export class DatabaseStorage implements IStorage {
       })
     );
 
+    // Average relevance score
+    const avgScoreResult = await db
+      .select({
+        avgScore: sql<number>`AVG(${journeyPlans.relevanceScore})`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`);
+    const averageRelevanceScore = Math.round(Number(avgScoreResult[0]?.avgScore || 0));
+
+    // Match quality distribution (high: 80-100, medium: 60-79, low: 0-59)
+    const qualityDistResult = await db
+      .select({
+        high: sql<number>`COUNT(*) FILTER (WHERE ${journeyPlans.relevanceScore} >= 80)`,
+        medium: sql<number>`COUNT(*) FILTER (WHERE ${journeyPlans.relevanceScore} >= 60 AND ${journeyPlans.relevanceScore} < 80)`,
+        low: sql<number>`COUNT(*) FILTER (WHERE ${journeyPlans.relevanceScore} < 60)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`);
+    const matchQualityDistribution = {
+      high: Number(qualityDistResult[0]?.high || 0),
+      medium: Number(qualityDistResult[0]?.medium || 0),
+      low: Number(qualityDistResult[0]?.low || 0)
+    };
+
+    // Visitor job titles (same as roles, already calculated above - this is the granular role data)
+    const visitorJobTitles = visitorRoles;
+
+    // Week-over-week growth
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    
+    // Current week count (last 7 days)
+    const currentWeekResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(journeyPlans)
+      .where(
+        and(
+          sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`,
+          sql`${journeyPlans.createdAt} >= ${sevenDaysAgo}`
+        )!
+      );
+    const currentWeekCount = Number(currentWeekResult[0]?.count || 0);
+    
+    // Previous week count (days 8-14 ago)
+    const previousWeekResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(journeyPlans)
+      .where(
+        and(
+          sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`,
+          sql`${journeyPlans.createdAt} >= ${fourteenDaysAgo}`,
+          sql`${journeyPlans.createdAt} < ${sevenDaysAgo}`
+        )!
+      );
+    const previousWeekCount = Number(previousWeekResult[0]?.count || 0);
+    
+    const weekOverWeekGrowth = previousWeekCount > 0 
+      ? Math.round(((currentWeekCount - previousWeekCount) / previousWeekCount) * 100)
+      : currentWeekCount > 0 ? 100 : 0;
+
     return {
       totalAppearances,
       uniqueVisitors,
@@ -350,7 +410,11 @@ export class DatabaseStorage implements IStorage {
       visitorIntents,
       topInterestCategories,
       topCompanies,
-      coSearchedExhibitors
+      coSearchedExhibitors,
+      averageRelevanceScore,
+      matchQualityDistribution,
+      visitorJobTitles,
+      weekOverWeekGrowth
     };
   }
 

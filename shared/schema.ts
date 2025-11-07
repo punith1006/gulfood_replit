@@ -272,6 +272,10 @@ export interface ExhibitorAnalytics {
   topInterestCategories: Array<{ category: string; count: number }>;
   topCompanies: Array<{ company: string; searches: number }>;
   coSearchedExhibitors: Array<{ exhibitorName: string; coSearches: number }>;
+  averageRelevanceScore: number;
+  matchQualityDistribution: { high: number; medium: number; low: number };
+  visitorJobTitles: Array<{ title: string; count: number }>;
+  weekOverWeekGrowth: number;
 }
 
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({

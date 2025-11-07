@@ -13,7 +13,10 @@ import {
   Building2, 
   Target, 
   Briefcase, 
-  Share2 
+  Share2,
+  Award,
+  TrendingDown,
+  Minus
 } from "lucide-react";
 import {
   AreaChart,
@@ -180,6 +183,48 @@ export default function ExhibitorDashboard() {
               </Card>
             </div>
 
+            {/* Additional Metrics Row */}
+            <div className="grid sm:grid-cols-2 gap-6 mb-8">
+              {/* Average Relevance Score */}
+              <Card className="overflow-hidden" data-testid="card-avg-relevance">
+                <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <Award className="w-8 h-8 opacity-80" />
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="text-avg-relevance">
+                    {analytics.averageRelevanceScore}/100
+                  </div>
+                  <div className="text-sm text-amber-100">Avg. Match Quality</div>
+                  <div className="mt-2 text-xs text-amber-100/80">
+                    {analytics.averageRelevanceScore >= 80 ? 'Excellent fit!' : 
+                     analytics.averageRelevanceScore >= 60 ? 'Good match' : 'Fair match'}
+                  </div>
+                </div>
+              </Card>
+
+              {/* Week-over-Week Growth */}
+              <Card className="overflow-hidden" data-testid="card-week-growth">
+                <div className={`bg-gradient-to-br p-6 text-white ${
+                  analytics.weekOverWeekGrowth > 0 ? 'from-emerald-500 to-emerald-600' :
+                  analytics.weekOverWeekGrowth < 0 ? 'from-rose-500 to-rose-600' :
+                  'from-slate-500 to-slate-600'
+                }`}>
+                  <div className="flex items-center justify-between mb-4">
+                    {analytics.weekOverWeekGrowth > 0 ? <TrendingUp className="w-8 h-8 opacity-80" /> :
+                     analytics.weekOverWeekGrowth < 0 ? <TrendingDown className="w-8 h-8 opacity-80" /> :
+                     <Minus className="w-8 h-8 opacity-80" />}
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="text-week-growth">
+                    {analytics.weekOverWeekGrowth > 0 ? '+' : ''}{analytics.weekOverWeekGrowth}%
+                  </div>
+                  <div className="text-sm text-white/90">Week-over-Week Growth</div>
+                  <div className="mt-2 text-xs text-white/70">
+                    Compared to previous 7 days
+                  </div>
+                </div>
+              </Card>
+            </div>
+
             {/* Charts Grid */}
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Last 7 Days Trend */}
@@ -223,11 +268,11 @@ export default function ExhibitorDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Visitor Roles Distribution */}
+              {/* Visitor Job Titles */}
               <Card data-testid="card-chart-roles">
                 <CardHeader>
-                  <CardTitle>Visitor Roles Distribution</CardTitle>
-                  <CardDescription>Types of visitors interested in your company</CardDescription>
+                  <CardTitle>Visitor Job Titles</CardTitle>
+                  <CardDescription>Professional roles of interested visitors</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {analytics.visitorRoles.length === 0 ? (
@@ -256,6 +301,55 @@ export default function ExhibitorDashboard() {
                           ))}
                         </Pie>
                         <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Match Quality Distribution */}
+              <Card data-testid="card-chart-quality">
+                <CardHeader>
+                  <CardTitle>Match Quality Distribution</CardTitle>
+                  <CardDescription>Breakdown of visitor match scores</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {analytics.matchQualityDistribution.high === 0 && 
+                   analytics.matchQualityDistribution.medium === 0 && 
+                   analytics.matchQualityDistribution.low === 0 ? (
+                    <div className="text-center py-12">
+                      <Award className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+                      <p className="text-muted-foreground">No quality data yet</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Match quality will appear as visitors engage
+                      </p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'High (80-100)', value: analytics.matchQualityDistribution.high, fill: '#10b981' },
+                            { name: 'Medium (60-79)', value: analytics.matchQualityDistribution.medium, fill: '#f59e0b' },
+                            { name: 'Low (0-59)', value: analytics.matchQualityDistribution.low, fill: '#ef4444' }
+                          ].filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name.split(' ')[0]} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={100}
+                          dataKey="value"
+                        >
+                          {[
+                            { name: 'High (80-100)', value: analytics.matchQualityDistribution.high, fill: '#10b981' },
+                            { name: 'Medium (60-79)', value: analytics.matchQualityDistribution.medium, fill: '#f59e0b' },
+                            { name: 'Low (0-59)', value: analytics.matchQualityDistribution.low, fill: '#ef4444' }
+                          ].filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
                       </PieChart>
                     </ResponsiveContainer>
                   )}
