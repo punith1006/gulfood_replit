@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, jsonb, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -34,22 +34,30 @@ export type GulfoodCategory = typeof GULFOOD_CATEGORIES[number];
 
 export const exhibitors = pgTable("exhibitors", {
   id: serial("id").primaryKey(),
+  eid: text("eid").unique(),
   name: text("name").notNull(),
   sector: text("sector").notNull(),
+  sectors: text("sectors").array(),
   country: text("country").notNull(),
   booth: text("booth").notNull(),
+  stand: text("stand"),
   venue: text("venue").notNull().default("Dubai World Trade Centre"),
   hall: text("hall"),
   boothX: integer("booth_x"),
   boothY: integer("booth_y"),
   description: text("description").notNull(),
+  info: text("info"),
   logoUrl: text("logo_url"),
   website: text("website"),
   products: text("products").array(),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => ({
+  countryIdx: index("exhibitors_country_idx").on(table.country),
+  hallIdx: index("exhibitors_hall_idx").on(table.hall),
+  sectorsIdx: index("exhibitors_sectors_idx").on(table.sectors)
+}));
 
 export const companyAnalyses = pgTable("company_analyses", {
   id: serial("id").primaryKey(),

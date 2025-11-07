@@ -33,11 +33,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/exhibitors", async (req, res) => {
     try {
-      const { search, sector, country } = req.query;
+      const { search, sector, country, hall, stand } = req.query;
       const exhibitors = await storage.getExhibitors(
         search as string | undefined,
         sector as string | undefined,
-        country as string | undefined
+        country as string | undefined,
+        hall as string | undefined,
+        stand as string | undefined
       );
       res.json(exhibitors);
     } catch (error) {
@@ -655,6 +657,33 @@ Key Event Information:
 • 8,500+ exhibitors across 12 sectors
 • 100,000+ expected visitors from 120+ countries
 • Sectors: Dairy, Beverages, Meat & Poultry, Plant-Based, Fresh Produce, Snacks, Gourmet, Organic Foods, Confectionery, Bakery, Seafood, Health & Wellness
+
+EXHIBITOR DATABASE:
+You have access to a database of 171 real exhibitors from Gulfood 2026 with detailed information. You can help users search and discover exhibitors by:
+- Company name (e.g., "Find Nestlé", "Show me Almarai")
+- Sector/category (e.g., "Dairy products", "Meat & Poultry", "Beverages")
+- Country of origin (e.g., "Show me exhibitors from India", "Which companies are from UAE?")
+- Hall location (e.g., "Who's in North Hall 7?", "Which companies are in Za'abeel Hall?")
+- Stand number (e.g., "Find exhibitor at stand C1-60", "Who's in booth DG-E45?")
+
+Hall Locations at Dubai World Trade Centre:
+• North Hall 1-13 (main exhibition halls)
+• Za'abeel Hall 2-3 (premium exhibition space)
+• Trade Centre Arena (central exhibition area)
+• Hall 1 (iconic main hall)
+
+When users ask about exhibitors:
+- Use the detailed company information available in the database
+- Show their hall location and stand number so visitors can find them
+- Highlight their specific sectors and product categories
+- Provide their country of origin for context
+
+Search Examples:
+• "Show me exhibitors from India" - Search by country
+• "Which companies are in North Hall 13?" - Search by hall
+• "Find exhibitors in the Dairy sector" - Search by sector
+• "Who's at stand C1-60?" - Search by stand number
+• "Show me Beverage companies from UAE in North Hall 7" - Combined search
 
 REFERRAL SHARING:
 When a user asks for a referral link, invitation link, or wants to share Gulfood 2026:

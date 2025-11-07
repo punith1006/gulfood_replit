@@ -51,7 +51,7 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  getExhibitors(search?: string, sector?: string, country?: string): Promise<Exhibitor[]>;
+  getExhibitors(search?: string, sector?: string, country?: string, hall?: string, stand?: string): Promise<Exhibitor[]>;
   getExhibitor(id: number): Promise<Exhibitor | undefined>;
   getExhibitorByCompanyName(companyName: string, exhibitorId?: number): Promise<Exhibitor | undefined>;
   createExhibitor(exhibitor: InsertExhibitor): Promise<Exhibitor>;
@@ -139,7 +139,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getExhibitors(search?: string, sector?: string, country?: string): Promise<Exhibitor[]> {
+  async getExhibitors(search?: string, sector?: string, country?: string, hall?: string, stand?: string): Promise<Exhibitor[]> {
     const conditions = [];
     
     if (search) {
@@ -168,6 +168,14 @@ export class DatabaseStorage implements IStorage {
     
     if (country && country !== "all") {
       conditions.push(eq(exhibitors.country, country));
+    }
+    
+    if (hall && hall !== "all") {
+      conditions.push(eq(exhibitors.hall, hall));
+    }
+    
+    if (stand) {
+      conditions.push(ilike(exhibitors.stand, `%${stand}%`));
     }
     
     if (conditions.length > 0) {

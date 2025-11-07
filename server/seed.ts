@@ -779,6 +779,14 @@ export async function seedDatabase() {
     
     const existingExhibitors = await storage.getExhibitors();
     
+    // Check if we have imported real exhibitor data (has eid field)
+    const hasImportedData = existingExhibitors.some(ex => ex.eid);
+    
+    if (hasImportedData) {
+      console.log(`✅ Database has imported exhibitor data (${existingExhibitors.length} exhibitors), skipping seed...`);
+      return;
+    }
+    
     if (existingExhibitors.length >= sampleExhibitors.length) {
       console.log(`✅ Database already seeded with ${existingExhibitors.length} exhibitors, skipping...`);
       return;
