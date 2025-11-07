@@ -13,6 +13,7 @@ import Home from "@/pages/Home";
 import OrganizerLogin from "@/pages/OrganizerLogin";
 import OrganizerAdmin from "@/pages/OrganizerAdmin";
 import ExhibitorVerify from "@/pages/ExhibitorVerify";
+import ExhibitorDashboard from "@/pages/ExhibitorDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/organizer/login" component={OrganizerLogin} />
       <Route path="/organizer/admin" component={OrganizerAdmin} />
       <Route path="/exhibitor/verify" component={ExhibitorVerify} />
+      <Route path="/exhibitor/dashboard" component={ExhibitorDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

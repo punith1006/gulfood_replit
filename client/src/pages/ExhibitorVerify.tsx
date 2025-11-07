@@ -46,7 +46,7 @@ export default function ExhibitorVerify() {
           description: `Welcome, ${data.companyName}!`,
         });
         
-        setLocation("/");
+        setLocation("/exhibitor/dashboard");
       }
     } catch (error: any) {
       toast({
