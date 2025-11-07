@@ -311,22 +311,30 @@ export class DatabaseStorage implements IStorage {
     }));
 
     // Co-searched exhibitors (other exhibitors in same journey plans)
-    const coSearchedResult = await db
-      .select({
-        exhibitorId: sql<number>`unnest(${journeyPlans.matchedExhibitorIds})`,
-        count: sql<number>`count(*)`
-      })
-      .from(journeyPlans)
-      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
-      .groupBy(sql`unnest(${journeyPlans.matchedExhibitorIds})`)
-      .having(sql`unnest(${journeyPlans.matchedExhibitorIds}) != ${exhibitorId}`)
-      .orderBy(desc(sql<number>`count(*)`))
-      .limit(10);
+    // Use CTE to avoid "set-returning functions not allowed in HAVING" error
+    const coSearchedResult = await db.execute<{
+      exhibitor_id: number;
+      count: number;
+    }>(sql`
+      WITH unnested AS (
+        SELECT unnest(matched_exhibitor_ids) as exhibitor_id
+        FROM journey_plans
+        WHERE ${exhibitorId} = ANY(matched_exhibitor_ids)
+      )
+      SELECT 
+        exhibitor_id,
+        count(*) as count
+      FROM unnested
+      WHERE exhibitor_id != ${exhibitorId}
+      GROUP BY exhibitor_id
+      ORDER BY count DESC
+      LIMIT 10
+    `);
 
     // Get exhibitor names for co-searched exhibitors
     const coSearchedExhibitors = await Promise.all(
-      coSearchedResult.map(async (row) => {
-        const exhibitor = await this.getExhibitor(row.exhibitorId);
+      coSearchedResult.rows.map(async (row) => {
+        const exhibitor = await this.getExhibitor(row.exhibitor_id);
         return {
           exhibitorName: exhibitor?.name || 'Unknown',
           coSearches: Number(row.count)
