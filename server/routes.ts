@@ -1694,6 +1694,104 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
     }
   });
 
+  // Itinerary generation endpoint
+  app.post("/api/itinerary/generate", async (req, res) => {
+    try {
+      console.log('=== ITINERARY GENERATION REQUEST ===');
+      
+      const { journeyPlan, sessionId, email } = req.body;
+      
+      if (!journeyPlan && !email) {
+        return res.status(400).json({ error: "Journey plan or email is required" });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "AI itinerary generation is currently unavailable. Please configure OPENAI_API_KEY to enable this feature." 
+        });
+      }
+
+      // If email provided but no journey plan, try to fetch existing journey plan
+      let planData = journeyPlan;
+      if (!planData && email) {
+        const existingPlan = await storage.getJourneyPlanByEmail(email);
+        if (existingPlan) {
+          planData = existingPlan;
+        } else {
+          return res.status(404).json({ error: "No journey plan found for this email. Please generate a journey plan first." });
+        }
+      }
+
+      // Extract data from journey plan
+      const {
+        name,
+        email: userEmail,
+        organization,
+        role,
+        interestCategories = [],
+        attendanceIntents = [],
+        matchedExhibitorIds = [],
+        matchedSessionIds = [],
+        reportData
+      } = planData;
+
+      // Fetch full exhibitor and session details
+      const exhibitors = await storage.getExhibitors();
+      const matchedExhibitors = exhibitors.filter(e => matchedExhibitorIds.includes(e.id));
+      
+      // Get scheduled sessions
+      const allSessions = await storage.getScheduledSessions(undefined, true, true);
+      const matchedSessions = allSessions.filter(s => matchedSessionIds.includes(s.id));
+
+      if (matchedExhibitors.length === 0) {
+        return res.status(400).json({ 
+          error: "No exhibitors matched in journey plan. Please generate a journey plan first." 
+        });
+      }
+
+      console.log(`Generating itinerary for ${name} (${organization})`);
+      console.log(`Matched exhibitors: ${matchedExhibitors.length}`);
+      console.log(`Matched sessions: ${matchedSessions.length}`);
+
+      // Generate itinerary using AI
+      const itineraryData = await generateItineraryWithAI({
+        name,
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        matchedExhibitors,
+        matchedSessions
+      });
+
+      // Save itinerary to database
+      const itinerary = await storage.createItinerary({
+        userId: userEmail,
+        leadId: planData.leadId,
+        journeyPlanId: planData.id,
+        sessionId: sessionId || planData.sessionId,
+        name,
+        organization,
+        role,
+        email: userEmail,
+        itineraryData: itineraryData as any,
+        totalExhibitors: itineraryData.totalExhibitors,
+        totalSessions: itineraryData.totalSessions,
+        totalDays: itineraryData.days.length
+      });
+
+      console.log('=== ITINERARY GENERATION COMPLETE ===\n');
+
+      res.json({
+        ...itinerary,
+        itineraryData
+      });
+    } catch (error) {
+      console.error("Error generating itinerary:", error);
+      res.status(500).json({ error: "Failed to generate itinerary" });
+    }
+  });
+
   // Appointment booking endpoints
   app.get("/api/appointments/available-slots", async (req, res) => {
     try {
@@ -2209,6 +2307,306 @@ Return ONLY a valid JSON object with keys: overview, justification, benefits, re
         `Use Gulfood's pre-event platform to schedule meetings with key exhibitors`,
         data.relevanceScore >= 70 ? `Consider booking VIP access for premium networking opportunities` : `Explore adjacent categories to expand your sourcing possibilities`
       ]
+    };
+  }
+}
+
+async function generateItineraryWithAI(data: {
+  name: string;
+  organization: string;
+  role: string;
+  interestCategories: string[];
+  attendanceIntents: string[];
+  matchedExhibitors: any[];
+  matchedSessions: any[];
+}): Promise<{
+  userId: string;
+  name: string;
+  organization: string;
+  role: string;
+  days: Array<{
+    date: string;
+    dayOfWeek: string;
+    summary: string;
+    activities: Array<{
+      id: string;
+      type: 'exhibitor_visit' | 'session' | 'break' | 'travel';
+      title: string;
+      startTime: string;
+      endTime: string;
+      duration: number;
+      location?: string;
+      stand?: string;
+      exhibitorId?: number;
+      exhibitorName?: string;
+      sessionId?: number;
+      description?: string;
+      relevanceScore?: number;
+      travelFrom?: string;
+      travelTo?: string;
+    }>;
+  }>;
+  totalExhibitors: number;
+  totalSessions: number;
+  generatedAt: string;
+}> {
+  try {
+    // Prepare exhibitor list with hall and stand information
+    const exhibitorsList = data.matchedExhibitors.map((ex, idx) => {
+      return `${idx + 1}. ${ex.name} - Hall: ${ex.hall || 'TBA'}, Stand: ${ex.stand || 'TBA'} (Relevance: ${ex.relevanceScore || 70}%)
+   Sector: ${ex.sector}
+   Description: ${ex.description?.substring(0, 150) || 'Premium food & beverage exhibitor'}`;
+    }).join('\n');
+
+    // Prepare session list with date and time information
+    const sessionsList = data.matchedSessions.map((session, idx) => {
+      const sessionDate = session.sessionDate ? new Date(session.sessionDate) : null;
+      const dateStr = sessionDate ? sessionDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'TBA';
+      return `${idx + 1}. ${session.title}
+   Date: ${dateStr}, Time: ${session.sessionTime || 'TBA'}
+   Location: ${session.location || 'Main Conference Hall'}
+   Description: ${session.description?.substring(0, 100) || 'Industry session'}`;
+    }).join('\n');
+
+    const prompt = `You are creating a detailed 5-day itinerary for Gulfood 2026 (January 26-30, 2026).
+
+EVENT DETAILS:
+- Event Hours: 10:00 AM - 6:00 PM daily
+- Location: Dubai World Trade Centre & Expo City Dubai
+- Halls: North Hall 1-13, Za'abeel Hall 1-6, Trade Centre Arena
+- Travel time between halls: 5-15 minutes depending on distance
+
+USER PROFILE:
+- Name: ${data.name}
+- Organization: ${data.organization}
+- Role: ${data.role}
+- Interest Categories: ${data.interestCategories.join(', ')}
+- Attendance Goals: ${data.attendanceIntents.join(', ')}
+
+MATCHED EXHIBITORS (${data.matchedExhibitors.length} total):
+${exhibitorsList}
+
+SCHEDULED SESSIONS (${data.matchedSessions.length} total):
+${sessionsList}
+
+INSTRUCTIONS:
+Create a detailed day-by-day itinerary following these rules:
+
+1. SCHEDULING CONSTRAINTS:
+   - Spread exhibitor visits across all 5 days (Jan 26-30, 2026)
+   - Each exhibitor visit: 20-30 minutes
+   - Mandatory lunch break: 12:00 PM - 1:00 PM daily
+   - Include 10-15 minute networking/coffee breaks mid-morning and mid-afternoon
+   - Schedule sessions at their EXACT specified times (if provided)
+
+2. ROUTING OPTIMIZATION:
+   - Group exhibitor visits by hall to minimize travel time
+   - Add travel activities (5-15 min) when moving between different halls
+   - Prioritize higher relevance score exhibitors earlier in each day
+   - Start each day in a hall with multiple high-priority exhibitors
+
+3. DAY STRUCTURE:
+   - Start: 10:00 AM
+   - Morning session: 10:00 AM - 12:00 PM (exhibitor visits)
+   - Lunch: 12:00 PM - 1:00 PM
+   - Afternoon session: 1:00 PM - 6:00 PM (exhibitor visits + sessions)
+   - Include brief descriptions for why each exhibitor is relevant
+
+4. ACTIVITY TYPES:
+   - exhibitor_visit: Meeting with exhibitor at their booth
+   - session: Attending a scheduled conference session
+   - break: Lunch, networking, or coffee breaks
+   - travel: Moving between different halls
+
+5. OUTPUT FORMAT:
+Return a JSON object with this exact structure:
+{
+  "days": [
+    {
+      "date": "January 26, 2026",
+      "dayOfWeek": "Monday",
+      "summary": "Focus on Dairy & Beverages sectors in North Halls 1-7",
+      "activities": [
+        {
+          "id": "act_1_1",
+          "type": "exhibitor_visit",
+          "title": "Visit [Company Name]",
+          "startTime": "10:00 AM",
+          "endTime": "10:30 AM",
+          "duration": 30,
+          "location": "North Hall 7",
+          "stand": "B4-25",
+          "exhibitorId": 123,
+          "exhibitorName": "[Company Name]",
+          "description": "Explore their dairy product innovations",
+          "relevanceScore": 85
+        },
+        {
+          "id": "act_1_2",
+          "type": "travel",
+          "title": "Travel to North Hall 13",
+          "startTime": "10:30 AM",
+          "endTime": "10:40 AM",
+          "duration": 10,
+          "travelFrom": "North Hall 7",
+          "travelTo": "North Hall 13"
+        }
+      ]
+    }
+  ]
+}
+
+IMPORTANT:
+- Ensure NO time overlaps between activities
+- Use actual exhibitor names, halls, stands, and IDs from the list above
+- Use actual session times and locations from the list above
+- Generate unique activity IDs (e.g., "act_1_1" for day 1 activity 1)
+- If an exhibitor has no hall/stand info, use "TBA" and place in a logical day
+- Distribute exhibitors evenly across all 5 days
+- Prioritize relevance scores when ordering daily activities
+
+Return ONLY valid JSON matching the structure above.`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { 
+            role: 'system', 
+            content: 'You are an expert event planner specializing in trade show itinerary optimization. You create detailed, practical schedules that maximize attendee value while respecting time and logistics constraints. Always return valid JSON.' 
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
+      })
+    });
+
+    if (!response.ok) {
+      console.error('OpenAI API failed:', response.status, response.statusText);
+      throw new Error('OpenAI API request failed');
+    }
+
+    const result = await response.json();
+    const aiResponse = JSON.parse(result.choices[0].message.content);
+
+    // Validate and enhance the response
+    const days = aiResponse.days || [];
+    
+    return {
+      userId: data.name,
+      name: data.name,
+      organization: data.organization,
+      role: data.role,
+      days,
+      totalExhibitors: data.matchedExhibitors.length,
+      totalSessions: data.matchedSessions.length,
+      generatedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error generating AI itinerary:', error);
+    
+    // Fallback: Create a basic itinerary structure
+    const days = [];
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const dates = ['January 26, 2026', 'January 27, 2026', 'January 28, 2026', 'January 29, 2026', 'January 30, 2026'];
+    
+    // Distribute exhibitors across days
+    const exhibitorsPerDay = Math.ceil(data.matchedExhibitors.length / 5);
+    
+    for (let dayIndex = 0; dayIndex < 5; dayIndex++) {
+      const dayExhibitors = data.matchedExhibitors.slice(
+        dayIndex * exhibitorsPerDay,
+        (dayIndex + 1) * exhibitorsPerDay
+      );
+      
+      const activities: any[] = [];
+      let currentTime = 10 * 60; // 10:00 AM in minutes
+      
+      // Morning exhibitor visits
+      for (const exhibitor of dayExhibitors) {
+        if (currentTime >= 12 * 60) break; // Stop before lunch
+        
+        const duration = 25;
+        const startHour = Math.floor(currentTime / 60);
+        const startMin = currentTime % 60;
+        const endTime = currentTime + duration;
+        const endHour = Math.floor(endTime / 60);
+        const endMin = endTime % 60;
+        
+        activities.push({
+          id: `act_${dayIndex + 1}_${activities.length + 1}`,
+          type: 'exhibitor_visit',
+          title: `Visit ${exhibitor.name}`,
+          startTime: `${startHour}:${startMin.toString().padStart(2, '0')} ${startHour >= 12 ? 'PM' : 'AM'}`,
+          endTime: `${endHour}:${endMin.toString().padStart(2, '0')} ${endHour >= 12 ? 'PM' : 'AM'}`,
+          duration,
+          location: exhibitor.hall || 'TBA',
+          stand: exhibitor.stand || 'TBA',
+          exhibitorId: exhibitor.id,
+          exhibitorName: exhibitor.name,
+          description: `Explore ${exhibitor.sector} innovations`,
+          relevanceScore: exhibitor.relevanceScore || 70
+        });
+        
+        currentTime += duration + 5; // Add 5 min buffer
+      }
+      
+      // Lunch break
+      activities.push({
+        id: `act_${dayIndex + 1}_lunch`,
+        type: 'break',
+        title: 'Lunch Break',
+        startTime: '12:00 PM',
+        endTime: '1:00 PM',
+        duration: 60,
+        description: 'Networking lunch'
+      });
+      
+      currentTime = 13 * 60; // 1:00 PM
+      
+      // Afternoon sessions (if any for this day)
+      const daySessions = data.matchedSessions.filter(s => {
+        const sessionDate = s.sessionDate ? new Date(s.sessionDate) : null;
+        return sessionDate && sessionDate.getDate() === 26 + dayIndex;
+      });
+      
+      for (const session of daySessions) {
+        activities.push({
+          id: `act_${dayIndex + 1}_${activities.length + 1}`,
+          type: 'session',
+          title: session.title,
+          startTime: session.sessionTime || '2:00 PM',
+          endTime: session.sessionTime || '3:00 PM',
+          duration: 60,
+          location: session.location || 'Conference Hall',
+          sessionId: session.id,
+          description: session.description || 'Industry conference session'
+        });
+      }
+      
+      days.push({
+        date: dates[dayIndex],
+        dayOfWeek: dayNames[dayIndex],
+        summary: `Day ${dayIndex + 1}: Focus on ${dayExhibitors.slice(0, 2).map(e => e.sector).join(' and ')}`,
+        activities
+      });
+    }
+    
+    return {
+      userId: data.name,
+      name: data.name,
+      organization: data.organization,
+      role: data.role,
+      days,
+      totalExhibitors: data.matchedExhibitors.length,
+      totalSessions: data.matchedSessions.length,
+      generatedAt: new Date().toISOString()
     };
   }
 }

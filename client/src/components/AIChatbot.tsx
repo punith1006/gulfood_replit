@@ -292,7 +292,7 @@ function RightNowContent() {
 
 export default function AIChatbot() {
   const [, setLocation] = useLocation();
-  const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan } = useChatbot();
+  const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary } = useChatbot();
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -316,6 +316,7 @@ export default function AIChatbot() {
   const [contextualKeyword, setContextualKeyword] = useState<string>("");
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [isGeneratingItinerary, setIsGeneratingItinerary] = useState(false);
   
   // Track viewed announcements and sessions for notification badge
   const [viewedItems, setViewedItems] = useState<{ announcements: number[]; sessions: number[] }>(() => {
@@ -2146,16 +2147,49 @@ export default function AIChatbot() {
 
                 <div className="flex justify-center py-4">
                   <Button
-                    onClick={() => {
-                      setLocation('/itinerary');
-                      closeChatbot();
+                    onClick={async () => {
+                      try {
+                        setIsGeneratingItinerary(true);
+                        const sessionLead = sessionManager.getLeadInfo();
+                        
+                        // Use guest email if no lead info provided (registration-free access)
+                        const email = sessionLead?.email || `guest-${Date.now()}@gulfood2026.com`;
+                        const name = sessionLead?.name || 'Guest';
+                        
+                        const res = await apiRequest('POST', '/api/itinerary/generate', {
+                          email: email,
+                          name: name,
+                          journeyPlan: journeyPlan,
+                          organization: journeyFormData.organization,
+                          role: journeyFormData.role
+                        });
+                        const itineraryData = await res.json();
+                        setGlobalItinerary(itineraryData);
+                        setLocation('/itinerary');
+                        closeChatbot();
+                      } catch (error) {
+                        console.error('Failed to generate itinerary:', error);
+                        toast({ title: "Failed to generate itinerary", variant: "destructive" });
+                      } finally {
+                        setIsGeneratingItinerary(false);
+                      }
                     }}
+                    disabled={isGeneratingItinerary}
                     size="lg"
                     className="gap-2"
                     data-testid="button-view-itinerary"
                   >
-                    <FileDown className="w-5 h-5" />
-                    View Full Itinerary
+                    {isGeneratingItinerary ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Generating Itinerary...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="w-5 h-5" />
+                        View Full Itinerary
+                      </>
+                    )}
                   </Button>
                 </div>
 

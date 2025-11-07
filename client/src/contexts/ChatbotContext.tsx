@@ -7,6 +7,8 @@ interface ChatbotContextType {
   toggleChatbot: () => void;
   journeyPlan: any | null;
   setJourneyPlan: (plan: any | null) => void;
+  itinerary: any | null;
+  setItinerary: (itinerary: any | null) => void;
 }
 
 const ChatbotContext = createContext<ChatbotContextType | undefined>(undefined);
@@ -16,6 +18,15 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [journeyPlanState, setJourneyPlanState] = useState<any | null>(() => {
     try {
       const stored = localStorage.getItem('gulfood_journey_plan');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [itineraryState, setItineraryState] = useState<any | null>(() => {
+    try {
+      const stored = localStorage.getItem('gulfood_itinerary');
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -35,8 +46,17 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setItinerary = (itinerary: any | null) => {
+    setItineraryState(itinerary);
+    if (itinerary) {
+      localStorage.setItem('gulfood_itinerary', JSON.stringify(itinerary));
+    } else {
+      localStorage.removeItem('gulfood_itinerary');
+    }
+  };
+
   return (
-    <ChatbotContext.Provider value={{ isOpen, openChatbot, closeChatbot, toggleChatbot, journeyPlan: journeyPlanState, setJourneyPlan }}>
+    <ChatbotContext.Provider value={{ isOpen, openChatbot, closeChatbot, toggleChatbot, journeyPlan: journeyPlanState, setJourneyPlan, itinerary: itineraryState, setItinerary }}>
       {children}
     </ChatbotContext.Provider>
   );

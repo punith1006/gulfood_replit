@@ -271,6 +271,24 @@ export const appointments = pgTable("appointments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+export const itineraries = pgTable("itineraries", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id"), // Link to leads table if lead exists
+  journeyPlanId: integer("journey_plan_id"), // Link to journey plan
+  sessionId: text("session_id").notNull(),
+  userId: text("user_id").notNull(), // Email or unique identifier
+  name: text("name").notNull(),
+  organization: text("organization").notNull(),
+  role: text("role").notNull(),
+  email: text("email").notNull(),
+  // Itinerary data stored as JSON
+  itineraryData: jsonb("itinerary_data").notNull(), // Full itinerary with days and activities
+  totalExhibitors: integer("total_exhibitors").notNull().default(0),
+  totalSessions: integer("total_sessions").notNull().default(0),
+  totalDays: integer("total_days").notNull().default(5),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // ExhibitorAnalytics interface for analytics API
 export interface ExhibitorAnalytics {
   totalAppearances: number;
@@ -457,6 +475,24 @@ export const insertAppointmentSchema = createInsertSchema(appointments).omit({
   timezone: z.string().default("Asia/Dubai")
 });
 
+export const insertItinerarySchema = createInsertSchema(itineraries).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  userId: z.string().min(1, "User ID is required"),
+  name: z.string().min(1, "Name is required"),
+  organization: z.string().min(1, "Organization is required"),
+  role: z.string().min(1, "Role is required"),
+  email: z.string().email("Invalid email address"),
+  sessionId: z.string(),
+  leadId: z.number().optional(),
+  journeyPlanId: z.number().optional(),
+  itineraryData: z.any(),
+  totalExhibitors: z.number().default(0),
+  totalSessions: z.number().default(0),
+  totalDays: z.number().default(5)
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -504,3 +540,43 @@ export type InsertJourneyPlan = z.infer<typeof insertJourneyPlanSchema>;
 
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+
+export type Itinerary = typeof itineraries.$inferSelect;
+export type InsertItinerary = z.infer<typeof insertItinerarySchema>;
+
+// TypeScript interfaces for itinerary structure
+export interface ItineraryActivity {
+  id: string;
+  type: 'exhibitor_visit' | 'session' | 'break' | 'travel';
+  title: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  location?: string;
+  stand?: string;
+  exhibitorId?: number;
+  exhibitorName?: string;
+  sessionId?: number;
+  description?: string;
+  relevanceScore?: number;
+  travelFrom?: string;
+  travelTo?: string;
+}
+
+export interface ItineraryDay {
+  date: string;
+  dayOfWeek: string;
+  activities: ItineraryActivity[];
+  summary: string;
+}
+
+export interface ItineraryData {
+  userId: string;
+  name: string;
+  organization: string;
+  role: string;
+  days: ItineraryDay[];
+  totalExhibitors: number;
+  totalSessions: number;
+  generatedAt: string;
+}

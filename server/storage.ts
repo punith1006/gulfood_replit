@@ -17,6 +17,7 @@ import {
   organizers,
   journeyPlans,
   appointments,
+  itineraries,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -47,6 +48,8 @@ import {
   type InsertOrganizer,
   type Appointment,
   type InsertAppointment,
+  type Itinerary,
+  type InsertItinerary,
   type ExhibitorAnalytics
 } from "@shared/schema";
 
@@ -136,6 +139,11 @@ export interface IStorage {
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   updateAppointmentStatus(id: number, status: string): Promise<Appointment | undefined>;
   cancelAppointment(id: number): Promise<Appointment | undefined>;
+  
+  getItineraryByEmail(email: string): Promise<Itinerary | undefined>;
+  getItineraryBySessionId(sessionId: string): Promise<Itinerary | undefined>;
+  createItinerary(itinerary: InsertItinerary): Promise<Itinerary>;
+  getItineraries(sessionId?: string): Promise<Itinerary[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1005,6 +1013,47 @@ export class DatabaseStorage implements IStorage {
       .where(eq(appointments.id, id))
       .returning();
     return cancelled;
+  }
+
+  async getItineraryByEmail(email: string): Promise<Itinerary | undefined> {
+    const [itinerary] = await db
+      .select()
+      .from(itineraries)
+      .where(eq(itineraries.email, email.toLowerCase()))
+      .orderBy(desc(itineraries.createdAt))
+      .limit(1);
+    return itinerary;
+  }
+
+  async getItineraryBySessionId(sessionId: string): Promise<Itinerary | undefined> {
+    const [itinerary] = await db
+      .select()
+      .from(itineraries)
+      .where(eq(itineraries.sessionId, sessionId))
+      .orderBy(desc(itineraries.createdAt))
+      .limit(1);
+    return itinerary;
+  }
+
+  async createItinerary(itinerary: InsertItinerary): Promise<Itinerary> {
+    const normalizedItinerary = {
+      ...itinerary,
+      email: itinerary.email.toLowerCase()
+    };
+    
+    const [created] = await db.insert(itineraries).values(normalizedItinerary).returning();
+    return created;
+  }
+
+  async getItineraries(sessionId?: string): Promise<Itinerary[]> {
+    if (sessionId) {
+      return await db
+        .select()
+        .from(itineraries)
+        .where(eq(itineraries.sessionId, sessionId))
+        .orderBy(desc(itineraries.createdAt));
+    }
+    return await db.select().from(itineraries).orderBy(desc(itineraries.createdAt));
   }
 }
 
