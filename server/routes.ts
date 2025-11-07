@@ -1835,6 +1835,7 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         attendanceIntents = [],
         matchedExhibitorIds = [],
         matchedSessionIds = [],
+        preferredExhibitorIds = [],
         reportData
       } = planData;
 
@@ -1861,6 +1862,7 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
       console.log(`Matched sessions: ${matchedSessions.length}`);
       console.log(`Number of days: ${numberOfDays}`);
       console.log(`Specific dates: ${specificDates.length > 0 ? specificDates.join(', ') : 'Using default dates'}`);
+      console.log(`Preferred exhibitors: ${preferredExhibitorIds.length > 0 ? preferredExhibitorIds.join(', ') : 'None'}`);
 
       // Generate itinerary using AI
       const itineraryData = await generateItineraryWithAI({
@@ -1872,7 +1874,8 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         matchedExhibitors,
         matchedSessions,
         numberOfDays,
-        specificDates
+        specificDates,
+        preferredExhibitorIds
       });
 
       // Save itinerary to database
@@ -2440,6 +2443,7 @@ async function generateItineraryWithAI(data: {
   matchedSessions: any[];
   numberOfDays: number;
   specificDates: string[];
+  preferredExhibitorIds?: number[];
 }): Promise<{
   userId: string;
   name: string;
@@ -2524,6 +2528,14 @@ async function generateItineraryWithAI(data: {
       dateRange = data.numberOfDays === 1 ? itineraryDates[0] : `${itineraryDates[0]} to ${lastDate}`;
     }
 
+    // Identify preferred exhibitors for special handling
+    const preferredExhibitorNames = data.preferredExhibitorIds && data.preferredExhibitorIds.length > 0
+      ? data.matchedExhibitors
+          .filter(e => data.preferredExhibitorIds!.includes(e.id))
+          .map(e => `${e.name} (ID: ${e.id})`)
+          .join(', ')
+      : '';
+
     const prompt = `You are creating a detailed ${data.numberOfDays}-day itinerary for Gulfood 2026.
 
 EVENT DETAILS:
@@ -2540,6 +2552,7 @@ USER PROFILE:
 - Interest Categories: ${data.interestCategories.join(', ')}
 - Attendance Goals: ${data.attendanceIntents.join(', ')}
 - Attendance Plan: ${data.numberOfDays} day${data.numberOfDays > 1 ? 's' : ''} ${dateRange}
+${preferredExhibitorNames ? `- PRIORITY EXHIBITORS: ${preferredExhibitorNames} (User specifically selected these - MUST schedule on Day 1!)` : ''}
 
 MATCHED EXHIBITORS (${data.matchedExhibitors.length} total):
 ${exhibitorsList}
@@ -2562,6 +2575,7 @@ Create a detailed day-by-day itinerary following these rules:
    - Add travel activities (5-15 min) when moving between different halls
    - Prioritize higher relevance score exhibitors earlier in each day
    - Start each day in a hall with multiple high-priority exhibitors
+   - CRITICAL: If PRIORITY EXHIBITORS are specified, schedule ALL of them on Day 1 in the morning session (10:00 AM - 12:00 PM). These are exhibitors the user explicitly wants to visit first!
 
 3. DAY STRUCTURE:
    - Start: 10:00 AM
@@ -2655,7 +2669,136 @@ Return ONLY valid JSON matching the structure above.`;
     const aiResponse = JSON.parse(result.choices[0].message.content);
 
     // Validate and enhance the response
-    const days = aiResponse.days || [];
+    let days = aiResponse.days || [];
+    
+    // ENFORCE: Verify preferred exhibitors are on Day 1, move them if not
+    if (data.preferredExhibitorIds && data.preferredExhibitorIds.length > 0 && days.length > 0) {
+      const preferredIds = new Set(data.preferredExhibitorIds);
+      const day1 = days[0];
+      
+      // Find which preferred exhibitors are on Day 1
+      const day1ExhibitorIds = new Set(
+        day1.activities
+          ?.filter((act: any) => act.type === 'exhibitor_visit' && act.exhibitorId)
+          .map((act: any) => act.exhibitorId) || []
+      );
+      
+      const missingPreferred = Array.from(preferredIds).filter(id => !day1ExhibitorIds.has(id));
+      
+      if (missingPreferred.length > 0) {
+        console.warn(`⚠️ AI didn't place ${missingPreferred.length} preferred exhibitors on Day 1. Enforcing...`);
+        
+        // Find preferred exhibitor activities in other days
+        const preferredActivities: any[] = [];
+        
+        for (let dayIdx = 1; dayIdx < days.length; dayIdx++) {
+          const day = days[dayIdx];
+          if (!day.activities) continue;
+          
+          for (const activity of day.activities) {
+            if (activity.type === 'exhibitor_visit' && missingPreferred.includes(activity.exhibitorId)) {
+              preferredActivities.push({ ...activity });
+            }
+          }
+          
+          // Keep only non-preferred activities on this day
+          day.activities = day.activities.filter((act: any) => 
+            !(act.type === 'exhibitor_visit' && missingPreferred.includes(act.exhibitorId))
+          );
+        }
+        
+        // Create activities for preferred exhibitors that are completely missing
+        const foundIds = new Set(preferredActivities.map(a => a.exhibitorId));
+        const completelyMissing = missingPreferred.filter(id => !foundIds.has(id));
+        
+        if (completelyMissing.length > 0) {
+          console.warn(`⚠️ AI completely omitted ${completelyMissing.length} preferred exhibitors. Creating fallback activities...`);
+          
+          for (const exhibitorId of completelyMissing) {
+            const exhibitor = data.matchedExhibitors.find(e => e.id === exhibitorId);
+            if (exhibitor) {
+              preferredActivities.push({
+                id: `act_1_pref_${exhibitorId}`,
+                type: 'exhibitor_visit',
+                title: `Visit ${exhibitor.name}`,
+                startTime: '10:00 AM',
+                endTime: '10:30 AM',
+                duration: 30,
+                location: exhibitor.hall || 'TBA',
+                stand: exhibitor.stand || 'TBA',
+                exhibitorId: exhibitor.id,
+                exhibitorName: exhibitor.name,
+                description: `Priority visit to ${exhibitor.name}`,
+                relevanceScore: exhibitor.relevanceScore || 90
+              });
+            }
+          }
+        }
+        
+        // Recalculate times for preferred exhibitors in Day 1 morning window (10:00-12:00 PM)
+        // STRICT 2-hour window constraint: never exceed 12:00 PM
+        const morningStart = 10 * 60; // 10:00 AM in minutes
+        const morningEnd = 12 * 60;   // 12:00 PM in minutes
+        const totalMinutes = morningEnd - morningStart; // 120 minutes
+        
+        // Cap at 5 exhibitors total (frontend enforces this)
+        const cappedActivities = preferredActivities.slice(0, 5);
+        
+        // Calculate slot duration to fit all exhibitors in the 2-hour window
+        // 1-4 exhibitors: 30 min each (standard)
+        // 5 exhibitors: 24 min each (120 / 5 = 24) to stay within 12:00 PM
+        const slotDuration = cappedActivities.length <= 4 ? 30 : Math.floor(totalMinutes / cappedActivities.length);
+        
+        cappedActivities.forEach((activity, index) => {
+          const startMinutes = morningStart + (index * slotDuration);
+          const endMinutes = startMinutes + slotDuration;
+          
+          // Ensure we never exceed 12:00 PM
+          const cappedEndMinutes = Math.min(endMinutes, morningEnd);
+          
+          const startHour = Math.floor(startMinutes / 60);
+          const startMin = startMinutes % 60;
+          const endHour = Math.floor(cappedEndMinutes / 60);
+          const endMin = cappedEndMinutes % 60;
+          
+          // Format time as 12-hour with AM/PM
+          const formatHour = (hour: number) => hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+          const formatPeriod = (hour: number) => hour < 12 ? 'AM' : 'PM';
+          
+          activity.startTime = `${formatHour(startHour)}:${startMin.toString().padStart(2, '0')} ${formatPeriod(startHour)}`;
+          activity.endTime = `${formatHour(endHour)}:${endMin.toString().padStart(2, '0')} ${formatPeriod(endHour)}`;
+          activity.duration = cappedEndMinutes - startMinutes;
+        });
+        
+        // If we had >5 preferred exhibitors, log a warning
+        if (preferredActivities.length > 5) {
+          console.warn(`⚠️ User selected ${preferredActivities.length} preferred exhibitors. Limiting to first 5 in Day 1 schedule.`);
+        }
+        
+        // Insert preferred activities at the start of Day 1
+        day1.activities = day1.activities || [];
+        
+        // Check for potential time overlaps with existing activities (informational only)
+        const existingMorningActivities = day1.activities.filter((act: any) => {
+          if (!act.startTime) return false;
+          const hour = parseInt(act.startTime.split(':')[0]);
+          const period = act.startTime.includes('PM') ? 'PM' : 'AM';
+          const hour24 = period === 'PM' && hour !== 12 ? hour + 12 : hour;
+          return hour24 >= 10 && hour24 < 12;
+        });
+        
+        if (existingMorningActivities.length > 0) {
+          console.warn(`⚠️ Detected ${existingMorningActivities.length} existing activities in 10:00-12:00 window. Preferred exhibitors take priority - potential time overlaps.`);
+        }
+        
+        day1.activities.unshift(...cappedActivities);
+        
+        const slotInfo = cappedActivities.length <= 4 ? '30-min slots' : '24-min slots';
+        console.log(`✅ Scheduled ${cappedActivities.length} preferred exhibitors on Day 1 morning (10:00-12:00 PM, ${slotInfo})`);
+      } else {
+        console.log(`✅ All ${preferredIds.size} preferred exhibitors are already on Day 1`);
+      }
+    }
     
     return {
       userId: data.name,
