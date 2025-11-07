@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2 } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -37,6 +37,7 @@ import { GULFOOD_CATEGORIES } from "@shared/schema";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import AppointmentSlotPicker from "@/components/AppointmentSlotPicker";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 const ATTENDANCE_INTENTS = [
   "Discover new products and innovations",
@@ -351,6 +352,7 @@ export default function AIChatbot() {
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [showIntentSearch, setShowIntentSearch] = useState(false);
   const [intentSearchTerm, setIntentSearchTerm] = useState('');
+  const [isScoreJustificationExpanded, setIsScoreJustificationExpanded] = useState(false);
   
   // Appointment booking state
   const [showAppointmentBooking, setShowAppointmentBooking] = useState(false);
@@ -2052,84 +2054,37 @@ export default function AIChatbot() {
                        journeyPlan.relevanceScore >= 40 ? "Fair" : "Limited"} match for Gulfood 2026
                     </p>
                     {journeyPlan.scoreJustification && (
-                      <div className="mt-4 p-3 bg-muted/30 rounded-lg">
-                        <p className="text-sm font-medium mb-1 text-foreground">Why this score?</p>
-                        <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-journey-score-justification">
-                          {journeyPlan.scoreJustification}
-                        </p>
-                      </div>
+                      <Collapsible 
+                        open={isScoreJustificationExpanded} 
+                        onOpenChange={setIsScoreJustificationExpanded}
+                        className="mt-4"
+                      >
+                        <CollapsibleTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full justify-between hover-elevate p-3 h-auto"
+                            data-testid="button-toggle-score-justification"
+                          >
+                            <span className="text-sm font-medium text-foreground">Why this score?</span>
+                            <ChevronDown 
+                              className={`w-4 h-4 transition-transform duration-200 ${
+                                isScoreJustificationExpanded ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="pt-2">
+                          <div className="p-3 bg-muted/30 rounded-lg">
+                            <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-journey-score-justification">
+                              {journeyPlan.scoreJustification}
+                            </p>
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
                     )}
                   </div>
                 </Card>
-
-                {journeyPlan.generalOverview && (
-                  <Card className="p-6">
-                    <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Overview
-                    </h4>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{journeyPlan.generalOverview}</p>
-                  </Card>
-                )}
-
-                {journeyPlan.benefits && journeyPlan.benefits.length > 0 && (
-                  <Card className="p-6">
-                    <h4 className="font-semibold text-foreground mb-3">Key Benefits</h4>
-                    <ul className="space-y-2">
-                      {journeyPlan.benefits.map((benefit: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          <Badge variant="secondary" className="mt-0.5 shrink-0">✓</Badge>
-                          <span className="text-muted-foreground">{benefit}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
-
-                {journeyPlan.recommendations && journeyPlan.recommendations.length > 0 && (
-                  <Card className="p-6">
-                    <h4 className="font-semibold text-foreground mb-3">Recommendations</h4>
-                    <ul className="space-y-2">
-                      {journeyPlan.recommendations.map((rec: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          <span className="text-primary font-medium shrink-0">{idx + 1}.</span>
-                          <span className="text-muted-foreground">{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
-
-                {journeyPlan.highlights && journeyPlan.highlights.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-foreground flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      Event Highlights for You
-                    </h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      {journeyPlan.highlights.map((highlight: any, idx: number) => {
-                        const iconMap: Record<string, any> = {
-                          Target, Droplet, Zap, Package, Globe, TrendingUp, Users, ShoppingCart, Sparkles, Award, Building2
-                        };
-                        const IconComponent = iconMap[highlight.icon] || Target;
-                        
-                        return (
-                          <Card key={idx} className="p-4 hover-elevate" data-testid={`highlight-card-${idx}`}>
-                            <div className="flex items-start gap-3">
-                              <div className="shrink-0 p-2 bg-primary/10 rounded-md">
-                                <IconComponent className="w-5 h-5 text-primary" />
-                              </div>
-                              <div className="flex-1 space-y-1">
-                                <h5 className="font-medium text-foreground">{highlight.title}</h5>
-                                <p className="text-sm text-muted-foreground leading-relaxed">{highlight.description}</p>
-                              </div>
-                            </div>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {journeyPlan.matchedExhibitors && journeyPlan.matchedExhibitors.length > 0 && (
                   <div className="space-y-4">
@@ -2223,6 +2178,75 @@ export default function AIChatbot() {
                           </div>
                         </Card>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {journeyPlan.generalOverview && (
+                  <Card className="p-6">
+                    <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Overview
+                    </h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{journeyPlan.generalOverview}</p>
+                  </Card>
+                )}
+
+                {journeyPlan.benefits && journeyPlan.benefits.length > 0 && (
+                  <Card className="p-6">
+                    <h4 className="font-semibold text-foreground mb-3">Key Benefits</h4>
+                    <ul className="space-y-2">
+                      {journeyPlan.benefits.map((benefit: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <Badge variant="secondary" className="mt-0.5 shrink-0">✓</Badge>
+                          <span className="text-muted-foreground">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
+                {journeyPlan.recommendations && journeyPlan.recommendations.length > 0 && (
+                  <Card className="p-6">
+                    <h4 className="font-semibold text-foreground mb-3">Recommendations</h4>
+                    <ul className="space-y-2">
+                      {journeyPlan.recommendations.map((rec: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2 text-sm">
+                          <span className="text-primary font-medium shrink-0">{idx + 1}.</span>
+                          <span className="text-muted-foreground">{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+
+                {journeyPlan.highlights && journeyPlan.highlights.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-foreground flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      Event Highlights for You
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {journeyPlan.highlights.map((highlight: any, idx: number) => {
+                        const iconMap: Record<string, any> = {
+                          Target, Droplet, Zap, Package, Globe, TrendingUp, Users, ShoppingCart, Sparkles, Award, Building2
+                        };
+                        const IconComponent = iconMap[highlight.icon] || Target;
+                        
+                        return (
+                          <Card key={idx} className="p-4 hover-elevate" data-testid={`highlight-card-${idx}`}>
+                            <div className="flex items-start gap-3">
+                              <div className="shrink-0 p-2 bg-primary/10 rounded-md">
+                                <IconComponent className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 space-y-1">
+                                <h5 className="font-medium text-foreground">{highlight.title}</h5>
+                                <p className="text-sm text-muted-foreground leading-relaxed">{highlight.description}</p>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
