@@ -299,10 +299,18 @@ Return format: {"relevanceScore": 65, "scoreJustification": "...", "keyTakeaways
     model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
-    max_tokens: 1500
+    max_tokens: 3000
   });
 
   const content = completion.choices[0]?.message?.content;
+  const finishReason = completion.choices[0]?.finish_reason;
+  
+  // Check for truncation
+  if (finishReason === 'length') {
+    console.warn('⚠️  AI response was truncated due to max_tokens limit. Consider increasing max_tokens or simplifying prompt.');
+    console.warn(`Response length: ${content?.length} characters`);
+  }
+  
   if (!content) {
     throw new Error('No response from OpenAI');
   }
@@ -392,23 +400,31 @@ ${orgContext}
 
 ATTENDEE PROFILE:
 - Role: ${role}
-- Interests: ${interestCategories.join(', ') || 'General'}
+- **PRIMARY INTERESTS: ${interestCategories.length > 0 ? interestCategories.join(', ') : 'General (no specific sectors)'}**
 - Goals: ${attendanceIntents.join(', ') || 'Networking'}
 
-TASK: Score each exhibitor's match with this attendee (0-100) based on:
-1. **Industry Alignment** - Does exhibitor's sector match attendee's industry/interests?
-2. **Product Relevance** - Do exhibitor's products solve attendee's needs or complement their business?
-3. **Business Model Fit** - Are they potential suppliers, partners, customers, or competitors?
-4. **Geographic Synergy** - Do their target markets or origins align?
-5. **Strategic Value** - Could this connection drive real business outcomes?
+CRITICAL SCORING RULE:
+**INTEREST CATEGORY MATCH IS THE #1 PRIORITY**
+- If attendee has specific interest categories, exhibitors in those sectors MUST score 70-95%
+- Exhibitors NOT in the interest categories should score 20-50% (unless exceptional strategic fit)
+- Preferred exhibitors ([USER PREFERRED] tag) should score 90-95%
 
-SCORING GUIDELINES:
-- **90-100%**: Perfect strategic fit - clear business case for meeting (preferred exhibitors, direct suppliers/partners)
-- **75-89%**: Strong alignment - high potential value, multiple synergy points
-- **60-74%**: Good fit - relevant but not critical, worth exploring
-- **40-59%**: Moderate relevance - some potential but limited alignment
-- **20-39%**: Weak fit - tangential connection at best
-- **0-19%**: Poor fit - no meaningful alignment
+TASK: Score each exhibitor's match with this attendee (0-100) based on:
+1. **⭐ INTEREST CATEGORY MATCH (HIGHEST WEIGHT)** - Does exhibitor's sector directly match attendee's interest categories?
+   - Direct match (e.g., "Dairy Products" interest + "Dairy Products" sector) = 70-95%
+   - No match = Start at 20-50% baseline
+2. **Product Relevance** - Do exhibitor's products align with attendee's business needs?
+3. **Business Model Fit** - Are they potential suppliers, partners, or customers?
+4. **Geographic Synergy** - Do their markets align?
+5. **Strategic Value** - Could this drive real business outcomes?
+
+SCORING GUIDELINES (ENFORCED):
+- **90-100%**: Preferred exhibitors [USER PREFERRED] OR perfect sector + product match
+- **75-89%**: Direct interest category match + strong product relevance
+- **60-74%**: Direct interest category match + moderate product fit
+- **40-59%**: Weak interest category match OR exceptional fit despite sector mismatch
+- **20-39%**: No interest category match, limited strategic value
+- **0-19%**: No alignment whatsoever
 
 EXHIBITORS TO SCORE:
 ${exhibitorsList}

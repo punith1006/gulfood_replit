@@ -1555,10 +1555,43 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       const scoreReasoning = relevanceScoring.scoreJustification;
       console.log(`✅ Relevance Score: ${relevanceScore}% - ${scoreReasoning}`);
 
+      // Prioritize exhibitors by interest categories
+      let exhibitorsToScore = filteredExhibitors;
+      if (interestCategories.length > 0) {
+        console.log(`🎯 Prioritizing exhibitors by interest categories: ${interestCategories.join(', ')}`);
+        
+        // Separate exhibitors into matching and non-matching
+        const matchingExhibitors = filteredExhibitors.filter(e => 
+          interestCategories.some((cat: string) => 
+            e.sector.toLowerCase().includes(cat.toLowerCase()) || 
+            cat.toLowerCase().includes(e.sector.toLowerCase())
+          )
+        );
+        
+        const nonMatchingExhibitors = filteredExhibitors.filter(e => 
+          !interestCategories.some((cat: string) => 
+            e.sector.toLowerCase().includes(cat.toLowerCase()) || 
+            cat.toLowerCase().includes(e.sector.toLowerCase())
+          )
+        );
+        
+        // Prioritize matching exhibitors (40) + include some variety (10)
+        exhibitorsToScore = [
+          ...matchingExhibitors.slice(0, 40),
+          ...nonMatchingExhibitors.slice(0, 10)
+        ];
+        
+        console.log(`✅ Prioritized ${matchingExhibitors.length} matching exhibitors, ${nonMatchingExhibitors.length} other exhibitors`);
+        console.log(`Analyzing top ${exhibitorsToScore.length} exhibitors (${Math.min(40, matchingExhibitors.length)} matching + ${Math.min(10, nonMatchingExhibitors.length)} variety)`);
+      } else {
+        // No specific interests - take first 50
+        exhibitorsToScore = filteredExhibitors.slice(0, 50);
+      }
+
       // Get top exhibitors using intelligent matching
       console.log('🎯 Calculating exhibitor match scores...');
       const exhibitorMatches = await calculateExhibitorMatchScores({
-        exhibitors: filteredExhibitors.slice(0, 50),
+        exhibitors: exhibitorsToScore,
         organization,
         role,
         interestCategories,
