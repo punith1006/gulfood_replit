@@ -1,13 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Building2, MessageSquare, TrendingUp, ArrowUp, ArrowDown, Lock, BarChart3, Download, CheckCircle2, UserCheck, Mail, Tag, Share2 } from "lucide-react";
+import { Users, Building2, MessageSquare, ArrowUp, ArrowDown, Download, CheckCircle2, UserCheck, Mail, Share2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import analyticsImage from "@assets/generated_images/Analytics_dashboard_visualization_c400d7e3.png";
-import { useRole } from "@/contexts/RoleContext";
-import { useChatbot } from "@/contexts/ChatbotContext";
 import { useToast } from "@/hooks/use-toast";
 import EmbeddableWidgetGenerator from "@/components/EmbeddableWidgetGenerator";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
@@ -44,26 +42,21 @@ interface ReferralStats {
 }
 
 export default function AnalyticsDashboard() {
-  const { userRole, setUserRole } = useRole();
-  const { openChatbot } = useChatbot();
   const { toast } = useToast();
   
   const { data: analytics, isLoading } = useQuery<Analytics>({
     queryKey: ["/api/analytics"],
-    refetchInterval: 10000,
-    enabled: userRole === "organizer" // Only fetch data when user is an organizer
+    refetchInterval: 10000
   });
 
   const { data: leads, isLoading: isLoadingLeads } = useQuery<Lead[]>({
     queryKey: ["/api/leads"],
-    refetchInterval: 15000,
-    enabled: userRole === "organizer" // Only fetch leads when user is an organizer
+    refetchInterval: 15000
   });
 
   const { data: referralStats, isLoading: isLoadingReferrals } = useQuery<ReferralStats>({
     queryKey: ["/api/referrals/stats"],
-    refetchInterval: 15000,
-    enabled: userRole === "organizer" // Only fetch referral stats when user is an organizer
+    refetchInterval: 15000
   });
 
   const generateReportMutation = useMutation({
@@ -131,85 +124,37 @@ export default function AnalyticsDashboard() {
     }
   ];
 
-  // Show locked state if user is not an organizer
-  if (userRole !== "organizer") {
-    return (
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-6">
-              <Lock className="w-10 h-10 text-muted-foreground" />
-            </div>
-            <h2 className="text-3xl lg:text-4xl font-bold tracking-tight mb-4">
-              Analytics Dashboard
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-xl mb-8">
-              This dashboard is exclusively available to event organizers.
-              Select "Organizer" role in Faris to access real-time analytics and insights.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                variant="default" 
-                className="gap-2"
-                onClick={() => {
-                  setUserRole("organizer");
-                }}
-                data-testid="button-select-organizer-role"
-              >
-                <BarChart3 className="w-4 h-4" />
-                Select Organizer Role
-              </Button>
-              <Button 
-                variant="outline" 
-                className="gap-2"
-                onClick={openChatbot}
-                data-testid="button-open-faris"
-              >
-                <MessageSquare className="w-4 h-4" />
-                Open Faris to Select Role
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section className="py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-12">
-          <Badge className="mb-4" variant="secondary" data-testid="badge-organizer">
-            Organizer Dashboard
-          </Badge>
-          <h2 className="text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-            Real-Time Event Intelligence
-          </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-            Comprehensive analytics and insights to make data-driven decisions for Gulfood 2026
-          </p>
-          <div className="flex gap-4 mb-8">
-            <Button 
-              variant="default" 
-              className="gap-2"
-              onClick={() => generateReportMutation.mutate()}
-              disabled={generateReportMutation.isPending}
-              data-testid="button-download-report"
-            >
-              <Download className="w-4 h-4" />
-              {generateReportMutation.isPending ? "Generating..." : "Download Analytics Report"}
-            </Button>
-          </div>
-          <div className="rounded-xl overflow-hidden shadow-lg mb-8">
-            <img 
-              src={analyticsImage} 
-              alt="Advanced analytics dashboard visualization" 
-              className="w-full h-64 object-cover"
-            />
-          </div>
+    <div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold tracking-tight mb-2">
+          Real-Time Event Intelligence
+        </h2>
+        <p className="text-muted-foreground mb-6">
+          Comprehensive analytics and insights to make data-driven decisions for Gulfood 2026
+        </p>
+        <div className="flex gap-4 mb-6">
+          <Button 
+            variant="default" 
+            className="gap-2"
+            onClick={() => generateReportMutation.mutate()}
+            disabled={generateReportMutation.isPending}
+            data-testid="button-download-report"
+          >
+            <Download className="w-4 h-4" />
+            {generateReportMutation.isPending ? "Generating..." : "Download Analytics Report"}
+          </Button>
         </div>
+        <div className="rounded-xl overflow-hidden shadow-lg mb-8">
+          <img 
+            src={analyticsImage} 
+            alt="Advanced analytics dashboard visualization" 
+            className="w-full h-64 object-cover"
+          />
+        </div>
+      </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, idx) => {
             const Icon = stat.icon;
             return (
@@ -244,9 +189,9 @@ export default function AnalyticsDashboard() {
               </Card>
             );
           })}
-        </div>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-6">
             <h3 className="text-xl font-bold mb-6">Sector Engagement</h3>
             {isLoading ? (
@@ -356,9 +301,9 @@ export default function AnalyticsDashboard() {
               </div>
             )}
           </Card>
-        </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
@@ -444,9 +389,8 @@ export default function AnalyticsDashboard() {
             )}
           </Card>
 
-          <EmbeddableWidgetGenerator />
-        </div>
+        <EmbeddableWidgetGenerator />
       </div>
-    </section>
+    </div>
   );
 }

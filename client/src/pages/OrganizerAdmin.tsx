@@ -13,8 +13,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users, Share2, TrendingUp, MousePointerClick, ArrowUp, ArrowDown } from "lucide-react";
+import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users, Share2, TrendingUp, MousePointerClick, ArrowUp, ArrowDown, BarChart3 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from "recharts";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 
 export default function OrganizerAdmin() {
   const [, setLocation] = useLocation();
@@ -58,7 +59,11 @@ export default function OrganizerAdmin() {
         </div>
 
         <Tabs defaultValue="announcements" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="analytics" data-testid="tab-analytics">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Analytics
+            </TabsTrigger>
             <TabsTrigger value="announcements" data-testid="tab-announcements">
               <Bell className="w-4 h-4 mr-2" />
               Announcements
@@ -76,6 +81,10 @@ export default function OrganizerAdmin() {
               Referrals
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics">
+            <AnalyticsDashboard />
+          </TabsContent>
 
           <TabsContent value="announcements">
             <AnnouncementsManager />
