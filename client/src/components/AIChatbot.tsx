@@ -2310,57 +2310,78 @@ export default function AIChatbot() {
                         .filter((exhibitor: any) => 
                           selectedCategory === "all" || exhibitor.sector === selectedCategory
                         )
-                        .map((exhibitor: any) => (
-                        <Card key={exhibitor.id} className="p-4 hover-elevate" data-testid={`exhibitor-card-${exhibitor.id}`}>
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <h5 className="font-medium text-foreground">{exhibitor.companyName}</h5>
-                                {exhibitor.sector && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">{exhibitor.sector}</p>
+                        .sort((a: any, b: any) => {
+                          const aIsPreferred = journeyPlan.preferredExhibitorIds?.includes(a.id) || false;
+                          const bIsPreferred = journeyPlan.preferredExhibitorIds?.includes(b.id) || false;
+                          if (aIsPreferred && !bIsPreferred) return -1;
+                          if (!aIsPreferred && bIsPreferred) return 1;
+                          return b.relevancePercentage - a.relevancePercentage;
+                        })
+                        .map((exhibitor: any) => {
+                          const isPreferred = journeyPlan.preferredExhibitorIds?.includes(exhibitor.id) || false;
+                          return (
+                            <Card 
+                              key={exhibitor.id} 
+                              className={`p-4 hover-elevate ${isPreferred ? 'border-2 border-primary/40' : ''}`}
+                              data-testid={`exhibitor-card-${exhibitor.id}`}
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <h5 className="font-medium text-foreground">{exhibitor.companyName}</h5>
+                                      {isPreferred && (
+                                        <Badge variant="default" className="text-xs shrink-0">
+                                          Your Selection
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {exhibitor.sector && (
+                                      <p className="text-xs text-muted-foreground mt-0.5">{exhibitor.sector}</p>
+                                    )}
+                                  </div>
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={`shrink-0 ${
+                                      exhibitor.relevancePercentage >= 80 ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
+                                      exhibitor.relevancePercentage >= 60 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400' :
+                                      ''
+                                    }`}
+                                    data-testid={`exhibitor-match-${exhibitor.id}`}
+                                  >
+                                    {exhibitor.relevancePercentage}% match
+                                  </Badge>
+                                </div>
+                                
+                                {exhibitor.personalizedReason && (
+                                  <div className="p-3 bg-primary/5 border border-primary/10 rounded-md">
+                                    <p className="text-sm font-medium text-primary mb-1">Why this matters to you:</p>
+                                    <p className="text-sm text-foreground leading-relaxed">{exhibitor.personalizedReason}</p>
+                                  </div>
                                 )}
+                                
+                                {exhibitor.description && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2">{exhibitor.description}</p>
+                                )}
+                                
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                  {exhibitor.country && (
+                                    <span className="flex items-center gap-1">
+                                      <Globe className="w-3 h-3" />
+                                      {exhibitor.country}
+                                    </span>
+                                  )}
+                                  {exhibitor.boothNumber && (
+                                    <span className="flex items-center gap-1">
+                                      <Building2 className="w-3 h-3" />
+                                      Booth {exhibitor.boothNumber}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <Badge 
-                                variant="secondary" 
-                                className={`shrink-0 ${
-                                  exhibitor.relevancePercentage >= 80 ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
-                                  exhibitor.relevancePercentage >= 60 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400' :
-                                  ''
-                                }`}
-                                data-testid={`exhibitor-match-${exhibitor.id}`}
-                              >
-                                {exhibitor.relevancePercentage}% match
-                              </Badge>
-                            </div>
-                            
-                            {exhibitor.personalizedReason && (
-                              <div className="p-3 bg-primary/5 border border-primary/10 rounded-md">
-                                <p className="text-sm font-medium text-primary mb-1">Why this matters to you:</p>
-                                <p className="text-sm text-foreground leading-relaxed">{exhibitor.personalizedReason}</p>
-                              </div>
-                            )}
-                            
-                            {exhibitor.description && (
-                              <p className="text-sm text-muted-foreground line-clamp-2">{exhibitor.description}</p>
-                            )}
-                            
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                              {exhibitor.country && (
-                                <span className="flex items-center gap-1">
-                                  <Globe className="w-3 h-3" />
-                                  {exhibitor.country}
-                                </span>
-                              )}
-                              {exhibitor.boothNumber && (
-                                <span className="flex items-center gap-1">
-                                  <Building2 className="w-3 h-3" />
-                                  Booth {exhibitor.boothNumber}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </Card>
-                      ))}
+                            </Card>
+                          );
+                        })}
                     </div>
                   </div>
                 )}

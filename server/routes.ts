@@ -1847,22 +1847,49 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
       const exhibitors = await storage.getExhibitors();
       const matchedExhibitors = exhibitors.filter(e => matchedExhibitorIds.includes(e.id));
       
+      // Create a map of exhibitor ID to relevance score from journey plan
+      const relevanceScoreMap = new Map<number, number>();
+      if (planData.matchedExhibitors && Array.isArray(planData.matchedExhibitors)) {
+        planData.matchedExhibitors.forEach((exhibitor: any) => {
+          if (exhibitor.id && typeof exhibitor.relevancePercentage === 'number') {
+            relevanceScoreMap.set(exhibitor.id, exhibitor.relevancePercentage);
+          }
+        });
+      }
+      
+      // Attach relevance scores to matched exhibitors
+      const matchedExhibitorsWithScores = matchedExhibitors.map(exhibitor => ({
+        ...exhibitor,
+        relevancePercentage: relevanceScoreMap.get(exhibitor.id) ?? 70
+      }));
+      
       // Get scheduled sessions
       const allSessions = await storage.getScheduledSessions(undefined, true, true);
       const matchedSessions = allSessions.filter(s => matchedSessionIds.includes(s.id));
 
-      if (matchedExhibitors.length === 0) {
+      if (matchedExhibitorsWithScores.length === 0) {
         return res.status(400).json({ 
           error: "No exhibitors matched in journey plan. Please generate a journey plan first." 
         });
       }
 
       console.log(`Generating itinerary for ${name} (${organization})`);
-      console.log(`Matched exhibitors: ${matchedExhibitors.length}`);
+      console.log(`Matched exhibitors: ${matchedExhibitorsWithScores.length}`);
       console.log(`Matched sessions: ${matchedSessions.length}`);
       console.log(`Number of days: ${numberOfDays}`);
       console.log(`Specific dates: ${specificDates.length > 0 ? specificDates.join(', ') : 'Using default dates'}`);
       console.log(`Preferred exhibitors: ${preferredExhibitorIds.length > 0 ? preferredExhibitorIds.join(', ') : 'None'}`);
+      
+      // Log relevance scores for debugging
+      if (relevanceScoreMap.size > 0) {
+        console.log(`📊 Relevance scores attached to ${relevanceScoreMap.size} exhibitors`);
+        const preferredScores = preferredExhibitorIds
+          .map((id: number) => relevanceScoreMap.get(id))
+          .filter((score: number | undefined): score is number => score !== undefined);
+        if (preferredScores.length > 0) {
+          console.log(`⭐ Preferred exhibitor scores: ${preferredScores.join(', ')}`);
+        }
+      }
 
       // Generate itinerary using AI
       const itineraryData = await generateItineraryWithAI({
@@ -1871,7 +1898,7 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         role,
         interestCategories,
         attendanceIntents,
-        matchedExhibitors,
+        matchedExhibitors: matchedExhibitorsWithScores,
         matchedSessions,
         numberOfDays,
         specificDates,
@@ -2476,9 +2503,10 @@ async function generateItineraryWithAI(data: {
   generatedAt: string;
 }> {
   try {
-    // Prepare exhibitor list with hall and stand information
+    // Prepare exhibitor list with hall and stand information including relevance scores
     const exhibitorsList = data.matchedExhibitors.map((ex, idx) => {
-      return `${idx + 1}. ${ex.name} - Hall: ${ex.hall || 'TBA'}, Stand: ${ex.stand || 'TBA'} (Relevance: ${ex.relevanceScore || 70}%)
+      const relevance = typeof ex.relevancePercentage === 'number' ? ex.relevancePercentage : 70;
+      return `${idx + 1}. ${ex.name} (ID: ${ex.id}) - Hall: ${ex.hall || 'TBA'}, Stand: ${ex.stand || 'TBA'} (Relevance: ${relevance}%)
    Sector: ${ex.sector}
    Description: ${ex.description?.substring(0, 150) || 'Premium food & beverage exhibitor'}`;
     }).join('\n');
@@ -2611,7 +2639,7 @@ Return a JSON object with this exact structure:
           "exhibitorId": 123,
           "exhibitorName": "[Company Name]",
           "description": "Explore their dairy product innovations",
-          "relevanceScore": 85
+          "matchScore": 85
         },
         {
           "id": "act_1_2",
@@ -2636,6 +2664,7 @@ IMPORTANT:
 - If an exhibitor has no hall/stand info, use "TBA" and place in a logical day
 - Distribute exhibitors evenly across all ${data.numberOfDays} day${data.numberOfDays > 1 ? 's' : ''}
 - Prioritize relevance scores when ordering daily activities
+- For each exhibitor_visit activity, use the exhibitor's Relevance percentage from the list above as the matchScore field
 - Use these exact dates for the itinerary: ${itineraryDates.join(', ')}
 
 Return ONLY valid JSON matching the structure above.`;
@@ -2729,7 +2758,7 @@ Return ONLY valid JSON matching the structure above.`;
                 exhibitorId: exhibitor.id,
                 exhibitorName: exhibitor.name,
                 description: `Priority visit to ${exhibitor.name}`,
-                relevanceScore: exhibitor.relevanceScore || 90
+                matchScore: typeof exhibitor.relevancePercentage === 'number' ? exhibitor.relevancePercentage : 90
               });
             }
           }
