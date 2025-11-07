@@ -2755,6 +2755,7 @@ export default function AIChatbot() {
                     mode="multiple"
                     selected={tempSpecificDates}
                     onSelect={(dates) => setTempSpecificDates(dates || [])}
+                    defaultMonth={new Date(2026, 0)}
                     disabled={(date) => {
                       const eventStart = new Date('2026-01-26');
                       const eventEnd = new Date('2026-01-30');
@@ -2788,7 +2789,7 @@ export default function AIChatbot() {
               <div>
                 <Label className="text-sm font-semibold">Interested in Specific Exhibitors? (Optional)</Label>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Search and select exhibitors you definitely want to visit
+                  Search and select up to 5 exhibitors you definitely want to visit
                 </p>
               </div>
               
@@ -2803,7 +2804,7 @@ export default function AIChatbot() {
                   >
                     <Building2 className="mr-2 h-4 w-4" />
                     {tempPreferredExhibitorIds.length > 0
-                      ? `${tempPreferredExhibitorIds.length} exhibitor${tempPreferredExhibitorIds.length > 1 ? 's' : ''} selected`
+                      ? `${tempPreferredExhibitorIds.length}/5 exhibitors selected`
                       : "Search exhibitors..."}
                   </Button>
                 </PopoverTrigger>
@@ -2822,33 +2823,49 @@ export default function AIChatbot() {
                           (exhibitor.sector?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase()) ||
                           (exhibitor.boothNumber?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase())
                         )
-                        .map((exhibitor: any) => (
-                          <CommandItem
-                            key={exhibitor.id}
-                            onSelect={() => {
-                              setTempPreferredExhibitorIds(prev =>
-                                prev.includes(exhibitor.id)
-                                  ? prev.filter(id => id !== exhibitor.id)
-                                  : [...prev, exhibitor.id]
-                              );
-                            }}
-                            data-testid={`exhibitor-option-${exhibitor.id}`}
-                          >
-                            <div className="flex items-center gap-2 flex-1">
-                              <Checkbox
-                                checked={tempPreferredExhibitorIds.includes(exhibitor.id)}
-                                className="pointer-events-none"
-                              />
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">{exhibitor.companyName}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {exhibitor.sector}
-                                  {exhibitor.boothNumber && ` • Booth: ${exhibitor.boothNumber}`}
+                        .map((exhibitor: any) => {
+                          const isSelected = tempPreferredExhibitorIds.includes(exhibitor.id);
+                          const isLimitReached = tempPreferredExhibitorIds.length >= 5 && !isSelected;
+                          
+                          return (
+                            <CommandItem
+                              key={exhibitor.id}
+                              onSelect={() => {
+                                setTempPreferredExhibitorIds(prev => {
+                                  if (prev.includes(exhibitor.id)) {
+                                    return prev.filter(id => id !== exhibitor.id);
+                                  } else if (prev.length < 5) {
+                                    return [...prev, exhibitor.id];
+                                  } else {
+                                    toast({
+                                      title: "Selection Limit Reached",
+                                      description: "You can select up to 5 exhibitors. Remove one to add another.",
+                                      variant: "destructive"
+                                    });
+                                    return prev;
+                                  }
+                                });
+                              }}
+                              disabled={isLimitReached}
+                              className={isLimitReached ? "opacity-50 cursor-not-allowed" : ""}
+                              data-testid={`exhibitor-option-${exhibitor.id}`}
+                            >
+                              <div className="flex items-center gap-2 flex-1">
+                                <Checkbox
+                                  checked={isSelected}
+                                  className="pointer-events-none"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium text-sm">{exhibitor.companyName}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {exhibitor.sector}
+                                    {exhibitor.boothNumber && ` • Booth: ${exhibitor.boothNumber}`}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </CommandItem>
-                        ))}
+                            </CommandItem>
+                          );
+                        })}
                     </CommandGroup>
                   </Command>
                 </PopoverContent>
