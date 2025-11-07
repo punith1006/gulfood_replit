@@ -457,6 +457,42 @@ Format as valid JSON only, no markdown.`;
     }
   });
 
+  app.post("/api/referrals/generate-code", async (req, res) => {
+    try {
+      const validationSchema = z.object({
+        sessionId: z.string().min(1, "Session ID is required"),
+        name: z.string().optional(),
+        email: z.string().email().optional().or(z.literal(""))
+      });
+
+      const { sessionId, name, email } = validationSchema.parse(req.body);
+
+      const timestamp = Date.now().toString(36);
+      const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const referralCode = `GF2026-${timestamp}-${randomStr}`;
+      
+      const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+        ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+        : req.protocol + '://' + req.get('host');
+      
+      const referralUrl = `${baseUrl}?ref=${referralCode}`;
+      
+      res.json({ 
+        success: true, 
+        referralCode,
+        referralUrl,
+        name,
+        email
+      });
+    } catch (error) {
+      console.error("Error generating referral code:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid request data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to generate referral code" });
+    }
+  });
+
   app.patch("/api/meetings/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

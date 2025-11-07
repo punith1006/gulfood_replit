@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import farisAvatar from "@assets/generated_images/Circular_bot_head_portrait_241be4f6.png";
 import ReferralWidget from "@/components/ReferralWidget";
 import RegistrationShareWidget from "@/components/RegistrationShareWidget";
+import ReferralShareCard from "@/components/ReferralShareCard";
 import { sessionManager } from "@/lib/sessionManager";
 import { GULFOOD_CATEGORIES } from "@shared/schema";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -2296,18 +2297,13 @@ export default function AIChatbot() {
 
       {/* Referral Tab Content */}
       {mainTab === "referral" && (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4 max-w-md">
-            <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-              <UserPlus className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">Referral Program</h3>
-            <p className="text-sm text-muted-foreground">
-              Share Gulfood 2026 with your network and earn rewards. Track your referrals and see their impact.
-            </p>
-            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
-          </div>
-        </div>
+        <ScrollArea className="flex-1 p-6">
+          <ReferralShareCard 
+            sessionId={sessionId}
+            name={leadForm.name || undefined}
+            email={leadForm.email || undefined}
+          />
+        </ScrollArea>
       )}
 
       {/* Radar Tab Content */}
