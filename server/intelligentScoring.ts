@@ -407,8 +407,84 @@ Return format: {"relevanceScore": 65, "scoreJustification": "...", "keyTakeaways
 /**
  * Calculate match scores for exhibitors based on user profile
  * More nuanced than simple keyword matching
+ * Processes exhibitors in batches of 10 to avoid token limits
  */
 export async function calculateExhibitorMatchScores(params: {
+  exhibitors: Exhibitor[];
+  organization: string;
+  role: string;
+  interestCategories: string[];
+  attendanceIntents: string[];
+  preferredExhibitorIds?: number[];
+  organizationEnrichment?: OrganizationEnrichment;
+}): Promise<ExhibitorMatchScore[]> {
+  if (!openai) {
+    throw new Error('OpenAI client not initialized');
+  }
+
+  const {
+    exhibitors,
+    organization,
+    role,
+    interestCategories,
+    attendanceIntents,
+    preferredExhibitorIds = [],
+    organizationEnrichment
+  } = params;
+
+  // Process exhibitors in batches of 10 to avoid truncation
+  const BATCH_SIZE = 10;
+  const batches: Exhibitor[][] = [];
+  
+  for (let i = 0; i < exhibitors.length; i += BATCH_SIZE) {
+    batches.push(exhibitors.slice(i, i + BATCH_SIZE));
+  }
+  
+  console.log(`Processing ${exhibitors.length} exhibitors in ${batches.length} batch(es) of ${BATCH_SIZE}`);
+  
+  const allMatchScores: ExhibitorMatchScore[] = [];
+  const failedBatches: number[] = [];
+  
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
+    console.log(`Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} exhibitors)...`);
+    
+    try {
+      const batchScores = await calculateExhibitorMatchScoresBatch({
+        exhibitors: batch,
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        preferredExhibitorIds,
+        organizationEnrichment
+      });
+      
+      // Validate that we got scores for this batch
+      if (batchScores.length === 0) {
+        throw new Error(`Batch ${batchIndex + 1} returned 0 scores - this indicates a critical AI processing failure`);
+      }
+      
+      allMatchScores.push(...batchScores);
+      console.log(`✅ Batch ${batchIndex + 1} completed: ${batchScores.length} scores`);
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      console.error(`❌ Batch ${batchIndex + 1} failed: ${errorMessage}`);
+      
+      // Fail fast on all batch errors to prevent silent data loss
+      // Journey generation will fall back to keyword matching in routes.ts
+      throw new Error(`Exhibitor batch processing failed at batch ${batchIndex + 1}/${batches.length}: ${errorMessage}`);
+    }
+  }
+  
+  return allMatchScores;
+}
+
+/**
+ * Calculate match scores for a single batch of exhibitors (max 10)
+ * Internal function called by calculateExhibitorMatchScores
+ */
+async function calculateExhibitorMatchScoresBatch(params: {
   exhibitors: Exhibitor[];
   organization: string;
   role: string;
@@ -441,8 +517,8 @@ ATTENDEE ORGANIZATION:
 - Target Markets: ${organizationEnrichment.targetMarkets?.join(', ') || 'Not specified'}
 ` : `ATTENDEE ORGANIZATION: ${organization}`;
 
-  // Build exhibitor list (limit to 30 for token efficiency and reliable parsing)
-  const exhibitorsList = exhibitors.slice(0, 30).map((ex, idx) => {
+  // Build exhibitor list (max 10 per batch for reliable parsing without truncation)
+  const exhibitorsList = exhibitors.map((ex, idx) => {
     const isPreferred = preferredExhibitorIds.includes(ex.id);
     return `${idx + 1}. ${ex.name} (ID: ${ex.id})${isPreferred ? ' [USER PREFERRED]' : ''}
    Sector: ${ex.sector}
@@ -517,6 +593,15 @@ Return format: [{"exhibitorId": 1, "matchScore": 85, "matchReasoning": "...", "r
   });
 
   const content = completion.choices[0]?.message?.content;
+  const finishReason = completion.choices[0]?.finish_reason;
+  
+  // Check for truncation
+  if (finishReason === 'length') {
+    console.warn('⚠️  AI response was truncated due to max_tokens limit in batch processing.');
+    console.warn(`Batch size: ${exhibitors.length} exhibitors, Response length: ${content?.length} characters`);
+    throw new Error('Batch response truncated - reduce batch size or increase max_tokens');
+  }
+  
   if (!content) {
     throw new Error('No response from OpenAI');
   }
