@@ -507,6 +507,35 @@ export default function ExhibitorDashboard() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Journey Size Distribution */}
+              <Card data-testid="card-chart-journey-size">
+                <CardHeader>
+                  <CardTitle>Journey Plan Sizes</CardTitle>
+                  <CardDescription>How many exhibitors visitors compare together</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {analytics.journeySizeDistribution.every(item => item.count === 0) ? (
+                    <div className="text-center py-12">
+                      <Users className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+                      <p className="text-muted-foreground">No journey data yet</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Journey size data will appear as visitors create plans
+                      </p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={analytics.journeySizeDistribution}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="range" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </>
         )}
