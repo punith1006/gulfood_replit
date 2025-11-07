@@ -64,8 +64,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/exhibitor/analytics", requireExhibitorAuth, async (req: AuthRequest, res) => {
     try {
-      const { companyName } = req.exhibitor!;
-      const exhibitor = await storage.getExhibitorByCompanyName(companyName);
+      const { companyName, exhibitorId } = req.exhibitor!;
+      const exhibitor = await storage.getExhibitorByCompanyName(companyName, exhibitorId);
       
       if (!exhibitor) {
         return res.status(404).json({ error: "Exhibitor not found" });
@@ -1271,7 +1271,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         return res.status(401).json({ error: "Invalid or expired access code" });
       }
 
-      const token = generateExhibitorToken(accessCode.code, accessCode.companyName);
+      const token = generateExhibitorToken(accessCode.code, accessCode.companyName, accessCode.exhibitorId || undefined);
       
       res.json({ 
         success: true,

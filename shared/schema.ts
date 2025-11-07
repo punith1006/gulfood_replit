@@ -388,8 +388,10 @@ export const insertExhibitorAccessCodeSchema = createInsertSchema(exhibitorAcces
   id: true,
   code: true,
   createdAt: true,
+  isActive: true,
   usedAt: true
 }).extend({
+  exhibitorId: z.number().positive("Please select an exhibitor"),
   companyName: z.string().min(1, "Company name is required"),
   email: z.string().email("Invalid email address"),
   expiresAt: z.string().optional().transform(val => val && val.trim() !== '' ? new Date(val) : undefined)

@@ -8,14 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
-import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users, Share2, TrendingUp, MousePointerClick, ArrowUp, ArrowDown, BarChart3 } from "lucide-react";
+import { Bell, Calendar, Key, Plus, Edit2, Trash2, Loader2, LogOut, Users, Share2, TrendingUp, MousePointerClick, ArrowUp, ArrowDown, BarChart3, Check, ChevronsUpDown } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid, BarChart, Bar } from "recharts";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import { cn } from "@/lib/utils";
 
 export default function OrganizerAdmin() {
   const [, setLocation] = useLocation();
@@ -646,7 +649,9 @@ function SessionsManager() {
 function AccessCodesManager() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
+    exhibitorId: null as number | null,
     companyName: "",
     email: "",
     expiresAt: ""
@@ -654,6 +659,10 @@ function AccessCodesManager() {
 
   const { data: accessCodes, isLoading } = useQuery<any[]>({
     queryKey: ['/api/exhibitor/access-codes'],
+  });
+
+  const { data: exhibitors, isLoading: exhibitorsLoading } = useQuery<any[]>({
+    queryKey: ['/api/exhibitors'],
   });
 
   const createMutation = useMutation({
@@ -673,19 +682,25 @@ function AccessCodesManager() {
 
   const resetForm = () => {
     setForm({
+      exhibitorId: null,
       companyName: "",
       email: "",
       expiresAt: ""
     });
+    setOpen(false);
     setIsDialogOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.exhibitorId) {
+      toast({ title: "Error", description: "Please select an exhibitor", variant: "destructive" });
+      return;
+    }
     createMutation.mutate(form);
   };
 
-  if (isLoading) {
+  if (isLoading || exhibitorsLoading) {
     return <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>;
   }
 
@@ -708,15 +723,57 @@ function AccessCodesManager() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="company-name">Company Name *</Label>
-                <Input
-                  id="company-name"
-                  value={form.companyName}
-                  onChange={(e) => setForm(prev => ({ ...prev, companyName: e.target.value }))}
-                  required
-                  data-testid="input-code-company"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="exhibitor-select">Select Exhibitor *</Label>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full justify-between"
+                      data-testid="button-select-exhibitor"
+                    >
+                      {form.exhibitorId
+                        ? exhibitors?.find((ex) => ex.id === form.exhibitorId)?.name
+                        : "Select exhibitor..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search exhibitor..." />
+                      <CommandList>
+                        <CommandEmpty>No exhibitor found.</CommandEmpty>
+                        <CommandGroup>
+                          {exhibitors?.map((exhibitor) => (
+                            <CommandItem
+                              key={exhibitor.id}
+                              value={exhibitor.name}
+                              onSelect={() => {
+                                setForm(prev => ({
+                                  ...prev,
+                                  exhibitorId: exhibitor.id,
+                                  companyName: exhibitor.name
+                                }));
+                                setOpen(false);
+                              }}
+                              data-testid={`exhibitor-option-${exhibitor.id}`}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  form.exhibitorId === exhibitor.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {exhibitor.name} - {exhibitor.country}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
                 <Label htmlFor="code-email">Email *</Label>
@@ -726,6 +783,7 @@ function AccessCodesManager() {
                   value={form.email}
                   onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))}
                   required
+                  placeholder={form.exhibitorId ? "Enter exhibitor contact email" : "Select an exhibitor first"}
                   data-testid="input-code-email"
                 />
               </div>

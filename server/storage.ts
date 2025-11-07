@@ -53,7 +53,7 @@ import {
 export interface IStorage {
   getExhibitors(search?: string, sector?: string, country?: string): Promise<Exhibitor[]>;
   getExhibitor(id: number): Promise<Exhibitor | undefined>;
-  getExhibitorByCompanyName(companyName: string): Promise<Exhibitor | undefined>;
+  getExhibitorByCompanyName(companyName: string, exhibitorId?: number): Promise<Exhibitor | undefined>;
   createExhibitor(exhibitor: InsertExhibitor): Promise<Exhibitor>;
   getExhibitorAnalytics(exhibitorId: number): Promise<ExhibitorAnalytics>;
   
@@ -187,7 +187,15 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async getExhibitorByCompanyName(companyName: string): Promise<Exhibitor | undefined> {
+  async getExhibitorByCompanyName(companyName: string, exhibitorId?: number): Promise<Exhibitor | undefined> {
+    if (exhibitorId) {
+      const result = await db
+        .select()
+        .from(exhibitors)
+        .where(eq(exhibitors.id, exhibitorId))
+        .limit(1);
+      return result[0];
+    }
     const result = await db
       .select()
       .from(exhibitors)

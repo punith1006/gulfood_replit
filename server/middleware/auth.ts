@@ -14,6 +14,7 @@ export interface AuthRequest extends Request {
   exhibitor?: {
     code: string;
     companyName: string;
+    exhibitorId?: number;
   };
 }
 
@@ -25,9 +26,9 @@ export function generateOrganizerToken(email: string, role: string): string {
   );
 }
 
-export function generateExhibitorToken(code: string, companyName: string): string {
+export function generateExhibitorToken(code: string, companyName: string, exhibitorId?: number): string {
   return jwt.sign(
-    { code, companyName, type: "exhibitor" },
+    { code, companyName, exhibitorId, type: "exhibitor" },
     JWT_SECRET,
     { expiresIn: "30d" }
   );
@@ -76,7 +77,8 @@ export function requireExhibitorAuth(req: AuthRequest, res: Response, next: Next
     req.exhibitorCode = decoded.code;
     req.exhibitor = {
       code: decoded.code,
-      companyName: decoded.companyName
+      companyName: decoded.companyName,
+      exhibitorId: decoded.exhibitorId
     };
     next();
   } catch (error) {
