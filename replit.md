@@ -4,7 +4,12 @@
 The Gulfood 2026 AI Event Assistant is a web application designed to enhance the experience for visitors, exhibitors, and event organizers at the Gulfood 2026 trade show. It offers AI-powered company analysis, intelligent exhibitor matching, meeting scheduling, and real-time event analytics. The platform is freely accessible without registration, aiming to maximize engagement by providing immediate access to its features, including an AI chatbot named "Faris." The application supports three user groups: Visitors, Exhibitors, and Event Organizers, with role-based access to specialized functionalities like the Analytics Dashboard.
 
 ## Recent Updates (November 2025)
-- **Appointment Booking System with Email Confirmations (LATEST)**: Fully functional consultation scheduling with automated email notifications
+- **Analytics Dashboard Relocation (LATEST)**: Moved analytics dashboard from public home page to organizer-only admin panel
+  - **Removed Public Access**: Analytics no longer accessible via `/analytics` route or navigation tabs
+  - **Organizer-Only Access**: Dashboard now integrated as first tab in `/organizer/admin` panel (requires authentication)
+  - **Simplified Component**: Removed role-based access controls from AnalyticsDashboard component since auth is enforced at page level
+  - **Cleaner Navigation**: Removed Analytics tab from main navigation header (both desktop and mobile)
+- **Appointment Booking System with Email Confirmations**: Fully functional consultation scheduling with automated email notifications
   - **Two-Step Wizard**: Step 1 for date/time selection, Step 2 for contact details with form validation
   - **Google Calendar Integration**: Appointments created in sales team calendar with auto-generated Google Meet links
   - **Email Confirmations**: Professional branded emails sent via Resend with meeting details and calendar attachment
@@ -58,7 +63,7 @@ The Gulfood 2026 AI Event Assistant is a web application designed to enhance the
 - **Announcements System**: Organizers can create, edit, and delete announcements with priority levels (normal, high, urgent) and target audiences (All, Visitor, Exhibitor, Organizer)
 - **Sessions Management**: Organizers can schedule, update, and manage sessions with date/time/location details and target audience settings
 - **Exhibitor Access Codes**: Organizers can generate unique access codes for exhibitors sent via email with optional expiration dates
-- **Organizer Admin Panel**: Comprehensive admin interface at `/organizer/admin` with tabs for managing announcements, sessions, and access codes
+- **Organizer Admin Panel**: Comprehensive admin interface at `/organizer/admin` with 5 tabs: Analytics (event metrics), Announcements, Sessions, Access Codes, and Referrals
 - **Protected Routes**: Backend API routes protected with JWT middleware ensuring only authenticated organizers can perform administrative actions
 - **Authentication Pages**: Created `/organizer/login` for organizer authentication and `/exhibitor/verify` for exhibitor code verification
 

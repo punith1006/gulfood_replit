@@ -11,7 +11,6 @@ export default function Navigation() {
     { label: "Home", path: "/" },
     { label: "Visitors", path: "/visitors" },
     { label: "Exhibitors", path: "/exhibitors" },
-    { label: "Analytics", path: "/analytics" },
   ];
 
   return (
