@@ -832,14 +832,6 @@ function ReferralsAnalytics() {
     queryKey: ["/api/referrals"],
   });
 
-  if (statsLoading || referralsLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const platformStats = stats?.platformBreakdown || [];
   const totalClicks = stats?.totalClicks || 0;
   const totalConversions = stats?.totalConversions || 0;
@@ -895,6 +887,14 @@ function ReferralsAnalytics() {
     }
     return data;
   }, [totalClicks, totalConversions]);
+
+  if (statsLoading || referralsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
