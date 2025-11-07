@@ -73,27 +73,33 @@ export default function EmbeddableWidgetGenerator() {
   }
 
   widget.innerHTML = \`
-    <div style="padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff; font-family: system-ui, -apple-system, sans-serif;">
-      <div style="display: flex; gap: 16px; align-items: start;">
-        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #ea580c, #f59e0b); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          <span style="color: white; font-size: 24px;">↗</span>
-        </div>
-        <div style="flex: 1;">
-          <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #111827;">Help Gulfood 2026 Grow!</h3>
-          <p style="margin: 0 0 16px 0; font-size: 14px; color: #6b7280;">Share Gulfood 2026 with your network and help grow our community.</p>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            \${platforms.map(p => \`
-              <button 
-                onclick="window.gulfoodShare('\${p.name}')" 
-                style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: \${p.color}; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: transform 0.2s;"
-                onmouseover="this.style.transform='scale(1.05)'" 
-                onmouseout="this.style.transform='scale(1)'"
-              >
-                <span>\${p.icon}</span> \${p.label}
-              </button>
-            \`).join('')}
-          </div>
-        </div>
+    <div style="max-width: 600px; margin: 0 auto; border: 2px solid rgba(255, 193, 7, 0.2); border-radius: 12px; overflow: hidden; background: #ffffff; font-family: system-ui, -apple-system, sans-serif;">
+      <div style="text-align: center; padding: 16px 16px 8px;">
+        <h2 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #111827;">
+          Join me at Gulfood 2026 and be part of this exciting event by registering today
+        </h2>
+      </div>
+      
+      <div style="position: relative; width: 100%; aspect-ratio: 16 / 9;">
+        <img 
+          src="\${baseUrl}/gulfood-2026-share.png" 
+          alt="Gulfood 2026 - January 26-30, 2026 in Dubai"
+          style="width: 100%; height: 100%; object-fit: cover; display: block;"
+        />
+      </div>
+      
+      <div style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 20px; background: linear-gradient(to bottom right, #f9fafb, #f3f4f6); border-top: 1px solid #e5e7eb;">
+        \${platforms.map(p => \`
+          <button 
+            onclick="window.gulfoodShare('\${p.name}')" 
+            style="width: 48px; height: 48px; background: \${p.color}; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 20px; font-weight: 600; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;"
+            onmouseover="this.style.transform='scale(1.1)'" 
+            onmouseout="this.style.transform='scale(1)'"
+            title="Share on \${p.label}"
+          >
+            \${p.icon}
+          </button>
+        \`).join('')}
       </div>
     </div>
   \`;
@@ -165,25 +171,40 @@ export default function EmbeddableWidgetGenerator() {
 
       <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
         <h4 className="text-sm font-semibold mb-2">Preview:</h4>
-        <div className="bg-white p-6 rounded-lg border border-border">
-          <div className="flex gap-4 items-start">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-2xl">↗</span>
+        <div className="max-w-xl mx-auto">
+          <Card className="overflow-hidden border-2 border-[#FFC107]/20">
+            <div className="text-center p-4 pb-2">
+              <h2 className="text-base font-bold text-foreground">
+                Join me at Gulfood 2026 and be part of this exciting event by registering today
+              </h2>
             </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold mb-1">Help Gulfood 2026 Grow!</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Share Gulfood 2026 with your network and help grow our community.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Badge className="bg-[#0077B5] text-white hover:bg-[#006399]">LinkedIn</Badge>
-                <Badge className="bg-[#1877F2] text-white hover:bg-[#0d6efd]">Facebook</Badge>
-                <Badge className="bg-black text-white hover:bg-gray-800">X</Badge>
-                <Badge className="bg-[#25D366] text-white hover:bg-[#20BD5A]">WhatsApp</Badge>
-                <Badge className="bg-gray-600 text-white hover:bg-gray-700">Email</Badge>
+            
+            <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+              <img 
+                src="/gulfood-2026-share.png" 
+                alt="Gulfood 2026 - January 26-30, 2026 in Dubai"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            <div className="flex items-center justify-center gap-3 py-5 bg-gradient-to-br from-background to-muted/30 border-t border-border">
+              <div className="w-12 h-12 rounded-full bg-[#0077B5] flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-semibold">in</span>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#1877F2] flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-semibold">f</span>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-semibold">X</span>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-semibold">W</span>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-gray-600 flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-semibold">@</span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
