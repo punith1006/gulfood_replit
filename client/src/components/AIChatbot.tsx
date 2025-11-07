@@ -827,6 +827,7 @@ export default function AIChatbot() {
           name: "",
           email: "",
           company: "",
+          companyWebsite: "",
           role: "",
           category: "",
           message: ""
@@ -1827,7 +1828,10 @@ export default function AIChatbot() {
                       role: journeyFormData.role,
                       interestCategories: journeyFormData.interestCategories,
                       attendanceIntents: finalIntents,
-                      sessionId: sessionManager.getOrCreateSessionId()
+                      sessionId: sessionManager.getOrCreateSessionId(),
+                      numberOfDays: journeyFormData.numberOfDays,
+                      specificDates: journeyFormData.specificDates,
+                      preferredExhibitorIds: journeyFormData.preferredExhibitorIds
                     };
                     
                     console.log('🚀 Generating journey with data:', submissionData);
@@ -1854,7 +1858,10 @@ export default function AIChatbot() {
                         organization: journeyFormData.organization,
                         role: journeyFormData.role,
                         interestCategories: journeyFormData.interestCategories,
-                        attendanceIntents: finalIntents
+                        attendanceIntents: finalIntents,
+                        numberOfDays: journeyFormData.numberOfDays,
+                        specificDates: journeyFormData.specificDates,
+                        preferredExhibitorIds: journeyFormData.preferredExhibitorIds
                       }
                     };
                     
@@ -2144,9 +2151,12 @@ export default function AIChatbot() {
                         setJourneyFormData({
                           organization: '',
                           role: '',
+                          numberOfDays: 5,
                           interestCategories: [],
                           attendanceIntents: [],
-                          otherIntent: ''
+                          otherIntent: '',
+                          specificDates: [],
+                          preferredExhibitorIds: []
                         });
                       }}
                       data-testid="button-create-new-journey"
@@ -2659,7 +2669,7 @@ export default function AIChatbot() {
               variant="outline"
               onClick={() => {
                 setShowLeadCapture(false);
-                setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
+                setLeadForm({ name: "", email: "", company: "", companyWebsite: "", role: "", category: "", message: "" });
               }}
               className="flex-1"
               data-testid="button-cancel-lead"
