@@ -263,7 +263,7 @@ export default function ExhibitorDashboard() {
               </Card>
 
               {/* Visitor Intents */}
-              <Card data-testid="card-chart-intents">
+              <Card data-testid="card-list-intents">
                 <CardHeader>
                   <CardTitle>Visitor Intents</CardTitle>
                   <CardDescription>What visitors are looking for</CardDescription>
@@ -278,15 +278,30 @@ export default function ExhibitorDashboard() {
                       </p>
                     </div>
                   ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={analytics.visitorIntents} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis type="number" />
-                        <YAxis dataKey="intent" type="category" width={150} />
-                        <Tooltip />
-                        <Bar dataKey="count" fill="#10b981" radius={[0, 8, 8, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    <div className="space-y-3">
+                      {analytics.visitorIntents.map((intent, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-green-50 to-transparent dark:from-green-950/20 hover-elevate"
+                          data-testid={`list-item-intent-${index}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="font-semibold">{intent.intent}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {intent.count} {intent.count === 1 ? 'visitor' : 'visitors'}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="secondary" data-testid={`badge-intent-${index}`}>
+                            {intent.count}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -365,7 +380,7 @@ export default function ExhibitorDashboard() {
               </Card>
 
               {/* Co-Searched Exhibitors */}
-              <Card data-testid="card-list-cosearched">
+              <Card data-testid="card-chart-cosearched">
                 <CardHeader>
                   <CardTitle>Co-Searched Exhibitors</CardTitle>
                   <CardDescription>Exhibitors searched alongside your company</CardDescription>
@@ -380,30 +395,21 @@ export default function ExhibitorDashboard() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {analytics.coSearchedExhibitors.map((exhibitor, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-orange-50 to-transparent dark:from-orange-950/20 hover-elevate"
-                          data-testid={`list-item-cosearched-${index}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center font-bold">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-semibold">{exhibitor.exhibitorName}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Co-searched {exhibitor.coSearches} {exhibitor.coSearches === 1 ? 'time' : 'times'}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge variant="secondary" data-testid={`badge-cosearches-${index}`}>
-                            {exhibitor.coSearches}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart 
+                        data={analytics.coSearchedExhibitors.map(ex => ({
+                          name: ex.exhibitorName,
+                          coSearches: ex.coSearches
+                        }))} 
+                        layout="vertical"
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" width={150} />
+                        <Tooltip />
+                        <Bar dataKey="coSearches" fill="#f97316" radius={[0, 8, 8, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   )}
                 </CardContent>
               </Card>
