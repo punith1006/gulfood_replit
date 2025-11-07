@@ -2819,9 +2819,9 @@ export default function AIChatbot() {
                     <CommandGroup className="max-h-64 overflow-auto">
                       {exhibitors
                         ?.filter(exhibitor => 
-                          (exhibitor.companyName?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase()) ||
+                          (exhibitor.name?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase()) ||
                           (exhibitor.sector?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase()) ||
-                          (exhibitor.boothNumber?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase())
+                          (exhibitor.booth?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase())
                         )
                         .map((exhibitor: any) => {
                           const isSelected = tempPreferredExhibitorIds.includes(exhibitor.id);
@@ -2856,10 +2856,10 @@ export default function AIChatbot() {
                                   className="pointer-events-none"
                                 />
                                 <div className="flex-1">
-                                  <div className="font-medium text-sm">{exhibitor.companyName}</div>
+                                  <div className="font-medium text-sm">{exhibitor.name}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {exhibitor.sector}
-                                    {exhibitor.boothNumber && ` • Booth: ${exhibitor.boothNumber}`}
+                                    {exhibitor.booth && ` • Booth: ${exhibitor.booth}`}
                                   </div>
                                 </div>
                               </div>
@@ -2877,7 +2877,7 @@ export default function AIChatbot() {
                     const exhibitor = exhibitors?.find(e => e.id === exhibitorId);
                     return exhibitor ? (
                       <Badge key={exhibitorId} variant="secondary" className="gap-1">
-                        {exhibitor.companyName}
+                        {exhibitor.name}
                         <button
                           type="button"
                           onClick={() => setTempPreferredExhibitorIds(prev => prev.filter(id => id !== exhibitorId))}
