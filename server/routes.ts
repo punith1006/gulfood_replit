@@ -1446,9 +1446,18 @@ Create a high-quality, personalized journey report with:
    - matchScore (0-100): How well this specific exhibitor matches the visitor's needs
    - personalizedReason: ONE sentence explaining "WHY this exhibitor matters specifically to ${role} at ${organization}"
    
-   IMPORTANT: Make the personalizedReason hyper-specific. Not generic.
-   Bad: "They offer dairy products"
-   Good: "Their advanced pasteurization technology can help ${organization} improve production efficiency and product quality"
+   CRITICAL RULES for personalizedReason:
+   - ALWAYS refer to the exhibitor by their COMPANY NAME (from the exhibitor list above), NEVER by their website URL
+   - Make it hyper-specific to the visitor's role and organization
+   - Focus on specific products, technologies, or capabilities that benefit the visitor
+   
+   Bad examples:
+   - "They offer dairy products" (too generic)
+   - "www.almarai.com offers quality products" (uses website URL instead of company name)
+   
+   Good examples:
+   - "Almarai's advanced pasteurization technology can help ${organization} improve production efficiency"
+   - "Nestlé's sustainable packaging solutions align with ${organization}'s environmental goals"
 
 Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
 {
