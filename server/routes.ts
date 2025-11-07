@@ -852,6 +852,40 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           eventDates: "January 26-30, 2026",
           pdfData: null
         }));
+      } else if (reportType === "itinerary") {
+        // Handle itinerary PDF generation
+        const { itinerary } = req.body;
+        
+        if (!itinerary || !itinerary.days) {
+          return res.status(400).json({ error: "Itinerary data with days is required" });
+        }
+
+        const pdfInputData = {
+          itinerary: {
+            days: itinerary.days,
+            role: itinerary.role || 'Visitor',
+            totalExhibitors: itinerary.totalExhibitors || 0,
+            totalSessions: itinerary.totalSessions || 0
+          },
+          name: name || 'Guest',
+          email: email || 'guest@gulfood2026.com',
+          organization: organization || 'Guest Organization',
+          generatedAt: new Date().toISOString()
+        };
+
+        const { generateItineraryPDF } = await import('./pdfGenerator.js');
+        pdfBuffer = await generateItineraryPDF(pdfInputData);
+
+        reportData = {
+          itinerary: pdfInputData.itinerary,
+          name: pdfInputData.name,
+          email: pdfInputData.email,
+          organization: pdfInputData.organization,
+          generatedAt: pdfInputData.generatedAt,
+          eventName: "Gulfood 2026",
+          eventDates: "January 26-30, 2026",
+          pdfData: null
+        };
       } else if (reportType === "journey" && userRole === "Visitor") {
         if (!sessionId) {
           return res.status(400).json({ error: "Session ID is required for visitor reports" });

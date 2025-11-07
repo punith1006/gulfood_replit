@@ -1095,3 +1095,265 @@ export async function generateVisitorJourneyPDF(reportData: {
     pdfDoc.end();
   });
 }
+
+export async function generateItineraryPDF(reportData: {
+  itinerary: any;
+  name: string;
+  email: string;
+  organization: string;
+  generatedAt: string;
+}): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const itinerary = reportData.itinerary;
+    
+    if (!itinerary || !itinerary.days) {
+      return reject(new Error('Itinerary data is missing'));
+    }
+
+    const content: Content[] = [
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: 515,
+            h: 80,
+            linearGradient: ['#f97316', '#ea580c'],
+            color: '#f97316'
+          }
+        ],
+        margin: [-40, -60, -40, 0]
+      },
+      {
+        text: 'GULFOOD 2026',
+        fontSize: 28,
+        bold: true,
+        color: '#ffffff',
+        alignment: 'center',
+        margin: [0, -65, 0, 5]
+      },
+      {
+        text: 'January 26-30, 2026 | Dubai World Trade Centre & Expo City Dubai',
+        fontSize: 11,
+        color: '#ffffff',
+        alignment: 'center',
+        margin: [0, 0, 0, 25]
+      },
+      {
+        text: 'Your Personalized Itinerary',
+        style: 'header',
+        alignment: 'center',
+        color: '#1f2937',
+        margin: [0, 20, 0, 10]
+      },
+      {
+        text: `Generated: ${new Date(reportData.generatedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}`,
+        style: 'metadata',
+        alignment: 'center',
+        margin: [0, 0, 0, 30]
+      }
+    ];
+
+    // Add attendee information
+    content.push({
+      text: 'Attendee Information',
+      fontSize: 12,
+      bold: true,
+      margin: [0, 0, 0, 10]
+    });
+    
+    content.push({
+      table: {
+        widths: [120, '*'],
+        body: [
+          [{ text: 'Name:', bold: true }, reportData.name],
+          [{ text: 'Organization:', bold: true }, reportData.organization],
+          [{ text: 'Role:', bold: true }, itinerary.role || 'Visitor'],
+          [{ text: 'Email:', bold: true }, reportData.email]
+        ]
+      },
+      layout: 'noBorders',
+      margin: [0, 0, 0, 20]
+    });
+
+    // Add summary statistics
+    content.push({
+      text: 'Itinerary Summary',
+      style: 'sectionHeader',
+      margin: [0, 10, 0, 10]
+    });
+
+    content.push({
+      columns: [
+        {
+          width: '*',
+          stack: [
+            { text: 'Total Exhibitors', fontSize: 10, color: '#6b7280', margin: [0, 0, 0, 5] },
+            { text: itinerary.totalExhibitors?.toString() || '0', fontSize: 20, bold: true, color: '#2563eb' }
+          ]
+        },
+        {
+          width: '*',
+          stack: [
+            { text: 'Total Sessions', fontSize: 10, color: '#6b7280', margin: [0, 0, 0, 5] },
+            { text: itinerary.totalSessions?.toString() || '0', fontSize: 20, bold: true, color: '#16a34a' }
+          ]
+        },
+        {
+          width: '*',
+          stack: [
+            { text: 'Total Days', fontSize: 10, color: '#6b7280', margin: [0, 0, 0, 5] },
+            { text: itinerary.days?.length?.toString() || '0', fontSize: 20, bold: true, color: '#f97316' }
+          ]
+        }
+      ],
+      margin: [0, 0, 0, 30]
+    });
+
+    // Add day-by-day schedule
+    itinerary.days.forEach((day: any, index: number) => {
+      content.push({
+        text: `Day ${index + 1} - ${day.date}`,
+        style: 'sectionHeader',
+        margin: [0, 20, 0, 10],
+        pageBreak: index > 0 ? 'before' : undefined
+      });
+
+      if (day.summary) {
+        content.push({
+          text: day.summary,
+          fontSize: 10,
+          color: '#6b7280',
+          margin: [0, 0, 0, 15],
+          lineHeight: 1.4
+        });
+      }
+
+      // Add activities table
+      if (day.activities && day.activities.length > 0) {
+        const activityRows = day.activities.map((activity: any) => {
+          const exhibitorInfo = activity.exhibitor 
+            ? `${activity.exhibitor.name}\n${activity.exhibitor.boothNumber ? `Booth: ${activity.exhibitor.boothNumber}` : ''}\n${activity.exhibitor.sector || ''}`
+            : activity.session 
+              ? `${activity.session.title}\n${activity.session.location || ''}`
+              : activity.description || '';
+          
+          return [
+            { text: activity.time, fontSize: 9, bold: true },
+            { text: activity.type, fontSize: 9 },
+            { text: exhibitorInfo, fontSize: 9 },
+            { text: activity.notes || '', fontSize: 9, color: '#6b7280' }
+          ];
+        });
+
+        content.push({
+          table: {
+            headerRows: 1,
+            widths: [60, 70, '*', 100],
+            body: [
+              [
+                { text: 'Time', style: 'tableHeader', bold: true, fontSize: 10 },
+                { text: 'Type', style: 'tableHeader', bold: true, fontSize: 10 },
+                { text: 'Details', style: 'tableHeader', bold: true, fontSize: 10 },
+                { text: 'Notes', style: 'tableHeader', bold: true, fontSize: 10 }
+              ],
+              ...activityRows
+            ]
+          },
+          layout: {
+            fillColor: function (rowIndex: number) {
+              return (rowIndex === 0) ? '#f3f4f6' : (rowIndex % 2 === 0 ? '#fafafa' : null);
+            },
+            hLineWidth: function (i: number, node: any) {
+              return (i === 0 || i === 1 || i === node.table.body.length) ? 1 : 0.5;
+            },
+            vLineWidth: function () {
+              return 0.5;
+            },
+            hLineColor: function () {
+              return '#e5e7eb';
+            },
+            vLineColor: function () {
+              return '#e5e7eb';
+            }
+          },
+          margin: [0, 0, 0, 20]
+        });
+      }
+    });
+
+    // Add footer
+    content.push({
+      text: 'Important Information',
+      style: 'sectionHeader',
+      margin: [0, 30, 0, 10]
+    });
+
+    content.push({
+      ul: [
+        'Event: Gulfood 2026',
+        'Dates: January 26-30, 2026',
+        'Venues: Dubai World Trade Centre & Expo City Dubai',
+        'Daily Hours: 10:00 AM - 6:00 PM',
+        'Please arrive 15 minutes early for sessions',
+        'Booth locations may change - check event app for updates'
+      ],
+      fontSize: 9,
+      margin: [0, 0, 0, 20]
+    });
+
+    content.push({
+      text: '© 2026 Gulfood. All rights reserved.',
+      style: 'footer',
+      alignment: 'center',
+      margin: [0, 30, 0, 0]
+    });
+
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      content: content,
+      styles: {
+        header: {
+          fontSize: 24,
+          bold: true,
+          color: '#1f2937'
+        },
+        metadata: {
+          fontSize: 10,
+          color: '#9ca3af',
+          italics: true
+        },
+        sectionHeader: {
+          fontSize: 16,
+          bold: true,
+          color: '#1f2937'
+        },
+        tableHeader: {
+          fillColor: '#f3f4f6',
+          color: '#1f2937'
+        },
+        footer: {
+          fontSize: 9,
+          color: '#9ca3af'
+        }
+      },
+      defaultStyle: {
+        font: 'Helvetica',
+        fontSize: 10,
+        color: '#374151'
+      }
+    };
+
+    const printer = new PdfPrinter(fonts);
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    
+    const chunks: Buffer[] = [];
+    pdfDoc.on('data', (chunk) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    
+    pdfDoc.end();
+  });
+}
