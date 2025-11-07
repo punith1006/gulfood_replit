@@ -1,0 +1,481 @@
+# Exhibition Organizer Analytics Report
+
+**Report Generated:** 2025-11-07 00:16:20
+
+---
+
+## Executive Summary
+
+This comprehensive report provides exhibition-wide analytics covering visitor engagement, exhibitor performance, sector analysis, and geographic insights. All metrics are derived from visitor search interactions and exhibitor data.
+
+---
+
+## 1. Active Visitors (Who Searched)
+
+**Description:** Total number of unique visitors who performed at least one exhibitor search during the exhibition. This represents engaged visitors actively exploring exhibitors.
+
+**Calculation:** Counts distinct `visitor_uuid` values from the `visitor_exhibitor` table.
+
+**SQL Logic:**
+```sql
+SELECT COUNT(DISTINCT visitor_uuid) as active_visitors
+FROM visitor_exhibitor
+```
+
+**Result:** 67 active visitors
+
+---
+
+## 2. Total Registered Visitors
+
+**Description:** Total number of visitors registered in the system with `is_active = 1`. This represents the full visitor base, regardless of search activity.
+
+**Calculation:** Counts all rows in `visitors` table where `is_active = 1`.
+
+**SQL Logic:**
+```sql
+SELECT COUNT(*) as total_visitors 
+FROM visitors 
+WHERE is_active = 1
+```
+
+**Result:** 42 total registered visitors
+
+---
+
+## 3. Total Searches Performed
+
+**Description:** Total number of exhibitor search interactions across all visitors. Each row in `visitor_exhibitor` represents one search/appearance.
+
+**Calculation:** Counts all rows in the `visitor_exhibitor` table.
+
+**SQL Logic:**
+```sql
+SELECT COUNT(*) as total_searches 
+FROM visitor_exhibitor
+```
+
+**Result:** 1051 total searches
+
+---
+
+## 4. Search Engagement Rate
+
+**Description:** Percentage of registered visitors who actively searched for exhibitors. Measures overall visitor engagement with the exhibitor directory.
+
+**Calculation:** `(active_visitors / total_visitors) * 100`
+
+**Components:**
+- Active Visitors: 67
+- Total Visitors: 42
+- **Engagement Rate:** 159.52%
+
+**Interpretation:** Higher percentages indicate more active visitor participation in exhibitor discovery.
+
+---
+
+## 5. Average Searches Per Visitor
+
+**Description:** Mean number of searches performed by active visitors. Indicates depth of engagement and exploration behavior.
+
+**Calculation:** `total_searches / active_visitors`
+
+**Components:**
+- Total Searches: 1051
+- Active Visitors: 67
+- **Average:** 15.69 searches per visitor
+
+**Interpretation:** Higher values suggest visitors are exploring multiple exhibitors, indicating high interest levels.
+
+---
+
+## 6. Top Performing Exhibitors
+
+**Description:** Exhibitors with the highest search appearances, indicating the most popular or sought-after companies.
+
+**Calculation:** Joins `visitor_exhibitor` with `exhibitor`, groups by exhibitor, counts total searches and unique visitors.
+
+**SQL Logic:**
+```sql
+SELECT e.company_name, e.sector, e.category, 
+       COUNT(*) as search_count,
+       COUNT(DISTINCT ve.visitor_uuid) as unique_visitors
+FROM visitor_exhibitor ve
+JOIN exhibitor e ON ve.exhibitor_id = e.uuid
+GROUP BY e.uuid, e.company_name, e.sector, e.category
+ORDER BY search_count DESC
+LIMIT 10
+```
+
+**Top 10 Performers:**
+- No top performer data available
+
+---
+
+## 7. Bottom Performers (No Search Visibility)
+
+**Description:** Exhibitors who have received zero search appearances. These exhibitors may need marketing support or visibility improvements.
+
+**Calculation:** Left join between `exhibitor` and `visitor_exhibitor`, filtering for exhibitors with no matching search records.
+
+**SQL Logic:**
+```sql
+SELECT e.company_name, e.sector, e.category
+FROM exhibitor e
+LEFT JOIN visitor_exhibitor ve ON e.uuid = ve.exhibitor_id
+WHERE ve.exhibitor_id IS NULL
+LIMIT 10
+```
+
+**Exhibitors with Zero Searches:**
+1. **gkt** (Sector: ["Dairy"], Category: N/A)
+2. **gkt** (Sector: ["Dairy"], Category: N/A)
+3. **aachi** (Sector: ["Grocery Trade"], Category: N/A)
+4. **asd** (Sector: ["Fats & Oils"], Category: N/A)
+5. **asd** (Sector: ["Dairy", "Power Brands"], Category: N/A)
+6. **asd** (Sector: ["Dairy"], Category: N/A)
+7. **asd** (Sector: ["Dairy"], Category: N/A)
+8. **asd** (Sector: ["Meat & Poultry"], Category: N/A)
+9. **asd** (Sector: ["Meat & Poultry"], Category: N/A)
+10. **asd** (Sector: ["Dairy"], Category: N/A)
+
+---
+
+## 8. Sector Performance
+
+**Description:** Aggregated performance metrics by industry sector, showing which sectors are attracting the most visitor interest.
+
+**Calculation:** Groups exhibitors by sector, calculates total searches, unique visitors, exhibitor count, and average searches per exhibitor.
+
+**SQL Logic:**
+```sql
+SELECT e.sector, 
+       COUNT(*) as search_count,
+       COUNT(DISTINCT ve.visitor_uuid) as unique_visitors,
+       COUNT(DISTINCT e.uuid) as exhibitor_count
+FROM visitor_exhibitor ve
+JOIN exhibitor e ON ve.exhibitor_id = e.uuid
+GROUP BY e.sector
+ORDER BY search_count DESC
+```
+
+**Sector Breakdown:**
+- No sector performance data available
+
+---
+
+## 9. Visitor Segments by Role
+
+**Description:** Analysis of search activity broken down by visitor professional roles. Shows which roles are most active in exhibitor discovery.
+
+**Calculation:** Joins `visitors` with `visitor_exhibitor`, groups by role, counts distinct visitors and total searches.
+
+**SQL Logic:**
+```sql
+SELECT v.role, 
+       COUNT(DISTINCT v.uuid) as visitor_count,
+       COUNT(ve.id) as total_searches
+FROM visitors v
+JOIN visitor_exhibitor ve ON v.uuid = ve.visitor_uuid
+WHERE v.role IS NOT NULL
+GROUP BY v.role
+ORDER BY total_searches DESC
+```
+
+**Role Distribution:**
+
+**sales**
+- Visitor Count: 12
+- Total Searches: 180
+- Avg Searches per Visitor: 15.0
+
+**manager**
+- Visitor Count: 4
+- Total Searches: 60
+- Avg Searches per Visitor: 15.0
+
+**Chef**
+- Visitor Count: 3
+- Total Searches: 45
+- Avg Searches per Visitor: 15.0
+
+**procruement manager**
+- Visitor Count: 3
+- Total Searches: 45
+- Avg Searches per Visitor: 15.0
+
+**Marketing**
+- Visitor Count: 2
+- Total Searches: 31
+- Avg Searches per Visitor: 15.5
+
+**Procrument Manager**
+- Visitor Count: 2
+- Total Searches: 30
+- Avg Searches per Visitor: 15.0
+
+**Procurement manager**
+- Visitor Count: 2
+- Total Searches: 30
+- Avg Searches per Visitor: 15.0
+
+**AI Engineer**
+- Visitor Count: 1
+- Total Searches: 15
+- Avg Searches per Visitor: 15.0
+
+**AI ENginer**
+- Visitor Count: 1
+- Total Searches: 15
+- Avg Searches per Visitor: 15.0
+
+**Head**
+- Visitor Count: 1
+- Total Searches: 15
+- Avg Searches per Visitor: 15.0
+
+**Plant Manager**
+- Visitor Count: 1
+- Total Searches: 15
+- Avg Searches per Visitor: 15.0
+
+**Procurement**
+- Visitor Count: 1
+- Total Searches: 15
+- Avg Searches per Visitor: 15.0
+
+---
+
+## 10. Visitor Interest Levels
+
+**Description:** Categorizes visitors by their search intensity: high (5+ exhibitors), medium (2-4), and low (1). Indicates engagement depth.
+
+**Calculation:** Groups `visitor_exhibitor` by `visitor_uuid`, counts distinct exhibitors per visitor, then categorizes.
+
+**SQL Logic:**
+```sql
+SELECT 
+    COUNT(CASE WHEN search_count >= 5 THEN 1 END) as high_interest,
+    COUNT(CASE WHEN search_count BETWEEN 2 AND 4 THEN 1 END) as medium_interest,
+    COUNT(CASE WHEN search_count = 1 THEN 1 END) as low_interest
+FROM (
+    SELECT visitor_uuid, COUNT(DISTINCT exhibitor_id) as search_count
+    FROM visitor_exhibitor
+    GROUP BY visitor_uuid
+) as visitor_searches
+```
+
+**Interest Categories:**
+- **High Interest (5+ exhibitors):** 66 visitors
+- **Medium Interest (2-4 exhibitors):** 0 visitors
+- **Low Interest (1 exhibitor):** 1 visitors
+
+**Total Active Visitors:** 67
+
+---
+
+## 11. Daily Search Volume (Last 14 Days)
+
+**Description:** Day-by-day breakdown of total search activity, showing engagement trends over time.
+
+**Calculation:** Groups `visitor_exhibitor` by date (`DATE(created_at)`) for the last 14 days, counting searches per day.
+
+**SQL Logic:**
+```sql
+SELECT DATE(created_at) as search_date, COUNT(*) as searches
+FROM visitor_exhibitor
+WHERE created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+GROUP BY DATE(created_at)
+ORDER BY search_date DESC
+```
+
+**Daily Breakdown:**
+- **2025-11-07:** 30 searches
+- **2025-11-06:** 90 searches
+- **2025-11-05:** 120 searches
+- **2025-11-03:** 330 searches
+- **2025-11-02:** 481 searches
+
+**Total (14 days):** 1051 searches
+
+---
+
+## 12. Peak Search Hours (Exhibition-wide)
+
+**Description:** Hours of the day when the most searches occur across all exhibitors. Identifies peak engagement times.
+
+**Calculation:** Groups searches by hour (`HOUR(created_at)`), counts occurrences, sorts by frequency.
+
+**SQL Logic:**
+```sql
+SELECT HOUR(created_at) as hour, COUNT(*) as searches
+FROM visitor_exhibitor
+GROUP BY HOUR(created_at)
+ORDER BY searches DESC
+LIMIT 5
+```
+
+**Top Peak Hours:**
+- **16:00 - 17:00:** 210 searches
+- **17:00 - 18:00:** 180 searches
+- **18:00 - 19:00:** 180 searches
+- **11:00 - 12:00:** 135 searches
+- **13:00 - 14:00:** 105 searches
+
+---
+
+## 13. Top Searched Interest Categories
+
+**Description:** Most popular interest categories among active searchers. Shows what visitor interests are driving search behavior.
+
+**Calculation:** Joins `visitor_exhibitor` with `visitors`, groups by `interests_category`, counts searches and unique visitors.
+
+**SQL Logic:**
+```sql
+SELECT 
+    v.interests_category,
+    COUNT(*) as total_searches,
+    COUNT(DISTINCT ve.visitor_uuid) as visitors
+FROM visitor_exhibitor ve
+JOIN visitors v ON ve.visitor_uuid = v.uuid
+WHERE v.interests_category IS NOT NULL
+GROUP BY v.interests_category
+ORDER BY total_searches DESC
+LIMIT 10
+```
+
+**Top Categories:**
+1. **["Dairy"]:** 210 searches by 14 visitors
+2. **["Dairy", "Beverages"]:** 75 searches by 5 visitors
+3. **["Beverages", "Dairy"]:** 45 searches by 3 visitors
+4. **["Beverages"]:** 30 searches by 2 visitors
+5. **["Fats & Oils", "Beverages"]:** 30 searches by 1 visitors
+6. **["Dairy", "Grocery Trade"]:** 30 searches by 2 visitors
+7. **["Logistics", "Dairy"]:** 15 searches by 1 visitors
+8. **["Dairy", "World Food"]:** 15 searches by 1 visitors
+9. **["Grocery Trade", "World Food"]:** 15 searches by 1 visitors
+10. **["Beverages", "Meat & Poultry"]:** 15 searches by 1 visitors
+
+---
+
+## 14. Visitor Intent Distribution
+
+**Description:** Breakdown of visitor business intentions (purchase, partnership, etc.) among active searchers. Indicates business potential.
+
+**Calculation:** Joins `visitors` with `visitor_exhibitor`, groups by `intent`, counts distinct visitors.
+
+**SQL Logic:**
+```sql
+SELECT v.intent, COUNT(DISTINCT v.uuid) as visitor_count
+FROM visitors v
+JOIN visitor_exhibitor ve ON v.uuid = ve.visitor_uuid
+WHERE v.intent IS NOT NULL
+GROUP BY v.intent
+ORDER BY visitor_count DESC
+```
+
+**Intent Distribution:**
+- **Explore:** 7 visitors (21.2%)
+- **ice cream:** 4 visitors (12.1%)
+- **Exploring the event:** 2 visitors (6.1%)
+- **marketing:** 2 visitors (6.1%)
+- **icecerams:** 2 visitors (6.1%)
+- **chef:** 2 visitors (6.1%)
+- **Exploring opportunities:** 2 visitors (6.1%)
+- **explore package:** 2 visitors (6.1%)
+- **exploring coffee and Dairy provider:** 1 visitors (3.0%)
+- **Exploring :** 1 visitors (3.0%)
+- **exploring
+:** 1 visitors (3.0%)
+- **Exploring:** 1 visitors (3.0%)
+- **Identify premium/gourmet ingredient partners for new SKUs:** 1 visitors (3.0%)
+- **just exploring:** 1 visitors (3.0%)
+- **Looking for collaboration opportunities with suppliers.:** 1 visitors (3.0%)
+- **explore
+:** 1 visitors (3.0%)
+- **To explore more in diary sectors:** 1 visitors (3.0%)
+- **to visit about icerem:** 1 visitors (3.0%)
+
+---
+
+## 15. Recent Activity (Last 24 Hours)
+
+**Description:** Current engagement snapshot showing search activity in the most recent 24-hour period.
+
+**Calculation:** Filters `visitor_exhibitor` records where `created_at >= NOW() - INTERVAL 24 HOUR`.
+
+**SQL Logic:**
+```sql
+SELECT COUNT(*) as recent_searches
+FROM visitor_exhibitor
+WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+
+SELECT COUNT(DISTINCT visitor_uuid) as recent_visitors
+FROM visitor_exhibitor
+WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+```
+
+**Results:**
+- **Recent Searches:** 120
+- **Recent Active Visitors:** 8
+- **Time Period:** 24 hours
+
+---
+
+## 16. Trending Exhibitors Today
+
+**Description:** Exhibitors with the most search activity today (since midnight). Identifies current hot topics or trending companies.
+
+**Calculation:** Filters searches where `created_at >= CURDATE()`, groups by exhibitor, counts and sorts.
+
+**SQL Logic:**
+```sql
+SELECT e.company_name, COUNT(*) as searches
+FROM visitor_exhibitor ve
+JOIN exhibitor e ON ve.exhibitor_id = e.uuid
+WHERE ve.created_at >= CURDATE()
+GROUP BY e.company_name, e.uuid
+ORDER BY searches DESC
+LIMIT 10
+```
+
+**Trending Today:**
+- No trending exhibitor data available for today
+
+---
+
+## 17. Country-Based Visitor Statistics
+
+**Description:** Geographic distribution of active visitors based on IP address geolocation. Shows international participation and regional engagement patterns.
+
+**Calculation:** 
+1. Retrieves IP addresses from visitor records who performed searches
+2. Converts IPs to country codes using GeoIP2 database
+3. Aggregates visitor counts and search counts by country
+4. Calculates average searches per visitor per country
+
+**Results:**
+
+**Unknown**
+- Visitor Count: 33
+- Total Searches: 496
+- Avg Searches per Visitor: 15.03
+
+---
+
+## Summary Statistics
+
+- **Total Registered Visitors:** 42
+- **Active Visitors (Searched):** 67
+- **Total Searches:** 1051
+- **Engagement Rate:** 159.52%
+- **Avg Searches per Active Visitor:** 15.69
+- **Top Performers Listed:** 0
+- **Sectors Analyzed:** 0
+- **Visitor Roles Tracked:** 12
+- **Countries Represented:** 1
+- **Days of Activity Data:** 5
+
+---
+
+*Report generated on 2025-11-07 00:16:20*

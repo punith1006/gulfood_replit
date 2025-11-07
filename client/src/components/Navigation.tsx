@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, Building2 } from "lucide-react";
 import { useState } from "react";
 
 export default function Navigation() {
@@ -45,18 +45,38 @@ export default function Navigation() {
                 </span>
               </Link>
             ))}
+            <Link href="/exhibitor/verify">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                data-testid="button-exhibitor-access"
+              >
+                <Building2 className="w-4 h-4" />
+                Exhibitor Access
+              </Button>
+            </Link>
           </div>
 
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            data-testid="button-mobile-menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
+          <div className="md:hidden flex items-center gap-2">
+            <Link href="/exhibitor/verify">
+              <Button
+                variant="ghost"
+                size="icon"
+                data-testid="button-mobile-exhibitor-access"
+              >
+                <Building2 className="w-5 h-5" />
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              data-testid="button-mobile-menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -76,6 +96,17 @@ export default function Navigation() {
                 </span>
               </Link>
             ))}
+            <Link href="/exhibitor/verify">
+              <Button
+                variant="outline"
+                className="w-full gap-2 mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+                data-testid="button-mobile-exhibitor-access-full"
+              >
+                <Building2 className="w-4 h-4" />
+                Exhibitor Access
+              </Button>
+            </Link>
           </div>
         </div>
       )}
