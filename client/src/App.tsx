@@ -10,6 +10,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import AIChatbot from "@/components/AIChatbot";
 import Home from "@/pages/Home";
+import Itinerary from "@/pages/Itinerary";
 import OrganizerLogin from "@/pages/OrganizerLogin";
 import OrganizerAdmin from "@/pages/OrganizerAdmin";
 import ExhibitorVerify from "@/pages/ExhibitorVerify";
@@ -20,6 +21,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/itinerary" component={Itinerary} />
       <Route path="/visitors" component={Home} />
       <Route path="/exhibitors" component={Home} />
       <Route path="/organizer/login" component={OrganizerLogin} />

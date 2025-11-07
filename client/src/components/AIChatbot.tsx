@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -290,7 +291,8 @@ function RightNowContent() {
 }
 
 export default function AIChatbot() {
-  const { isOpen, openChatbot, closeChatbot } = useChatbot();
+  const [, setLocation] = useLocation();
+  const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan } = useChatbot();
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -1825,7 +1827,19 @@ export default function AIChatbot() {
                       sessionsCount: response.matchedSessions?.length || 0
                     });
                     
-                    setJourneyPlan(response);
+                    // Persist journey form data alongside the plan for full context reconstruction
+                    const journeyPlanWithFormData = {
+                      ...response,
+                      formData: {
+                        organization: journeyFormData.organization,
+                        role: journeyFormData.role,
+                        interestCategories: journeyFormData.interestCategories,
+                        attendanceIntents: finalIntents
+                      }
+                    };
+                    
+                    setJourneyPlan(journeyPlanWithFormData);
+                    setGlobalJourneyPlan(journeyPlanWithFormData);
                     toast({ title: "Journey plan generated successfully!" });
                   } catch (error) {
                     console.error('❌ Failed to generate journey:', error);
@@ -2129,6 +2143,21 @@ export default function AIChatbot() {
                     )}
                   </div>
                 </Card>
+
+                <div className="flex justify-center py-4">
+                  <Button
+                    onClick={() => {
+                      setLocation('/itinerary');
+                      closeChatbot();
+                    }}
+                    size="lg"
+                    className="gap-2"
+                    data-testid="button-view-itinerary"
+                  >
+                    <FileDown className="w-5 h-5" />
+                    View Full Itinerary
+                  </Button>
+                </div>
 
                 {journeyPlan.matchedExhibitors && journeyPlan.matchedExhibitors.length > 0 && (
                   <div className="space-y-4">
