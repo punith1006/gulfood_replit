@@ -1698,6 +1698,9 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
   app.post("/api/itinerary/generate", async (req, res) => {
     try {
       console.log('=== ITINERARY GENERATION REQUEST ===');
+      console.log('Request body keys:', Object.keys(req.body));
+      console.log('Has journeyPlan:', !!req.body.journeyPlan);
+      console.log('Has email:', !!req.body.email);
       
       const { journeyPlan, sessionId, email } = req.body;
       
@@ -1734,6 +1737,10 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         matchedSessionIds = [],
         reportData
       } = planData;
+
+      console.log('Journey plan keys:', Object.keys(planData));
+      console.log('matchedExhibitorIds:', matchedExhibitorIds);
+      console.log('matchedExhibitorIds length:', matchedExhibitorIds?.length || 0);
 
       // Fetch full exhibitor and session details
       const exhibitors = await storage.getExhibitors();
