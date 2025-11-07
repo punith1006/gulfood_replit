@@ -2166,7 +2166,10 @@ export default function AIChatbot() {
                         const itineraryData = await res.json();
                         setGlobalItinerary(itineraryData);
                         setLocation('/itinerary');
-                        closeChatbot();
+                        toast({ 
+                          title: "Itinerary Generated!", 
+                          description: "Your personalized day-by-day itinerary is ready to view.",
+                        });
                       } catch (error) {
                         console.error('Failed to generate itinerary:', error);
                         toast({ title: "Failed to generate itinerary", variant: "destructive" });
