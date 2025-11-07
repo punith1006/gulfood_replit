@@ -9,6 +9,8 @@ import { z } from "zod";
 import { seedDatabase } from "./seed";
 import bcrypt from "bcryptjs";
 import { requireOrganizerAuth, requireExhibitorAuth, generateOrganizerToken, generateExhibitorToken, type AuthRequest } from "./middleware/auth";
+import { enrichOrganization } from './organizationEnrichment';
+import { calculateRelevanceScore as calculateIntelligentRelevanceScore, calculateExhibitorMatchScores } from './intelligentScoring';
 // Semantic matcher no longer used - replaced with AI evaluation
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -1517,6 +1519,11 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         leadId = newLead.id;
       }
 
+      // Enrich organization data with web search/AI analysis
+      console.log('🔍 Enriching organization data...');
+      const organizationEnrichment = await enrichOrganization(organization, true);
+      console.log(`✅ Organization enriched: ${organizationEnrichment.organizationName} (confidence: ${organizationEnrichment.confidenceScore}%)`);
+
       if (!openai) {
         return res.status(503).json({ 
           error: "Journey generation requires AI analysis. Please configure OPENAI_API_KEY." 
@@ -1531,156 +1538,64 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         return !exhibitorName.includes(userOrgLower) && !userOrgLower.includes(exhibitorName);
       });
       
-      console.log(`Analyzing user profile against ${filteredExhibitors.length} exhibitors (excluded user's company) using AI evaluation...`);
+      console.log(`Analyzing user profile against ${filteredExhibitors.length} exhibitors (excluded user's company) using intelligent scoring...`);
       
-      const exhibitorSummaries = filteredExhibitors.slice(0, 50).map(e => 
-        `ID ${e.id}: ${e.name} - ${e.sector} - ${e.description?.substring(0, 100) || 'No description'}`
-      ).join('\n');
-
-      const prompt = `You are creating a personalized event journey for Gulfood 2026, the world's largest FOOD & BEVERAGE exhibition.
-
-VISITOR PROFILE:
-- Organization: ${organization}
-- Role: ${role}
-- Interest Categories: ${interestCategories.join(', ') || 'Not specified'}
-- Attendance Intents: ${attendanceIntents.join(', ') || 'Not specified'}
-
-VISIT PLANNING:
-- Planning to attend: ${numberOfDays || 5} day(s)
-${specificDates && specificDates.length > 0 ? `- Specific dates: ${specificDates.join(', ')}` : '- Dates: Not specified (all 5 days available)'}
-${preferredExhibitorIds && preferredExhibitorIds.length > 0 ? `- Specifically interested in exhibitors with IDs: ${preferredExhibitorIds.join(', ')} (MUST PRIORITIZE THESE)` : ''}
-
-AVAILABLE EXHIBITORS (sample of ${filteredExhibitors.length}):
-${exhibitorSummaries}
-
-YOUR TASK:
-Create a high-quality, personalized journey report with:
-
-1. OVERALL RELEVANCE SCORE (0-100) based on these strict rules:
-   - Is ${organization} a FOOD/BEVERAGE company? (dairy, food manufacturing, beverages, restaurants, catering, distribution)
-     → YES = 80-100% score
-   - Food-related industry? (packaging, food tech, equipment, logistics, hospitality)
-     → 50-79% score
-   - Tangentially related? (agriculture, retail, F&B consulting)
-     → 20-49% score
-   - Not F&B industry? (tech, finance, real estate)
-     → 0-19% score maximum
-
-   Examples: "Al Rawabi Dairy" + "Procurement Manager" = 85-95% | "Tech Company" + "Engineer" = 5-15%
-
-2. SCORE REASONING: 2-3 sentences explaining the score based on industry + role alignment
-
-3. TOP HIGHLIGHTS (4-5 items): Specific Gulfood 2026 event features/zones/areas that are highly relevant to this visitor
-   Format: { "icon": "Target|Droplet|Zap|Package|Globe", "title": "Feature Name", "description": "Why this matters for ${role} at ${organization}" }
-   Use these lucide-react icon names: Target, Droplet, Zap, Package, Globe, TrendingUp, Users, ShoppingCart, Sparkles, Award
-   Make these specific to Gulfood 2026 event features (e.g., "Dairy & Cheese Zone", "Beverage Innovation Hall", "Food Tech Stage")
-
-4. TOP EXHIBITORS (MUST be exactly 10): Select the 10 MOST relevant exhibitors from the list above
-   For EACH exhibitor provide:
-   - exhibitorId (from list above)
-   - matchScore (0-100): How well this specific exhibitor matches the visitor's needs
-   - personalizedReason: ONE sentence explaining "WHY this exhibitor matters specifically to ${role} at ${organization}"
-   
-   IMPORTANT: If preferred exhibitor IDs are specified, you MUST include those exhibitors in your top 10 list with HIGH match scores (85-100), even if they don't perfectly match the interest categories. These are exhibitors the visitor explicitly wants to visit.
-   
-   CRITICAL RULES for personalizedReason:
-   - ALWAYS refer to the exhibitor by their COMPANY NAME (from the exhibitor list above), NEVER by their website URL
-   - Make it hyper-specific to the visitor's role and organization
-   - Focus on specific products, technologies, or capabilities that benefit the visitor
-   
-   Bad examples:
-   - "They offer dairy products" (too generic)
-   - "www.almarai.com offers quality products" (uses website URL instead of company name)
-   
-   Good examples:
-   - "Almarai's advanced pasteurization technology can help ${organization} improve production efficiency"
-   - "Nestlé's sustainable packaging solutions align with ${organization}'s environmental goals"
-
-Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
-{
-  "overallRelevanceScore": <number 0-100>,
-  "scoreReasoning": "<2-3 sentences>",
-  "highlights": [
-    { "icon": "Target", "title": "Dairy & Cheese Zone", "description": "..." },
-    { "icon": "Droplet", "title": "Beverage Innovation Hall", "description": "..." },
-    { "icon": "Zap", "title": "Food Tech Stage", "description": "..." },
-    { "icon": "Package", "title": "Packaging Solutions Arena", "description": "..." },
-    { "icon": "Globe", "title": "Sustainable Food Pavilion", "description": "..." }
-  ],
-  "topExhibitors": [
-    { "exhibitorId": 1, "matchScore": 95, "personalizedReason": "..." },
-    { "exhibitorId": 2, "matchScore": 92, "personalizedReason": "..." },
-    { "exhibitorId": 3, "matchScore": 88, "personalizedReason": "..." },
-    { "exhibitorId": 4, "matchScore": 85, "personalizedReason": "..." },
-    { "exhibitorId": 5, "matchScore": 82, "personalizedReason": "..." },
-    { "exhibitorId": 6, "matchScore": 78, "personalizedReason": "..." },
-    { "exhibitorId": 7, "matchScore": 75, "personalizedReason": "..." },
-    { "exhibitorId": 8, "matchScore": 72, "personalizedReason": "..." },
-    { "exhibitorId": 9, "matchScore": 68, "personalizedReason": "..." },
-    { "exhibitorId": 10, "matchScore": 65, "personalizedReason": "..." }
-  ]
-}`;
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
+      // Calculate intelligent relevance score with detailed justification
+      console.log('📊 Calculating event attendance relevance score...');
+      const relevanceScoring = await calculateIntelligentRelevanceScore({
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        preferredExhibitorIds,
+        organizationEnrichment
       });
 
-      const content = completion.choices[0].message.content || "{}";
-      let aiEvaluation;
-      try {
-        aiEvaluation = JSON.parse(content.replace(/```json\n?/g, "").replace(/```\n?/g, ""));
-      } catch (parseError) {
-        console.error("Failed to parse AI evaluation:", content);
-        return res.status(500).json({ error: "Failed to parse AI analysis. Please try again." });
-      }
+      const relevanceScore = relevanceScoring.relevanceScore;
+      const scoreReasoning = relevanceScoring.scoreJustification;
+      console.log(`✅ Relevance Score: ${relevanceScore}% - ${scoreReasoning}`);
 
-      const relevanceScore = Math.max(0, Math.min(100, aiEvaluation.overallRelevanceScore || 50));
-      const scoreReasoning = aiEvaluation.scoreReasoning || "Score based on industry alignment with Gulfood 2026.";
-      const highlights = aiEvaluation.highlights || [];
-      
-      if (highlights.length < 4) {
-        console.warn('Insufficient highlights generated by AI, adding Gulfood-specific defaults');
-        const defaultHighlights = [
-          { icon: "Target", title: "Product Discovery Zone", description: "Explore thousands of new products across food and beverage categories" },
-          { icon: "Users", title: "Industry Networking Hub", description: "Connect with global buyers, suppliers, and industry leaders" },
-          { icon: "TrendingUp", title: "Innovation Showcase", description: "Discover cutting-edge technologies and emerging market trends" },
-          { icon: "Globe", title: "International Trade Pavilions", description: "Access to exhibitors from over 120 countries worldwide" },
-          { icon: "Award", title: "Gulfood Awards Ceremony", description: "Witness recognition of excellence in food and beverage innovation" }
-        ];
-        
-        while (highlights.length < 4 && defaultHighlights.length > 0) {
-          highlights.push(defaultHighlights.shift()!);
-        }
-      }
-      
-      console.log(`AI Evaluation - Relevance Score: ${relevanceScore}%`);
-      console.log(`Score Reasoning: ${scoreReasoning}`);
-      console.log(`Highlights: ${highlights.length} items`);
-      console.log(`AI returned ${aiEvaluation.topExhibitors?.length || 0} exhibitors`);
+      // Get top exhibitors using intelligent matching
+      console.log('🎯 Calculating exhibitor match scores...');
+      const exhibitorMatches = await calculateExhibitorMatchScores({
+        exhibitors: filteredExhibitors.slice(0, 50),
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        preferredExhibitorIds,
+        organizationEnrichment
+      });
+
+      console.log(`✅ Generated ${exhibitorMatches.length} exhibitor matches`);
+
+      // Generate highlights based on keyTakeaways
+      const highlights = relevanceScoring.keyTakeaways.map((takeaway, idx) => ({
+        icon: ["Target", "Users", "TrendingUp", "Globe", "Award"][idx] || "Target",
+        title: takeaway.split(':')[0] || `Benefit ${idx + 1}`,
+        description: takeaway
+      })).slice(0, 5);
 
       const matchedExhibitors = [];
       const exhibitorCategories = new Set();
       
-      if (aiEvaluation.topExhibitors && Array.isArray(aiEvaluation.topExhibitors)) {
-        for (const match of aiEvaluation.topExhibitors.slice(0, 10)) {
-          const exhibitor = filteredExhibitors.find(e => e.id === match.exhibitorId);
-          if (exhibitor) {
-            exhibitorCategories.add(exhibitor.sector);
-            matchedExhibitors.push({
-              id: exhibitor.id,
-              companyName: exhibitor.name,
-              name: exhibitor.name,
-              sector: exhibitor.sector,
-              description: exhibitor.description,
-              country: exhibitor.country,
-              boothNumber: exhibitor.booth,
-              productCategories: exhibitor.products || [],
-              relevancePercentage: Math.max(0, Math.min(100, match.matchScore || 50)),
-              personalizedReason: match.personalizedReason || "Relevant to your industry focus"
-            });
-          }
+      for (const match of exhibitorMatches.slice(0, 10)) {
+        const exhibitor = filteredExhibitors.find(e => e.id === match.exhibitorId);
+        if (exhibitor) {
+          exhibitorCategories.add(exhibitor.sector);
+          matchedExhibitors.push({
+            id: exhibitor.id,
+            companyName: exhibitor.name,
+            name: exhibitor.name,
+            sector: exhibitor.sector,
+            description: exhibitor.description,
+            country: exhibitor.country,
+            boothNumber: exhibitor.booth,
+            productCategories: exhibitor.products || [],
+            relevancePercentage: match.matchScore,
+            personalizedReason: match.matchReasoning,
+            relevanceFactors: match.relevanceFactors
+          });
         }
       }
 
@@ -1770,6 +1685,7 @@ Respond with valid JSON only (no markdown). MUST include exactly 10 exhibitors:
         specificDates,
         preferredExhibitorIds,
         relevanceScore,
+        organizationEnrichment,
         generalOverview: aiContent.overview,
         scoreJustification: aiContent.justification,
         benefits: aiContent.benefits,

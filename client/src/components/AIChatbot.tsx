@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, ChevronDown, Calendar, SlidersHorizontal } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, ChevronDown, Calendar, SlidersHorizontal, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -43,6 +43,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 
 const ATTENDANCE_INTENTS = [
@@ -193,6 +194,13 @@ const getRoleWelcomeMessage = (role: UserRole): string => {
   };
   
   return welcomeMessages[role];
+};
+
+const getScoreVariant = (score: number): "default" | "secondary" | "destructive" | "outline" => {
+  if (score >= 80) return "default";
+  if (score >= 60) return "secondary";
+  if (score >= 40) return "outline";
+  return "destructive";
 };
 
 function RightNowContent() {
@@ -2166,56 +2174,67 @@ export default function AIChatbot() {
                   </div>
                 </div>
 
-                <Card className="p-6 space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-semibold">Relevance Score</span>
-                      <span className={`text-2xl font-bold ${
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
+                      <span>Event Relevance Score</span>
+                      <Badge variant="outline" data-testid="badge-confidence-score">
+                        Confidence: {journeyPlan.confidenceScore || 85}%
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className={`text-5xl font-bold ${
                         journeyPlan.relevanceScore >= 80 ? 'text-green-600 dark:text-green-400' :
-                        journeyPlan.relevanceScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
-                        journeyPlan.relevanceScore >= 40 ? 'text-orange-600 dark:text-orange-400' :
+                        journeyPlan.relevanceScore >= 60 ? 'text-blue-600 dark:text-blue-400' :
+                        journeyPlan.relevanceScore >= 40 ? 'text-yellow-600 dark:text-yellow-400' :
+                        journeyPlan.relevanceScore >= 20 ? 'text-orange-600 dark:text-orange-400' :
                         'text-red-600 dark:text-red-400'
                       }`} data-testid="text-journey-relevance-score">
                         {journeyPlan.relevanceScore}%
-                      </span>
+                      </div>
+                      <p className="flex-1 text-muted-foreground" data-testid="text-journey-score-justification">
+                        {journeyPlan.scoreJustification || `This event has a ${
+                          journeyPlan.relevanceScore >= 80 ? "excellent" : 
+                          journeyPlan.relevanceScore >= 60 ? "good" : 
+                          journeyPlan.relevanceScore >= 40 ? "fair" : "limited"
+                        } match for your profile and interests.`}
+                      </p>
                     </div>
-                    <Progress value={journeyPlan.relevanceScore} className="h-3" />
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {journeyPlan.relevanceScore >= 80 ? "Excellent" : 
-                       journeyPlan.relevanceScore >= 60 ? "Good" : 
-                       journeyPlan.relevanceScore >= 40 ? "Fair" : "Limited"} match for Gulfood 2026
-                    </p>
-                    {journeyPlan.scoreJustification && (
+                    
+                    {journeyPlan.benefits && journeyPlan.benefits.length > 0 && (
                       <Collapsible 
                         open={isScoreJustificationExpanded} 
                         onOpenChange={setIsScoreJustificationExpanded}
-                        className="mt-4"
                       >
                         <CollapsibleTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-full justify-between hover-elevate p-3 h-auto"
-                            data-testid="button-toggle-score-justification"
+                          <Button
+                            variant="ghost"
+                            className="flex items-center gap-2 text-sm font-medium hover-elevate p-0 h-auto"
+                            data-testid="button-toggle-benefits"
                           >
-                            <span className="text-sm font-medium text-foreground">Why this score?</span>
                             <ChevronDown 
-                              className={`w-4 h-4 transition-transform duration-200 ${
+                              className={`h-4 w-4 transition-transform duration-200 ${
                                 isScoreJustificationExpanded ? 'rotate-180' : ''
                               }`}
                             />
+                            View Key Takeaways & Benefits
                           </Button>
                         </CollapsibleTrigger>
-                        <CollapsibleContent className="pt-2">
-                          <div className="p-3 bg-muted/30 rounded-lg">
-                            <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-journey-score-justification">
-                              {journeyPlan.scoreJustification}
-                            </p>
-                          </div>
+                        <CollapsibleContent className="mt-4">
+                          <ul className="space-y-2">
+                            {journeyPlan.benefits.map((benefit: string, idx: number) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                                <span className="text-sm text-foreground">{benefit}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </CollapsibleContent>
                       </Collapsible>
                     )}
-                  </div>
+                  </CardContent>
                 </Card>
 
                 <div className="flex justify-center py-4">
@@ -2340,17 +2359,35 @@ export default function AIChatbot() {
                                       <p className="text-xs text-muted-foreground mt-0.5">{exhibitor.sector}</p>
                                     )}
                                   </div>
-                                  <Badge 
-                                    variant="secondary" 
-                                    className={`shrink-0 ${
-                                      exhibitor.relevancePercentage >= 80 ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' :
-                                      exhibitor.relevancePercentage >= 60 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400' :
-                                      ''
-                                    }`}
-                                    data-testid={`exhibitor-match-${exhibitor.id}`}
-                                  >
-                                    {exhibitor.relevancePercentage}% match
-                                  </Badge>
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant={getScoreVariant(exhibitor.relevancePercentage)}
+                                      className="shrink-0"
+                                      data-testid={`exhibitor-match-${exhibitor.id}`}
+                                    >
+                                      {exhibitor.relevancePercentage}% Match
+                                    </Badge>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <button className="flex items-center" data-testid={`tooltip-trigger-${exhibitor.id}`}>
+                                            <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                                          </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-xs">
+                                          <p className="font-semibold mb-2">Why this score?</p>
+                                          <p className="text-sm mb-2">{exhibitor.personalizedReason || `This exhibitor matches your interests with a ${exhibitor.relevancePercentage}% relevance score.`}</p>
+                                          {exhibitor.relevanceFactors && exhibitor.relevanceFactors.length > 0 && (
+                                            <ul className="text-xs space-y-1">
+                                              {exhibitor.relevanceFactors.map((factor: string, idx: number) => (
+                                                <li key={idx}>• {factor}</li>
+                                              ))}
+                                            </ul>
+                                          )}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
                                 </div>
                                 
                                 {exhibitor.personalizedReason && (

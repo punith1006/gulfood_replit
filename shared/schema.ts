@@ -243,16 +243,18 @@ export const journeyPlans = pgTable("journey_plans", {
   specificDates: text("specific_dates").array(), // Specific dates they'll attend (e.g., ['2026-01-26', '2026-01-27'])
   preferredExhibitorIds: integer("preferred_exhibitor_ids").array(), // Exhibitors they're specifically interested in
   relevanceScore: integer("relevance_score").notNull(), // 0-100
+  // Organization enrichment data from web search
+  organizationEnrichment: jsonb("organization_enrichment"), // Enriched organization context: industry, size, products, recent news, etc.
   // AI-generated content
   generalOverview: text("general_overview"),
-  scoreJustification: text("score_justification"),
+  scoreJustification: text("score_justification"), // Detailed justification for relevance score with KPIs and takeaways
   benefits: text("benefits").array(),
   recommendations: text("recommendations").array(),
   // Matched exhibitors and sessions
   matchedExhibitorIds: integer("matched_exhibitor_ids").array(),
   matchedSessionIds: integer("matched_session_ids").array(),
   // Additional data stored as JSON
-  reportData: jsonb("report_data"), // Full report data including exhibitor details, session details, etc.
+  reportData: jsonb("report_data"), // Full report data including exhibitor details with match scores, session details, etc.
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
