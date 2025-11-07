@@ -43,14 +43,14 @@ const COLORS = {
   amber: ["#f59e0b", "#fbbf24", "#fcd34d"],
   rose: ["#f43f5e", "#fb7185", "#fda4af"],
   cyan: ["#06b6d4", "#22d3ee", "#67e8f9"],
-  vibrant: [
-    "#f97316", // orange
-    "#8b5cf6", // purple
-    "#10b981", // green
-    "#f43f5e", // rose
-    "#06b6d4", // cyan
-    "#f59e0b", // amber
-    "#3b82f6", // blue
+  vibrantDark: [
+    "#ea580c", // darker orange
+    "#7c3aed", // darker purple
+    "#059669", // darker green
+    "#e11d48", // darker rose
+    "#0891b2", // darker cyan
+    "#d97706", // darker amber
+    "#2563eb", // darker blue
   ],
 };
 
@@ -306,7 +306,7 @@ export default function ExhibitorDashboard() {
                           dataKey="count"
                         >
                           {analytics.visitorRoles.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS.vibrant[index % COLORS.vibrant.length]} />
+                            <Cell key={`cell-${index}`} fill={COLORS.vibrantDark[index % COLORS.vibrantDark.length]} />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -382,7 +382,11 @@ export default function ExhibitorDashboard() {
                         <XAxis dataKey="category" angle={-45} textAnchor="end" height={100} />
                         <YAxis />
                         <Tooltip />
-                        <Bar dataKey="count" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                          {analytics.topInterestCategories.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS.vibrantDark[index % COLORS.vibrantDark.length]} />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   )}
