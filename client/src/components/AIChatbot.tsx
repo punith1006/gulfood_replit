@@ -355,6 +355,37 @@ export default function AIChatbot() {
   const [intentSearchTerm, setIntentSearchTerm] = useState('');
   const [isScoreJustificationExpanded, setIsScoreJustificationExpanded] = useState(false);
   
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const intentDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Click-outside detection for category dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setShowCategorySearch(false);
+      }
+    };
+    
+    if (showCategorySearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showCategorySearch]);
+  
+  // Click-outside detection for intent dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (intentDropdownRef.current && !intentDropdownRef.current.contains(event.target as Node)) {
+        setShowIntentSearch(false);
+      }
+    };
+    
+    if (showIntentSearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showIntentSearch]);
+  
   // Appointment booking state
   const [showAppointmentBooking, setShowAppointmentBooking] = useState(false);
   const [appointmentFormData, setAppointmentFormData] = useState({
@@ -1829,16 +1860,17 @@ export default function AIChatbot() {
 
                   <div className="space-y-2">
                     <Label>Categories of Interest ({journeyFormData.interestCategories.length} selected)</Label>
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative" ref={categoryDropdownRef}>
                       <Input
                         value={categorySearchTerm}
                         onChange={(e) => setCategorySearchTerm(e.target.value)}
-                        placeholder="Search categories..."
+                        placeholder="Click to select categories..."
+                        onClick={() => setShowCategorySearch(true)}
                         onFocus={() => setShowCategorySearch(true)}
                         data-testid="input-category-search"
                       />
                       {showCategorySearch && (
-                        <Card className="max-h-64 overflow-auto p-3 space-y-2">
+                        <Card className="absolute z-50 w-full mt-1 max-h-64 overflow-auto p-3 space-y-2">
                           {GULFOOD_CATEGORIES
                             .filter(cat => cat.toLowerCase().includes(categorySearchTerm.toLowerCase()))
                             .map(category => (
@@ -1887,16 +1919,17 @@ export default function AIChatbot() {
 
                   <div className="space-y-2">
                     <Label>Intent of Attending ({journeyFormData.attendanceIntents.length} selected)</Label>
-                    <div className="space-y-2">
+                    <div className="space-y-2 relative" ref={intentDropdownRef}>
                       <Input
                         value={intentSearchTerm}
                         onChange={(e) => setIntentSearchTerm(e.target.value)}
-                        placeholder="Search intents..."
+                        placeholder="Click to select intents..."
+                        onClick={() => setShowIntentSearch(true)}
                         onFocus={() => setShowIntentSearch(true)}
                         data-testid="input-intent-search"
                       />
                       {showIntentSearch && (
-                        <Card className="max-h-64 overflow-auto p-3 space-y-2">
+                        <Card className="absolute z-50 w-full mt-1 max-h-64 overflow-auto p-3 space-y-2">
                           {ATTENDANCE_INTENTS
                             .filter(intent => intent.toLowerCase().includes(intentSearchTerm.toLowerCase()))
                             .map(intent => (
