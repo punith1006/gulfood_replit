@@ -139,6 +139,7 @@ export const leads = pgTable("leads", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   company: text("company"),
+  companyWebsite: text("company_website"),
   role: text("role"), // Visitor or Exhibitor
   phone: text("phone"),
   category: text("category"), // Legacy field, kept for backward compatibility
@@ -331,6 +332,7 @@ export const insertLeadSchema = createInsertSchema(leads).omit({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
   company: z.string().optional(),
+  companyWebsite: z.string().url("Invalid URL").optional().or(z.literal("")),
   role: z.string().optional(),
   phone: z.string().optional(),
   category: z.enum(["Visitor", "Exhibitor", "Organizer", "Media", "Other"]).optional(),

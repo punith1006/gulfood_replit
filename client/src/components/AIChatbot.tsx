@@ -432,6 +432,7 @@ export default function AIChatbot() {
     name: "",
     email: "",
     company: "",
+    companyWebsite: "",
     role: "",
     category: "",
     message: ""
@@ -476,6 +477,7 @@ export default function AIChatbot() {
         name: "",
         email: "",
         company: "",
+        companyWebsite: "",
         role: "",
         category: "",
         message: ""
@@ -1068,7 +1070,7 @@ export default function AIChatbot() {
   }
 
   return (
-    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[480px] md:w-[520px] h-[90vh] sm:h-[600px] md:h-[650px] max-h-screen shadow-2xl z-50 flex flex-col rounded-xl border-2" data-testid="card-chatbot">
+    <Card className="fixed bottom-0 right-0 sm:bottom-4 sm:right-4 w-full sm:w-[480px] md:w-[520px] h-[90vh] sm:h-[680px] md:h-[720px] max-h-screen shadow-2xl z-50 flex flex-col rounded-xl border-2" data-testid="card-chatbot">
       <div className="p-2.5 border-b border-[#FFC107]/20 bg-[#FFC107] rounded-t-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -1338,11 +1340,18 @@ export default function AIChatbot() {
                           data-testid="input-inline-lead-email"
                         />
                         <Input
-                          placeholder="Company (Optional)"
+                          placeholder="Company Name (Optional)"
                           value={leadForm.company}
                           onChange={(e) => setLeadForm(prev => ({ ...prev, company: e.target.value }))}
                           className="text-sm focus-visible:ring-orange-500"
                           data-testid="input-inline-lead-company"
+                        />
+                        <Input
+                          placeholder="Company Website (Optional)"
+                          value={leadForm.companyWebsite}
+                          onChange={(e) => setLeadForm(prev => ({ ...prev, companyWebsite: e.target.value }))}
+                          className="text-sm focus-visible:ring-orange-500"
+                          data-testid="input-inline-lead-company-website"
                         />
                         <Input
                           placeholder="Role/Title (Optional)"
@@ -1359,7 +1368,7 @@ export default function AIChatbot() {
                           onClick={() => {
                             setShowInlineLeadForm(false);
                             setHasInteractedWithInitialLeadCapture(true);
-                            setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
+                            setLeadForm({ name: "", email: "", company: "", companyWebsite: "", role: "", category: "", message: "" });
                           }}
                           className="flex-1"
                           data-testid="button-cancel-inline-lead"
@@ -1399,7 +1408,7 @@ export default function AIChatbot() {
                                   role: "assistant",
                                   content: `Welcome back, ${checkData.lead.name}! 👋 It's great to see you again. ${roleSpecificMessage}`
                                 }]);
-                                setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
+                                setLeadForm({ name: "", email: "", company: "", companyWebsite: "", role: "", category: "", message: "" });
                                 return;
                               }
                               
@@ -1411,6 +1420,7 @@ export default function AIChatbot() {
                                 name: leadForm.name,
                                 email: leadForm.email,
                                 company: leadForm.company || undefined,
+                                companyWebsite: leadForm.companyWebsite || undefined,
                                 role: leadForm.role || undefined,
                                 capturedVia: "direct",
                                 conversationId: sessionId,
@@ -1432,7 +1442,7 @@ export default function AIChatbot() {
                                 role: "assistant",
                                 content: `Thanks ${leadForm.name}! ${roleSpecificMessage}`
                               }]);
-                              setLeadForm({ name: "", email: "", company: "", role: "", category: "", message: "" });
+                              setLeadForm({ name: "", email: "", company: "", companyWebsite: "", role: "", category: "", message: "" });
                             } catch (error) {
                               toast({
                                 title: "Error",
