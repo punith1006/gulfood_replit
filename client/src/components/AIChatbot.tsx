@@ -2810,7 +2810,7 @@ export default function AIChatbot() {
                         ?.filter(exhibitor => 
                           exhibitor.companyName.toLowerCase().includes(exhibitorSearchTerm.toLowerCase()) ||
                           exhibitor.sector.toLowerCase().includes(exhibitorSearchTerm.toLowerCase()) ||
-                          exhibitor.boothNumber?.toLowerCase().includes(exhibitorSearchTerm.toLowerCase())
+                          (exhibitor.boothNumber?.toLowerCase() || '').includes(exhibitorSearchTerm.toLowerCase())
                         )
                         .map((exhibitor: any) => (
                           <CommandItem
