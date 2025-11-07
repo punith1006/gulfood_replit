@@ -307,55 +307,6 @@ export default function ExhibitorDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Match Quality Distribution */}
-              <Card data-testid="card-chart-quality">
-                <CardHeader>
-                  <CardTitle>Match Quality Distribution</CardTitle>
-                  <CardDescription>Breakdown of visitor match scores</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {analytics.matchQualityDistribution.high === 0 && 
-                   analytics.matchQualityDistribution.medium === 0 && 
-                   analytics.matchQualityDistribution.low === 0 ? (
-                    <div className="text-center py-12">
-                      <Award className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-                      <p className="text-muted-foreground">No quality data yet</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Match quality will appear as visitors engage
-                      </p>
-                    </div>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: 'High (80-100)', value: analytics.matchQualityDistribution.high, fill: '#10b981' },
-                            { name: 'Medium (60-79)', value: analytics.matchQualityDistribution.medium, fill: '#f59e0b' },
-                            { name: 'Low (0-59)', value: analytics.matchQualityDistribution.low, fill: '#ef4444' }
-                          ].filter(item => item.value > 0)}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name.split(' ')[0]} (${(percent * 100).toFixed(0)}%)`}
-                          outerRadius={100}
-                          dataKey="value"
-                        >
-                          {[
-                            { name: 'High (80-100)', value: analytics.matchQualityDistribution.high, fill: '#10b981' },
-                            { name: 'Medium (60-79)', value: analytics.matchQualityDistribution.medium, fill: '#f59e0b' },
-                            { name: 'Low (0-59)', value: analytics.matchQualityDistribution.low, fill: '#ef4444' }
-                          ].filter(item => item.value > 0).map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  )}
-                </CardContent>
-              </Card>
-
               {/* Visitor Intents */}
               <Card data-testid="card-list-intents">
                 <CardHeader>
@@ -373,7 +324,7 @@ export default function ExhibitorDashboard() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {analytics.visitorIntents.map((intent, index) => (
+                      {analytics.visitorIntents.slice(0, 5).map((intent, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-green-50 to-transparent dark:from-green-950/20 hover-elevate"
@@ -508,26 +459,75 @@ export default function ExhibitorDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Journey Size Distribution */}
-              <Card data-testid="card-chart-journey-size">
+              {/* Match Quality Distribution */}
+              <Card data-testid="card-chart-quality">
                 <CardHeader>
-                  <CardTitle>Journey Plan Sizes</CardTitle>
-                  <CardDescription>How many exhibitors visitors compare together</CardDescription>
+                  <CardTitle>Match Quality Distribution</CardTitle>
+                  <CardDescription>Breakdown of visitor match scores</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {analytics.journeySizeDistribution.every(item => item.count === 0) ? (
+                  {analytics.matchQualityDistribution.high === 0 && 
+                   analytics.matchQualityDistribution.medium === 0 && 
+                   analytics.matchQualityDistribution.low === 0 ? (
                     <div className="text-center py-12">
-                      <Users className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
-                      <p className="text-muted-foreground">No journey data yet</p>
+                      <Award className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+                      <p className="text-muted-foreground">No quality data yet</p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Journey size data will appear as visitors create plans
+                        Match quality will appear as visitors engage
                       </p>
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={analytics.journeySizeDistribution}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'High (80-100)', value: analytics.matchQualityDistribution.high, fill: '#10b981' },
+                            { name: 'Medium (60-79)', value: analytics.matchQualityDistribution.medium, fill: '#f59e0b' },
+                            { name: 'Low (0-59)', value: analytics.matchQualityDistribution.low, fill: '#ef4444' }
+                          ].filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name.split(' ')[0]} (${(percent * 100).toFixed(0)}%)`}
+                          outerRadius={100}
+                          dataKey="value"
+                        >
+                          {[
+                            { name: 'High (80-100)', value: analytics.matchQualityDistribution.high, fill: '#10b981' },
+                            { name: 'Medium (60-79)', value: analytics.matchQualityDistribution.medium, fill: '#f59e0b' },
+                            { name: 'Low (0-59)', value: analytics.matchQualityDistribution.low, fill: '#ef4444' }
+                          ].filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Peak Activity Days */}
+              <Card data-testid="card-chart-peak-days">
+                <CardHeader>
+                  <CardTitle>Peak Activity Days</CardTitle>
+                  <CardDescription>Which days visitors are most active</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {analytics.peakActivityDays.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Activity className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+                      <p className="text-muted-foreground">No activity data yet</p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Day-of-week activity will appear as visitors create plans
+                      </p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={analytics.peakActivityDays}>
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                        <XAxis dataKey="range" />
+                        <XAxis dataKey="day" />
                         <YAxis />
                         <Tooltip />
                         <Bar dataKey="count" fill="#06b6d4" radius={[8, 8, 0, 0]} />

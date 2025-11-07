@@ -276,7 +276,7 @@ export interface ExhibitorAnalytics {
   matchQualityDistribution: { high: number; medium: number; low: number };
   visitorJobTitles: Array<{ title: string; count: number }>;
   weekOverWeekGrowth: number;
-  journeySizeDistribution: Array<{ range: string; count: number }>;
+  peakActivityDays: Array<{ day: string; count: number }>;
 }
 
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({

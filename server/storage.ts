@@ -402,32 +402,22 @@ export class DatabaseStorage implements IStorage {
       ? Math.round(((currentWeekCount - previousWeekCount) / previousWeekCount) * 100)
       : currentWeekCount > 0 ? 100 : 0;
 
-    // Journey Size Distribution - how many exhibitors are in each journey plan
-    const journeySizeResult = await db.execute<{
-      range: string;
-      count: number;
-    }>(sql`
-      SELECT 
-        CASE 
-          WHEN array_length(matched_exhibitor_ids, 1) BETWEEN 1 AND 3 THEN '1-3 exhibitors'
-          WHEN array_length(matched_exhibitor_ids, 1) BETWEEN 4 AND 6 THEN '4-6 exhibitors'
-          WHEN array_length(matched_exhibitor_ids, 1) BETWEEN 7 AND 10 THEN '7-10 exhibitors'
-          ELSE '11+ exhibitors'
-        END as range,
-        count(*) as count
-      FROM journey_plans
-      WHERE ${exhibitorId} = ANY(matched_exhibitor_ids)
-      GROUP BY range
-    `);
-
-    // Ensure all ranges are present with zero-fill
-    const rangeMap = new Map(journeySizeResult.rows.map(r => [r.range, Number(r.count)]));
-    const journeySizeDistribution = [
-      { range: '1-3 exhibitors', count: rangeMap.get('1-3 exhibitors') || 0 },
-      { range: '4-6 exhibitors', count: rangeMap.get('4-6 exhibitors') || 0 },
-      { range: '7-10 exhibitors', count: rangeMap.get('7-10 exhibitors') || 0 },
-      { range: '11+ exhibitors', count: rangeMap.get('11+ exhibitors') || 0 }
-    ];
+    // Peak Activity Days - day-of-week breakdown
+    const peakDaysResult = await db
+      .select({
+        day: sql<string>`TO_CHAR(${journeyPlans.createdAt}, 'Day')`,
+        dayNum: sql<number>`EXTRACT(DOW FROM ${journeyPlans.createdAt})`,
+        count: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
+      .groupBy(sql`TO_CHAR(${journeyPlans.createdAt}, 'Day')`, sql`EXTRACT(DOW FROM ${journeyPlans.createdAt})`)
+      .orderBy(sql`EXTRACT(DOW FROM ${journeyPlans.createdAt})`);
+    
+    const peakActivityDays = peakDaysResult.map(row => ({
+      day: row.day.trim(),
+      count: Number(row.count)
+    }));
 
     return {
       totalAppearances,
@@ -442,7 +432,7 @@ export class DatabaseStorage implements IStorage {
       matchQualityDistribution,
       visitorJobTitles,
       weekOverWeekGrowth,
-      journeySizeDistribution
+      peakActivityDays
     };
   }
 
