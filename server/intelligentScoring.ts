@@ -170,13 +170,22 @@ RESPONSE FORMAT (valid JSON only):
 }
 
 Be REALISTIC. Don't inflate scores. If the organization isn't in F&B, say so and score accordingly.
-Return ONLY valid JSON, no markdown.`;
+
+CRITICAL JSON FORMATTING RULES:
+- Return ONLY valid JSON object, no markdown, no explanations
+- Use double quotes for all strings
+- Escape any quotes inside strings with backslash
+- Keep justification and attendanceValue concise (2-3 sentences max)
+- Keep keyTakeaways brief (10-15 words each)
+- No newlines in string values
+
+Return format: {"relevanceScore": 65, "scoreJustification": "...", "keyTakeaways": ["...", "...", "..."], "attendanceValue": "...", "confidenceScore": 80}`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
-    max_tokens: 1000
+    max_tokens: 1500
   });
 
   const content = completion.choices[0]?.message?.content;
@@ -184,9 +193,28 @@ Return ONLY valid JSON, no markdown.`;
     throw new Error('No response from OpenAI');
   }
 
-  const scoringData = parseAIJSON<RelevanceScoring>(content);
-  
-  return scoringData as RelevanceScoring;
+  try {
+    const scoringData = parseAIJSON<RelevanceScoring>(content);
+    console.log(`✅ Successfully parsed relevance score: ${scoringData.relevanceScore}%`);
+    return scoringData;
+  } catch (parseError) {
+    console.error('❌ Failed to parse relevance scoring:', (parseError as Error).message);
+    console.error('Response preview:', content.substring(0, 500));
+    
+    // Return fallback values - ensures journey generation doesn't crash
+    console.warn('⚠️  Returning fallback relevance scoring values');
+    return {
+      relevanceScore: 50,
+      scoreJustification: `Unable to fully analyze your profile due to technical issues. As a ${role} at ${organization}, you may find relevant opportunities at Gulfood 2026. We recommend exploring the exhibitor list to identify potential matches.`,
+      keyTakeaways: [
+        'Access to 5,000+ food & beverage exhibitors from 120+ countries',
+        'Networking opportunities with global F&B industry professionals',
+        'Insights into latest food trends and innovations'
+      ],
+      attendanceValue: 'Gulfood 2026 offers broad exposure to the global F&B industry with opportunities for business connections and market insights.',
+      confidenceScore: 30
+    };
+  }
 }
 
 /**
