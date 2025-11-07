@@ -177,49 +177,12 @@ export default function ReferralShareCard({ sessionId, name, email }: ReferralSh
       </div>
 
       <Card className="overflow-hidden border-2 border-[#FFC107]/20" data-testid="card-gulfood-preview">
-        <div className="bg-gradient-to-br from-gray-900 via-black to-gray-800 p-10 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#FFC107]/10 via-transparent to-transparent" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC107]/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl" />
-          
-          <div className="relative text-center space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-6xl md:text-7xl font-black text-white tracking-tight leading-none">
-                GULFOOD
-              </h1>
-              <div className="flex items-center justify-center gap-3">
-                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#FFC107]" />
-                <p className="text-[#FFC107] text-3xl font-bold">2026</p>
-                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#FFC107]" />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-white/90 text-sm font-medium tracking-wider uppercase">
-                The World's Largest Food & Beverage Event
-              </p>
-            </div>
-            
-            <div className="bg-gradient-to-r from-[#FFC107] to-amber-500 text-black font-bold text-center py-4 px-6 rounded-lg shadow-lg">
-              <p className="text-lg">26-30 January 2026</p>
-              <p className="text-sm mt-1 opacity-90">Dubai World Trade Centre & Expo City Dubai</p>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-4 pt-4">
-              <div className="text-center space-y-1">
-                <p className="text-[#FFC107] text-2xl font-bold">5,000+</p>
-                <p className="text-white/60 text-xs uppercase tracking-wide">Exhibitors</p>
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-[#FFC107] text-2xl font-bold">120+</p>
-                <p className="text-white/60 text-xs uppercase tracking-wide">Countries</p>
-              </div>
-              <div className="text-center space-y-1">
-                <p className="text-[#FFC107] text-2xl font-bold">100K+</p>
-                <p className="text-white/60 text-xs uppercase tracking-wide">Visitors</p>
-              </div>
-            </div>
-          </div>
+        <div className="relative w-full" style={{ aspectRatio: '16 / 9' }}>
+          <img 
+            src="/gulfood-2026-share.png" 
+            alt="Gulfood 2026 - January 26-30, 2026 in Dubai"
+            className="w-full h-full object-cover"
+          />
         </div>
         
         <div className="flex items-center justify-center gap-3 py-5 bg-gradient-to-br from-background to-muted/30 border-t border-border">
