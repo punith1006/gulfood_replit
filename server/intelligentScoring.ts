@@ -46,6 +46,120 @@ function parseAIJSON<T>(content: string): T {
   }
 }
 
+/**
+ * Validate RelevanceScoring structure
+ * Ensures all required fields exist and have valid types and values
+ */
+function validateRelevanceScoring(data: any): data is RelevanceScoring {
+  if (!data || typeof data !== 'object') {
+    console.error('Validation failed: data is not an object');
+    return false;
+  }
+  
+  // Validate relevanceScore
+  if (typeof data.relevanceScore !== 'number' || isNaN(data.relevanceScore)) {
+    console.error('Validation failed: relevanceScore is not a valid number');
+    return false;
+  }
+  if (data.relevanceScore < 0 || data.relevanceScore > 100) {
+    console.error(`Validation failed: relevanceScore ${data.relevanceScore} is out of range (0-100)`);
+    return false;
+  }
+  
+  // Validate scoreJustification
+  if (typeof data.scoreJustification !== 'string' || data.scoreJustification.length === 0) {
+    console.error('Validation failed: scoreJustification is not a non-empty string');
+    return false;
+  }
+  
+  // Validate keyTakeaways - must be non-empty array of non-empty strings
+  if (!Array.isArray(data.keyTakeaways) || data.keyTakeaways.length === 0) {
+    console.error('Validation failed: keyTakeaways is not a non-empty array');
+    return false;
+  }
+  if (!data.keyTakeaways.every((item: any) => typeof item === 'string' && item.length > 0)) {
+    console.error('Validation failed: keyTakeaways contains non-string or empty elements');
+    return false;
+  }
+  
+  // Validate attendanceValue
+  if (typeof data.attendanceValue !== 'string' || data.attendanceValue.length === 0) {
+    console.error('Validation failed: attendanceValue is not a non-empty string');
+    return false;
+  }
+  
+  // Validate confidenceScore
+  if (typeof data.confidenceScore !== 'number' || isNaN(data.confidenceScore)) {
+    console.error('Validation failed: confidenceScore is not a valid number');
+    return false;
+  }
+  if (data.confidenceScore < 0 || data.confidenceScore > 100) {
+    console.error(`Validation failed: confidenceScore ${data.confidenceScore} is out of range (0-100)`);
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Validate ExhibitorMatchScore array
+ * Ensures all items have required fields with valid types and values
+ */
+function validateExhibitorMatchScores(data: any): data is ExhibitorMatchScore[] {
+  if (!Array.isArray(data)) {
+    console.error('Validation failed: data is not an array');
+    return false;
+  }
+  
+  if (data.length === 0) {
+    console.error('Validation failed: exhibitor match scores array is empty');
+    return false;
+  }
+  
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    
+    if (!item || typeof item !== 'object') {
+      console.error(`Validation failed: item ${i} is not an object`);
+      return false;
+    }
+    
+    // Validate exhibitorId
+    if (typeof item.exhibitorId !== 'number' || isNaN(item.exhibitorId)) {
+      console.error(`Validation failed: item ${i} exhibitorId is not a valid number`);
+      return false;
+    }
+    
+    // Validate matchScore with range check
+    if (typeof item.matchScore !== 'number' || isNaN(item.matchScore)) {
+      console.error(`Validation failed: item ${i} matchScore is not a valid number`);
+      return false;
+    }
+    if (item.matchScore < 0 || item.matchScore > 100) {
+      console.error(`Validation failed: item ${i} matchScore ${item.matchScore} is out of range (0-100)`);
+      return false;
+    }
+    
+    // Validate matchReasoning
+    if (typeof item.matchReasoning !== 'string' || item.matchReasoning.length === 0) {
+      console.error(`Validation failed: item ${i} matchReasoning is not a non-empty string`);
+      return false;
+    }
+    
+    // Validate relevanceFactors - must be array of strings
+    if (!Array.isArray(item.relevanceFactors)) {
+      console.error(`Validation failed: item ${i} relevanceFactors is not an array`);
+      return false;
+    }
+    if (!item.relevanceFactors.every((factor: any) => typeof factor === 'string' && factor.length > 0)) {
+      console.error(`Validation failed: item ${i} relevanceFactors contains non-string or empty elements`);
+      return false;
+    }
+  }
+  
+  return true;
+}
+
 export interface RelevanceScoring {
   relevanceScore: number; // 0-100
   scoreJustification: string; // Detailed explanation with KPIs
@@ -195,10 +309,18 @@ Return format: {"relevanceScore": 65, "scoreJustification": "...", "keyTakeaways
 
   try {
     const scoringData = parseAIJSON<RelevanceScoring>(content);
-    console.log(`✅ Successfully parsed relevance score: ${scoringData.relevanceScore}%`);
+    
+    // Validate the parsed structure
+    if (!validateRelevanceScoring(scoringData)) {
+      console.error('❌ AI returned invalid relevance scoring structure');
+      console.error('Parsed data:', JSON.stringify(scoringData, null, 2).substring(0, 500));
+      throw new Error('Invalid AI response structure - missing or malformed fields');
+    }
+    
+    console.log(`✅ Successfully parsed and validated relevance score: ${scoringData.relevanceScore}%`);
     return scoringData;
   } catch (parseError) {
-    console.error('❌ Failed to parse relevance scoring:', (parseError as Error).message);
+    console.error('❌ Failed to parse or validate relevance scoring:', (parseError as Error).message);
     console.error('Response preview:', content.substring(0, 500));
     
     // Return fallback values - ensures journey generation doesn't crash
@@ -328,10 +450,18 @@ Return format: [{"exhibitorId": 1, "matchScore": 85, "matchReasoning": "...", "r
 
   try {
     const matchScores = parseAIJSON<ExhibitorMatchScore[]>(content);
-    console.log(`✅ Successfully parsed ${matchScores.length} exhibitor match scores`);
+    
+    // Validate the parsed structure
+    if (!validateExhibitorMatchScores(matchScores)) {
+      console.error('❌ AI returned invalid exhibitor match scores structure');
+      console.error('Parsed data preview:', JSON.stringify(matchScores, null, 2).substring(0, 500));
+      throw new Error('Invalid AI response structure - missing or malformed match score fields');
+    }
+    
+    console.log(`✅ Successfully parsed and validated ${matchScores.length} exhibitor match scores`);
     return matchScores;
   } catch (parseError) {
-    console.error('❌ Failed to parse exhibitor match scores:', (parseError as Error).message);
+    console.error('❌ Failed to parse or validate exhibitor match scores:', (parseError as Error).message);
     console.error('Response preview:', content.substring(0, 500));
     
     // Return empty array as fallback - the route will handle boosting preferred exhibitors
