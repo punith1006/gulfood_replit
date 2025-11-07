@@ -43,14 +43,14 @@ const COLORS = {
   amber: ["#f59e0b", "#fbbf24", "#fcd34d"],
   rose: ["#f43f5e", "#fb7185", "#fda4af"],
   cyan: ["#06b6d4", "#22d3ee", "#67e8f9"],
-  vibrantDark: [
-    "#ea580c", // darker orange
-    "#7c3aed", // darker purple
-    "#059669", // darker green
-    "#e11d48", // darker rose
-    "#0891b2", // darker cyan
-    "#d97706", // darker amber
-    "#2563eb", // darker blue
+  vibrantBright: [
+    "#ff6b35", // bright orange
+    "#a855f7", // bright purple
+    "#22c55e", // bright green
+    "#f43f5e", // bright rose
+    "#06b6d4", // bright cyan
+    "#fbbf24", // bright amber
+    "#3b82f6", // bright blue
   ],
 };
 
@@ -306,7 +306,7 @@ export default function ExhibitorDashboard() {
                           dataKey="count"
                         >
                           {analytics.visitorRoles.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS.vibrantDark[index % COLORS.vibrantDark.length]} />
+                            <Cell key={`cell-${index}`} fill={COLORS.vibrantBright[index % COLORS.vibrantBright.length]} />
                           ))}
                         </Pie>
                         <Tooltip />
@@ -384,7 +384,7 @@ export default function ExhibitorDashboard() {
                         <Tooltip />
                         <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                           {analytics.topInterestCategories.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS.vibrantDark[index % COLORS.vibrantDark.length]} />
+                            <Cell key={`cell-${index}`} fill={COLORS.vibrantBright[index % COLORS.vibrantBright.length]} />
                           ))}
                         </Bar>
                       </BarChart>
