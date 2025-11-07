@@ -6,6 +6,46 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 }) : null;
 
+/**
+ * Robust JSON parsing with aggressive cleanup
+ * Handles common AI response issues like markdown, escaped quotes, newlines
+ */
+function parseAIJSON<T>(content: string): T {
+  // Remove markdown code blocks
+  let cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+  
+  // Remove any leading/trailing whitespace
+  cleaned = cleaned.trim();
+  
+  // Try to find JSON array or object boundaries if embedded in other text
+  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+  const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+  
+  if (arrayMatch) {
+    cleaned = arrayMatch[0];
+  } else if (objectMatch) {
+    cleaned = objectMatch[0];
+  }
+  
+  try {
+    return JSON.parse(cleaned);
+  } catch (firstError) {
+    // Try more aggressive cleanup
+    try {
+      // Fix common issues: unescaped quotes in strings, trailing commas
+      cleaned = cleaned
+        .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+        .replace(/\n/g, ' ') // Replace newlines with spaces
+        .replace(/\r/g, ''); // Remove carriage returns
+      
+      return JSON.parse(cleaned);
+    } catch (secondError) {
+      console.error('Failed to parse AI JSON after cleanup:', cleaned.substring(0, 500));
+      throw new Error(`JSON parsing failed: ${(secondError as Error).message}`);
+    }
+  }
+}
+
 export interface RelevanceScoring {
   relevanceScore: number; // 0-100
   scoreJustification: string; // Detailed explanation with KPIs
@@ -144,8 +184,7 @@ Return ONLY valid JSON, no markdown.`;
     throw new Error('No response from OpenAI');
   }
 
-  const cleanedContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
-  const scoringData = JSON.parse(cleanedContent);
+  const scoringData = parseAIJSON<RelevanceScoring>(content);
   
   return scoringData as RelevanceScoring;
 }
@@ -187,8 +226,8 @@ ATTENDEE ORGANIZATION:
 - Target Markets: ${organizationEnrichment.targetMarkets?.join(', ') || 'Not specified'}
 ` : `ATTENDEE ORGANIZATION: ${organization}`;
 
-  // Build exhibitor list (limit to reasonable batch size)
-  const exhibitorsList = exhibitors.slice(0, 50).map((ex, idx) => {
+  // Build exhibitor list (limit to 30 for token efficiency and reliable parsing)
+  const exhibitorsList = exhibitors.slice(0, 30).map((ex, idx) => {
     const isPreferred = preferredExhibitorIds.includes(ex.id);
     return `${idx + 1}. ${ex.name} (ID: ${ex.id})${isPreferred ? ' [USER PREFERRED]' : ''}
    Sector: ${ex.sector}
@@ -236,13 +275,22 @@ Return a JSON array with this structure for EACH exhibitor:
 
 Be REALISTIC. Most exhibitors should score 40-70 unless there's exceptional alignment.
 Preferred exhibitors should score 90-95% (user explicitly interested).
-Return ONLY valid JSON array, no markdown.`;
+
+CRITICAL JSON FORMATTING RULES:
+- Return ONLY valid JSON array, no markdown, no explanations
+- Use double quotes for all strings
+- Escape any quotes inside strings with backslash
+- Keep matchReasoning short (1-2 sentences max)
+- Keep relevanceFactors brief (3-5 words each)
+- No newlines in string values
+
+Return format: [{"exhibitorId": 1, "matchScore": 85, "matchReasoning": "...", "relevanceFactors": ["...", "..."]}]`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [{ role: "user", content: prompt }],
     temperature: 0.3,
-    max_tokens: 3000
+    max_tokens: 4000
   });
 
   const content = completion.choices[0]?.message?.content;
@@ -250,8 +298,16 @@ Return ONLY valid JSON array, no markdown.`;
     throw new Error('No response from OpenAI');
   }
 
-  const cleanedContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
-  const matchScores = JSON.parse(cleanedContent);
-  
-  return matchScores as ExhibitorMatchScore[];
+  try {
+    const matchScores = parseAIJSON<ExhibitorMatchScore[]>(content);
+    console.log(`✅ Successfully parsed ${matchScores.length} exhibitor match scores`);
+    return matchScores;
+  } catch (parseError) {
+    console.error('❌ Failed to parse exhibitor match scores:', (parseError as Error).message);
+    console.error('Response preview:', content.substring(0, 500));
+    
+    // Return empty array as fallback - the route will handle boosting preferred exhibitors
+    console.warn('⚠️  Returning empty match scores - preferred exhibitors will be added by route');
+    return [];
+  }
 }

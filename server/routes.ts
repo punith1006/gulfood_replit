@@ -1569,6 +1569,41 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
 
       console.log(`✅ Generated ${exhibitorMatches.length} exhibitor matches`);
 
+      // Fallback: If intelligent scoring failed, use simple keyword-based matching
+      if (exhibitorMatches.length === 0) {
+        console.warn('⚠️  Intelligent scoring returned no matches, using fallback matching...');
+        
+        // Simple fallback: score exhibitors based on interest category matches
+        const fallbackMatches = filteredExhibitors.slice(0, 30).map(exhibitor => {
+          let score = 50; // Base score
+          
+          // Boost if exhibitor sector matches any interest category
+          if (interestCategories.some((cat: string) => 
+            exhibitor.sector.toLowerCase().includes(cat.toLowerCase()) || 
+            cat.toLowerCase().includes(exhibitor.sector.toLowerCase())
+          )) {
+            score += 20;
+          }
+          
+          // Boost preferred exhibitors
+          if (preferredExhibitorIds && preferredExhibitorIds.includes(exhibitor.id)) {
+            score = 92;
+          }
+          
+          return {
+            exhibitorId: exhibitor.id,
+            matchScore: Math.min(100, score),
+            matchReasoning: preferredExhibitorIds && preferredExhibitorIds.includes(exhibitor.id)
+              ? "You selected this exhibitor as a priority"
+              : `Relevant to your interests in ${exhibitor.sector}`,
+            relevanceFactors: [exhibitor.sector, exhibitor.country]
+          };
+        }).sort((a, b) => b.matchScore - a.matchScore);
+        
+        exhibitorMatches.push(...fallbackMatches.slice(0, 15));
+        console.log(`✅ Fallback matching generated ${exhibitorMatches.length} matches`);
+      }
+
       // Generate highlights based on keyTakeaways
       const highlights = relevanceScoring.keyTakeaways.map((takeaway, idx) => ({
         icon: ["Target", "Users", "TrendingUp", "Globe", "Award"][idx] || "Target",
