@@ -43,6 +43,15 @@ const COLORS = {
   amber: ["#f59e0b", "#fbbf24", "#fcd34d"],
   rose: ["#f43f5e", "#fb7185", "#fda4af"],
   cyan: ["#06b6d4", "#22d3ee", "#67e8f9"],
+  vibrant: [
+    "#f97316", // orange
+    "#8b5cf6", // purple
+    "#10b981", // green
+    "#f43f5e", // rose
+    "#06b6d4", // cyan
+    "#f59e0b", // amber
+    "#3b82f6", // blue
+  ],
 };
 
 export default function ExhibitorDashboard() {
@@ -297,7 +306,7 @@ export default function ExhibitorDashboard() {
                           dataKey="count"
                         >
                           {analytics.visitorRoles.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS.blue[index % COLORS.blue.length]} />
+                            <Cell key={`cell-${index}`} fill={COLORS.vibrant[index % COLORS.vibrant.length]} />
                           ))}
                         </Pie>
                         <Tooltip />
