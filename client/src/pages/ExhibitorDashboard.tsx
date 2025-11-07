@@ -515,7 +515,7 @@ export default function ExhibitorDashboard() {
                   <CardDescription>Which days visitors are most active</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {analytics.peakActivityDays.length === 0 ? (
+                  {!analytics?.peakActivityDays || analytics.peakActivityDays.length === 0 ? (
                     <div className="text-center py-12">
                       <Activity className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
                       <p className="text-muted-foreground">No activity data yet</p>
