@@ -7,8 +7,8 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 }) : null;
 
 /**
- * Robust JSON parsing with aggressive cleanup
- * Handles common AI response issues like markdown, escaped quotes, newlines
+ * Robust JSON parsing with aggressive cleanup and brace-aware extraction
+ * Handles common AI response issues like markdown, escaped quotes, newlines, nested structures
  */
 function parseAIJSON<T>(content: string): T {
   // Remove markdown code blocks
@@ -17,14 +17,11 @@ function parseAIJSON<T>(content: string): T {
   // Remove any leading/trailing whitespace
   cleaned = cleaned.trim();
   
-  // Try to find JSON array or object boundaries if embedded in other text
-  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-  const objectMatch = cleaned.match(/\{[\s\S]*\}/);
-  
-  if (arrayMatch) {
-    cleaned = arrayMatch[0];
-  } else if (objectMatch) {
-    cleaned = objectMatch[0];
+  // Use brace-aware scanner to extract the first balanced JSON structure
+  // This handles nested arrays and objects correctly
+  const extracted = extractFirstJSONStructure(cleaned);
+  if (extracted) {
+    cleaned = extracted;
   }
   
   try {
@@ -44,6 +41,66 @@ function parseAIJSON<T>(content: string): T {
       throw new Error(`JSON parsing failed: ${(secondError as Error).message}`);
     }
   }
+}
+
+/**
+ * Extract the first balanced JSON structure (object or array) using character-by-character scanning
+ * Handles nested structures, quotes, and escapes correctly
+ */
+function extractFirstJSONStructure(content: string): string | null {
+  let depth = 0;
+  let startIndex = -1;
+  let inString = false;
+  let escapeNext = false;
+  let currentBracket: '{' | '[' | null = null;
+  
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    
+    // Handle escape sequences
+    if (escapeNext) {
+      escapeNext = false;
+      continue;
+    }
+    
+    if (char === '\\') {
+      escapeNext = true;
+      continue;
+    }
+    
+    // Handle string boundaries
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    
+    // Skip characters inside strings
+    if (inString) {
+      continue;
+    }
+    
+    // Handle opening brackets
+    if (char === '{' || char === '[') {
+      if (depth === 0) {
+        startIndex = i;
+        currentBracket = char;
+      }
+      depth++;
+    }
+    
+    // Handle closing brackets
+    if (char === '}' || char === ']') {
+      depth--;
+      
+      // Found the closing bracket for our top-level structure
+      if (depth === 0 && startIndex !== -1) {
+        return content.substring(startIndex, i + 1);
+      }
+    }
+  }
+  
+  // No balanced structure found
+  return null;
 }
 
 /**
