@@ -1,0 +1,286 @@
+# Exhibitor Analytics Report
+
+**Company:** Nandini  
+**Exhibitor ID:** `cfbe8a08-f7ec-40c9-9cc5-842e01c36261`  
+**Sector:** ["Grocery Trade", "Dairy"]  
+**Category:** N/A  
+**Products:** ["dairy"]  
+**Report Generated:** 2025-11-07 00:26:23
+
+---
+
+## Executive Summary
+
+This report provides comprehensive analytics for the exhibitor's performance at the exhibition. All metrics are calculated from visitor search interactions, where visitors search for and view exhibitor information.
+
+---
+
+## 1. Basic Exhibitor Information
+
+**Description:** Core company information stored in the system.
+
+**Calculation:** Direct retrieval from the `exhibitor` table where `uuid = cfbe8a08-f7ec-40c9-9cc5-842e01c36261`.
+
+**Data:**
+- Company Name: Nandini
+- Sector: ["Grocery Trade", "Dairy"]
+- Category: Not specified
+- Products: ["dairy"]
+
+---
+
+## 2. Total Search Appearances
+
+**Description:** The total number of times this exhibitor appeared in visitor search results. This is the fundamental engagement metric indicating overall visibility.
+
+**Calculation:** Counts all rows in the `visitor_exhibitor` table where `exhibitor_id = cfbe8a08-f7ec-40c9-9cc5-842e01c36261`. Each row represents one search/appearance event.
+
+**SQL Logic:**
+```sql
+SELECT COUNT(*) as total_appearances
+FROM visitor_exhibitor
+WHERE exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+```
+
+**Result:** 0 total appearances
+
+---
+
+## 3. Unique Visitors Interested
+
+**Description:** The number of distinct visitors who have searched for this exhibitor at least once. This metric indicates reach and interest diversity.
+
+**Calculation:** Counts distinct `visitor_uuid` values from `visitor_exhibitor` table where `exhibitor_id = cfbe8a08-f7ec-40c9-9cc5-842e01c36261`.
+
+**SQL Logic:**
+```sql
+SELECT COUNT(DISTINCT visitor_uuid) as unique_visitors
+FROM visitor_exhibitor
+WHERE exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+```
+
+**Result:** 0 unique visitors
+
+**Engagement Rate:** 0% (unique visitors per appearance)
+
+---
+
+## 4. Search Trend (Last 7 Days)
+
+**Description:** Daily breakdown of search appearances over the past week, showing engagement patterns and trends.
+
+**Calculation:** Groups search events by date (`DATE(created_at)`) for the last 7 days, counting occurrences per day.
+
+**SQL Logic:**
+```sql
+SELECT DATE(created_at) as search_date, COUNT(*) as count
+FROM visitor_exhibitor
+WHERE exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+GROUP BY DATE(created_at)
+ORDER BY search_date DESC
+```
+
+**Results:**
+- No search activity in the last 7 days
+
+**Total in Period:** 0 searches
+
+---
+
+## 5. Peak Interest Hours
+
+**Description:** Hours of the day when this exhibitor receives the most search traffic, helping identify optimal engagement times.
+
+**Calculation:** Groups searches by hour of day (`HOUR(created_at)`) and counts occurrences, sorted by frequency.
+
+**SQL Logic:**
+```sql
+SELECT HOUR(created_at) as hour, COUNT(*) as count
+FROM visitor_exhibitor
+WHERE exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+GROUP BY HOUR(created_at)
+ORDER BY count DESC
+LIMIT 5
+```
+
+**Top Peak Hours:**
+- No peak hour data available
+
+---
+
+## 6. Visitor Roles Distribution
+
+**Description:** Breakdown of visitor professional roles who showed interest in this exhibitor. Helps understand the target audience profile.
+
+**Calculation:** Joins `visitor_exhibitor` with `visitors` table, groups by `role` field, and counts occurrences.
+
+**SQL Logic:**
+```sql
+SELECT v.role, COUNT(*) as count
+FROM visitor_exhibitor ve
+JOIN visitors v ON ve.visitor_uuid = v.uuid
+WHERE ve.exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261' AND v.role IS NOT NULL
+GROUP BY v.role
+ORDER BY count DESC
+```
+
+**Distribution:**
+- No role data available
+
+---
+
+## 7. Visitor Intent Distribution
+
+**Description:** Analysis of visitor purchase/partnership intentions when searching for this exhibitor. Indicates business potential and visitor goals.
+
+**Calculation:** Joins `visitor_exhibitor` with `visitors` table, groups by `intent` field, and counts occurrences.
+
+**SQL Logic:**
+```sql
+SELECT v.intent, COUNT(*) as count
+FROM visitor_exhibitor ve
+JOIN visitors v ON ve.visitor_uuid = v.uuid
+WHERE ve.exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261' AND v.intent IS NOT NULL
+GROUP BY v.intent
+ORDER BY count DESC
+```
+
+**Intent Breakdown:**
+- No intent data available
+
+---
+
+## 8. Top Interest Categories
+
+**Description:** Most popular interest categories among visitors who searched for this exhibitor. Shows alignment between visitor interests and exhibitor.
+
+**Calculation:** Joins `visitor_exhibitor` with `visitors`, groups by `interests_category`, and counts occurrences.
+
+**SQL Logic:**
+```sql
+SELECT v.interests_category, COUNT(*) as count
+FROM visitor_exhibitor ve
+JOIN visitors v ON ve.visitor_uuid = v.uuid
+WHERE ve.exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261' AND v.interests_category IS NOT NULL
+GROUP BY v.interests_category
+ORDER BY count DESC
+LIMIT 10
+```
+
+**Top Categories:**
+- No interest category data available
+
+---
+
+## 9. Top Interested Companies
+
+**Description:** Companies whose representatives showed the most interest in this exhibitor. Identifies potential high-value leads or partnership opportunities.
+
+**Calculation:** Joins `visitor_exhibitor` with `visitors`, groups by `company_name`, and counts search occurrences per company.
+
+**SQL Logic:**
+```sql
+SELECT v.company_name, COUNT(*) as searches
+FROM visitor_exhibitor ve
+JOIN visitors v ON ve.visitor_uuid = v.uuid
+WHERE ve.exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261' AND v.company_name IS NOT NULL
+GROUP BY v.company_name
+ORDER BY searches DESC
+LIMIT 10
+```
+
+**Top Companies:**
+- No company data available
+
+---
+
+## 10. Co-Searched Exhibitors
+
+**Description:** Exhibitors that are frequently searched by the same visitors who also searched for this exhibitor. Identifies competitors and complementary exhibitors.
+
+**Calculation:** Self-joins `visitor_exhibitor` to find visitors who searched both this exhibitor and others, then groups by co-searched exhibitors.
+
+**SQL Logic:**
+```sql
+SELECT e.company_name, COUNT(*) as co_searches
+FROM visitor_exhibitor ve1
+JOIN visitor_exhibitor ve2 ON ve1.visitor_uuid = ve2.visitor_uuid
+JOIN exhibitor e ON ve2.exhibitor_id = e.uuid
+WHERE ve1.exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+AND ve2.exhibitor_id != 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+GROUP BY e.company_name, e.uuid
+ORDER BY co_searches DESC
+LIMIT 10
+```
+
+**Frequently Co-Searched Exhibitors:**
+- No co-searched exhibitor data available
+
+---
+
+## 11. Market Position & Category Performance
+
+**Description:** Compares this exhibitor's performance against the average performance of all exhibitors in the same category. Shows competitive standing.
+
+**Calculation:** 
+1. Calculates average search count for all exhibitors in the same category
+2. Gets this exhibitor's search count
+3. Computes performance index: `(my_searches / category_average) * 100`
+
+**SQL Logic:**
+```sql
+-- Category average
+SELECT AVG(search_count) as category_avg
+FROM (
+    SELECT ve.exhibitor_id, COUNT(*) as search_count
+    FROM visitor_exhibitor ve
+    JOIN exhibitor e ON ve.exhibitor_id = e.uuid
+    WHERE e.category = ''
+    GROUP BY ve.exhibitor_id
+) as cat_stats
+
+-- My searches
+SELECT COUNT(*) as my_searches
+FROM visitor_exhibitor
+WHERE exhibitor_id = 'cfbe8a08-f7ec-40c9-9cc5-842e01c36261'
+```
+
+**Results:**
+
+- **Category:** N/A
+- **This Exhibitor's Searches:** 0
+- **Category Average:** 0.0
+- **Performance Index:** 0.0
+  - Index > 100: Above average performance
+  - Index = 100: Average performance
+  - Index < 100: Below average performance
+
+---
+
+## 12. Country Distribution
+
+**Description:** Geographic distribution of visitors interested in this exhibitor, based on IP address geolocation. Shows international reach and regional interest.
+
+**Calculation:** 
+1. Retrieves IP addresses from visitor records
+2. Converts IP to country code using GeoIP2 database (or returns 'Unknown' if unavailable)
+3. Aggregates counts by country
+
+**Results:**
+- No country data available (IP addresses may not be stored)
+
+---
+
+## Summary Statistics
+
+- **Total Search Appearances:** 0
+- **Unique Visitors:** 0
+- **Average Searches per Visitor:** 0
+- **Search Activity Days (Last 7):** 0
+- **Peak Hours Identified:** 0
+- **Countries Represented:** 0
+
+---
+
+*Report generated on 2025-11-07 00:26:23*

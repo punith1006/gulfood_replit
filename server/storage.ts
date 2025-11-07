@@ -46,13 +46,16 @@ import {
   type Organizer,
   type InsertOrganizer,
   type Appointment,
-  type InsertAppointment
+  type InsertAppointment,
+  type ExhibitorAnalytics
 } from "@shared/schema";
 
 export interface IStorage {
   getExhibitors(search?: string, sector?: string, country?: string): Promise<Exhibitor[]>;
   getExhibitor(id: number): Promise<Exhibitor | undefined>;
+  getExhibitorByCompanyName(companyName: string): Promise<Exhibitor | undefined>;
   createExhibitor(exhibitor: InsertExhibitor): Promise<Exhibitor>;
+  getExhibitorAnalytics(exhibitorId: number): Promise<ExhibitorAnalytics>;
   
   getCompanyAnalysis(companyIdentifier: string): Promise<CompanyAnalysis | undefined>;
   createCompanyAnalysis(analysis: InsertCompanyAnalysis): Promise<CompanyAnalysis>;
@@ -182,6 +185,157 @@ export class DatabaseStorage implements IStorage {
   async createExhibitor(exhibitor: InsertExhibitor): Promise<Exhibitor> {
     const result = await db.insert(exhibitors).values(exhibitor).returning();
     return result[0];
+  }
+
+  async getExhibitorByCompanyName(companyName: string): Promise<Exhibitor | undefined> {
+    const result = await db
+      .select()
+      .from(exhibitors)
+      .where(ilike(exhibitors.name, companyName))
+      .limit(1);
+    return result[0];
+  }
+
+  async getExhibitorAnalytics(exhibitorId: number): Promise<ExhibitorAnalytics> {
+    // Total appearances - count of journey plans containing this exhibitor
+    const totalAppearancesResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`);
+    const totalAppearances = Number(totalAppearancesResult[0]?.count || 0);
+
+    // Unique visitors - count of distinct leadIds
+    const uniqueVisitorsResult = await db
+      .select({ count: sql<number>`count(DISTINCT ${journeyPlans.leadId})` })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`);
+    const uniqueVisitors = Number(uniqueVisitorsResult[0]?.count || 0);
+
+    // Last 7 days trend
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const trendResult = await db
+      .select({
+        date: sql<string>`DATE(${journeyPlans.createdAt})`,
+        count: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(
+        and(
+          sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`,
+          sql`${journeyPlans.createdAt} >= ${sevenDaysAgo}`
+        )!
+      )
+      .groupBy(sql`DATE(${journeyPlans.createdAt})`)
+      .orderBy(sql`DATE(${journeyPlans.createdAt})`);
+    
+    const last7DaysTrend = trendResult.map(row => ({
+      date: row.date,
+      count: Number(row.count)
+    }));
+
+    // Visitor roles
+    const rolesResult = await db
+      .select({
+        role: journeyPlans.role,
+        count: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
+      .groupBy(journeyPlans.role)
+      .orderBy(desc(sql<number>`count(*)`));
+    
+    const visitorRoles = rolesResult.map(row => ({
+      role: row.role,
+      count: Number(row.count)
+    }));
+
+    // Visitor intents (unnest attendanceIntents array)
+    const intentsResult = await db
+      .select({
+        intent: sql<string>`unnest(${journeyPlans.attendanceIntents})`,
+        count: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
+      .groupBy(sql`unnest(${journeyPlans.attendanceIntents})`)
+      .orderBy(desc(sql<number>`count(*)`))
+      .limit(10);
+    
+    const visitorIntents = intentsResult.map(row => ({
+      intent: row.intent,
+      count: Number(row.count)
+    }));
+
+    // Top interest categories (unnest interestCategories array)
+    const categoriesResult = await db
+      .select({
+        category: sql<string>`unnest(${journeyPlans.interestCategories})`,
+        count: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
+      .groupBy(sql`unnest(${journeyPlans.interestCategories})`)
+      .orderBy(desc(sql<number>`count(*)`))
+      .limit(10);
+    
+    const topInterestCategories = categoriesResult.map(row => ({
+      category: row.category,
+      count: Number(row.count)
+    }));
+
+    // Top companies
+    const companiesResult = await db
+      .select({
+        company: journeyPlans.organization,
+        searches: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
+      .groupBy(journeyPlans.organization)
+      .orderBy(desc(sql<number>`count(*)`))
+      .limit(10);
+    
+    const topCompanies = companiesResult.map(row => ({
+      company: row.company,
+      searches: Number(row.searches)
+    }));
+
+    // Co-searched exhibitors (other exhibitors in same journey plans)
+    const coSearchedResult = await db
+      .select({
+        exhibitorId: sql<number>`unnest(${journeyPlans.matchedExhibitorIds})`,
+        count: sql<number>`count(*)`
+      })
+      .from(journeyPlans)
+      .where(sql`${exhibitorId} = ANY(${journeyPlans.matchedExhibitorIds})`)
+      .groupBy(sql`unnest(${journeyPlans.matchedExhibitorIds})`)
+      .having(sql`unnest(${journeyPlans.matchedExhibitorIds}) != ${exhibitorId}`)
+      .orderBy(desc(sql<number>`count(*)`))
+      .limit(10);
+
+    // Get exhibitor names for co-searched exhibitors
+    const coSearchedExhibitors = await Promise.all(
+      coSearchedResult.map(async (row) => {
+        const exhibitor = await this.getExhibitor(row.exhibitorId);
+        return {
+          exhibitorName: exhibitor?.name || 'Unknown',
+          coSearches: Number(row.count)
+        };
+      })
+    );
+
+    return {
+      totalAppearances,
+      uniqueVisitors,
+      last7DaysTrend,
+      visitorRoles,
+      visitorIntents,
+      topInterestCategories,
+      topCompanies,
+      coSearchedExhibitors
+    };
   }
 
   async getCompanyAnalysis(companyIdentifier: string): Promise<CompanyAnalysis | undefined> {

@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.SESSION_SECRET;
+const JWT_SECRET = process.env.SESSION_SECRET!;
 
-if (!JWT_SECRET) {
+if (!process.env.SESSION_SECRET) {
   throw new Error("CRITICAL: SESSION_SECRET environment variable must be set for JWT authentication");
 }
 
@@ -11,6 +11,10 @@ export interface AuthRequest extends Request {
   organizerEmail?: string;
   organizerRole?: string;
   exhibitorCode?: string;
+  exhibitor?: {
+    code: string;
+    companyName: string;
+  };
 }
 
 export function generateOrganizerToken(email: string, role: string): string {
@@ -70,6 +74,10 @@ export function requireExhibitorAuth(req: AuthRequest, res: Response, next: Next
     }
 
     req.exhibitorCode = decoded.code;
+    req.exhibitor = {
+      code: decoded.code,
+      companyName: decoded.companyName
+    };
     next();
   } catch (error) {
     return res.status(401).json({ error: "Invalid or expired token" });

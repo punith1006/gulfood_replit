@@ -62,6 +62,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/exhibitor/analytics", requireExhibitorAuth, async (req: AuthRequest, res) => {
+    try {
+      const { companyName } = req.exhibitor!;
+      const exhibitor = await storage.getExhibitorByCompanyName(companyName);
+      
+      if (!exhibitor) {
+        return res.status(404).json({ error: "Exhibitor not found" });
+      }
+      
+      const analytics = await storage.getExhibitorAnalytics(exhibitor.id);
+      res.json({ exhibitor, analytics });
+    } catch (error) {
+      console.error("Error fetching exhibitor analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
   app.post("/api/analyze-company", async (req, res) => {
     try {
       const { companyIdentifier } = req.body;

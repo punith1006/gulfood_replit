@@ -262,6 +262,18 @@ export const appointments = pgTable("appointments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// ExhibitorAnalytics interface for analytics API
+export interface ExhibitorAnalytics {
+  totalAppearances: number;
+  uniqueVisitors: number;
+  last7DaysTrend: Array<{ date: string; count: number }>;
+  visitorRoles: Array<{ role: string; count: number }>;
+  visitorIntents: Array<{ intent: string; count: number }>;
+  topInterestCategories: Array<{ category: string; count: number }>;
+  topCompanies: Array<{ company: string; searches: number }>;
+  coSearchedExhibitors: Array<{ exhibitorName: string; coSearches: number }>;
+}
+
 export const insertExhibitorSchema = createInsertSchema(exhibitors).omit({
   id: true,
   createdAt: true
