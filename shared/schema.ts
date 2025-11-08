@@ -32,6 +32,58 @@ export const GULFOOD_CATEGORIES = [
 
 export type GulfoodCategory = typeof GULFOOD_CATEGORIES[number];
 
+// Sector normalization map: Maps form categories to database sectors
+// This handles cases where form labels differ from database values
+export const SECTOR_NORMALIZATION: Record<string, string[]> = {
+  "Dairy": ["Dairy Products", "Dairy"],
+  "Rice, Pulses & Grain": ["Pulses, Grains & Cereals", "Rice, Pulses & Grain"],
+  "Beverages": ["Beverages", "Coffee & Tea"],
+  "Fats & Oils": ["Fats & Oils"],
+  "Meat & Poultry": ["Meat & Poultry", "Seafood"],
+  "Power Brands": ["Power Brands"],
+  "Grocery Trade": ["Grocery Trade", "Retail & Distribution", "Private Label"],
+  "World Food": [
+    "World Food",
+    "Bakery & Confectionery",
+    "Fresh Produce",
+    "Frozen Food",
+    "Canned & Preserved Food",
+    "Organic & Natural Products",
+    "Plant-Based & Vegan",
+    "Snacks & Nuts",
+    "Spices & Condiments",
+    "Ingredients & Food Additives",
+    "Food Packaging & Machinery",
+    "Catering Equipment & Supplies",
+    "Halal Products",
+    "Kosher Products",
+    "Health, Wellness & Free-From"
+  ]
+};
+
+// Helper function to normalize interest categories to database sectors
+export function normalizeInterestCategories(categories: string[]): string[] {
+  const normalizedSectors = new Set<string>();
+  
+  for (const category of categories) {
+    // Always include the original category to ensure specific matches work
+    normalizedSectors.add(category);
+    
+    // Find which database sector(s) this category maps to
+    for (const [dbSector, formCategories] of Object.entries(SECTOR_NORMALIZATION)) {
+      if (formCategories.some(fc => 
+        fc.toLowerCase() === category.toLowerCase() ||
+        category.toLowerCase().includes(fc.toLowerCase()) ||
+        fc.toLowerCase().includes(category.toLowerCase())
+      )) {
+        normalizedSectors.add(dbSector);
+      }
+    }
+  }
+  
+  return Array.from(normalizedSectors);
+}
+
 export const exhibitors = pgTable("exhibitors", {
   id: serial("id").primaryKey(),
   eid: text("eid").unique(),

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema, normalizeInterestCategories } from "@shared/schema";
 import { googleCalendar } from "./googleCalendar";
 import { sendAppointmentConfirmation } from "./emailService";
 import OpenAI from "openai";
@@ -1560,20 +1560,41 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       if (interestCategories.length > 0) {
         console.log(`🎯 Prioritizing exhibitors by interest categories: ${interestCategories.join(', ')}`);
         
-        // Separate exhibitors into matching and non-matching
-        const matchingExhibitors = filteredExhibitors.filter(e => 
-          interestCategories.some((cat: string) => 
-            e.sector.toLowerCase().includes(cat.toLowerCase()) || 
-            cat.toLowerCase().includes(e.sector.toLowerCase())
-          )
-        );
+        // Normalize user's interest categories to database sectors
+        const normalizedSectors = normalizeInterestCategories(interestCategories);
+        console.log(`📋 Normalized to database sectors: ${normalizedSectors.join(', ')}`);
         
-        const nonMatchingExhibitors = filteredExhibitors.filter(e => 
-          !interestCategories.some((cat: string) => 
-            e.sector.toLowerCase().includes(cat.toLowerCase()) || 
-            cat.toLowerCase().includes(e.sector.toLowerCase())
-          )
-        );
+        // Separate exhibitors into matching and non-matching
+        const matchingExhibitors = filteredExhibitors.filter(e => {
+          // Check both e.sector (string) and e.sectors (array) fields
+          const exhibitorSectors = [
+            e.sector,
+            ...(e.sectors || [])
+          ].filter(Boolean);
+          
+          return exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+        });
+        
+        const nonMatchingExhibitors = filteredExhibitors.filter(e => {
+          const exhibitorSectors = [
+            e.sector,
+            ...(e.sectors || [])
+          ].filter(Boolean);
+          
+          return !exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+        });
         
         // Prioritize matching exhibitors (40) + include some variety (10)
         exhibitorsToScore = [
@@ -1606,14 +1627,28 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       if (exhibitorMatches.length === 0) {
         console.warn('⚠️  Intelligent scoring returned no matches, using fallback matching...');
         
+        // Normalize interest categories for fallback matching
+        const normalizedSectors = interestCategories.length > 0 
+          ? normalizeInterestCategories(interestCategories) 
+          : [];
+        
         // Simple fallback: score exhibitors based on interest category matches
         const fallbackMatches = filteredExhibitors.slice(0, 30).map(exhibitor => {
           let score = 50; // Base score
           
-          // Boost if exhibitor sector matches any interest category
-          if (interestCategories.some((cat: string) => 
-            exhibitor.sector.toLowerCase().includes(cat.toLowerCase()) || 
-            cat.toLowerCase().includes(exhibitor.sector.toLowerCase())
+          // Check both exhibitor.sector and exhibitor.sectors array
+          const exhibitorSectors = [
+            exhibitor.sector,
+            ...(exhibitor.sectors || [])
+          ].filter(Boolean);
+          
+          // Boost if exhibitor sector matches any normalized sector
+          if (normalizedSectors.length > 0 && exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
           )) {
             score += 20;
           }

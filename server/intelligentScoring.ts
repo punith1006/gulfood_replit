@@ -536,6 +536,19 @@ ATTENDEE PROFILE:
 - **PRIMARY INTERESTS: ${interestCategories.length > 0 ? interestCategories.join(', ') : 'General (no specific sectors)'}**
 - Goals: ${attendanceIntents.join(', ') || 'Networking'}
 
+CRITICAL PERSONALIZATION RULE:
+**ALL matchReasoning MUST BE WRITTEN IN SECOND PERSON FROM THE ATTENDEE'S POV**
+- Use "you", "your", "you'll" - NEVER use third person
+- ALWAYS mention: "${role}" (their role)
+- ALWAYS connect to: "${attendanceIntents.join(', ')}" (their goals)
+- ALWAYS reference: "${interestCategories.join(', ')}" (their interests)
+
+PERSONALIZATION EXAMPLES:
+✅ GOOD: "As a ${role} ${attendanceIntents[0] ? `looking to ${attendanceIntents[0].toLowerCase()}` : 'attending Gulfood'}, you'll find their ${interestCategories[0] || 'offerings'} directly support your procurement objectives."
+✅ GOOD: "Their dairy products align perfectly with your focus on ${interestCategories.join(' and ')}, making them an ideal supplier for your ${role} goals."
+❌ BAD: "This exhibitor offers dairy products." (no personalization, third person)
+❌ BAD: "Direct match in dairy sector." (too generic, no user perspective)
+
 CRITICAL SCORING RULE:
 **INTEREST CATEGORY MATCH IS THE #1 PRIORITY**
 - If attendee has specific interest categories, exhibitors in those sectors MUST score 70-95%
@@ -567,10 +580,18 @@ Return a JSON array with this structure for EACH exhibitor:
   {
     "exhibitorId": <number>,
     "matchScore": <number 0-100>,
-    "matchReasoning": "<1-2 sentences explaining the score>",
+    "matchReasoning": "<WHY THIS MATTERS TO YOU - written in second person from attendee's perspective>",
     "relevanceFactors": ["<factor 1>", "<factor 2>"]
   }
 ]
+
+**CRITICAL: matchReasoning MUST BE PERSONALIZED FROM ATTENDEE'S PERSPECTIVE**
+- Write in SECOND PERSON ("you", "your") - NOT third person
+- Explicitly reference their role: "${role}"
+- Connect to their goals: "${attendanceIntents.join(', ')}"
+- Tie to their interest categories: "${interestCategories.join(', ')}"
+- Example GOOD: "As a ${role} focused on ${attendanceIntents[0] || 'networking'}, you'll find their ${interestCategories[0] || 'products'} align with your procurement needs"
+- Example BAD: "This exhibitor offers dairy products" (too generic, no personalization)
 
 Be REALISTIC. Most exhibitors should score 40-70 unless there's exceptional alignment.
 Preferred exhibitors should score 90-95% (user explicitly interested).
