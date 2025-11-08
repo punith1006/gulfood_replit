@@ -52,6 +52,22 @@ export function streamChatResponse(
   const wsUrl = 'wss://stu.globalknowledgetech.com:8000/generate/response/stream';
   
   let ws: WebSocket | null = null;
+  let hasCompleted = false;
+  let hasErrored = false;
+  
+  const safeComplete = () => {
+    if (!hasCompleted && !hasErrored) {
+      hasCompleted = true;
+      onComplete();
+    }
+  };
+  
+  const safeError = (error: Error) => {
+    if (!hasErrored && !hasCompleted) {
+      hasErrored = true;
+      onError(error);
+    }
+  };
   
   try {
     ws = new WebSocket(wsUrl);
@@ -84,8 +100,8 @@ export function streamChatResponse(
         if (data.token) {
           onToken(data.token);
         } else if (data.type === 'complete' || data.complete === true) {
-          // Stream completed successfully
-          onComplete();
+          // Stream completed successfully - mark as complete
+          safeComplete();
         }
       } catch (parseError) {
         // If it's not JSON, treat it as a raw token
@@ -95,18 +111,19 @@ export function streamChatResponse(
     
     ws.onerror = (event) => {
       console.error('WebSocket error:', event);
-      onError(new Error('WebSocket connection error'));
+      safeError(new Error('WebSocket connection error'));
     };
     
     ws.onclose = (event) => {
       console.log('WebSocket connection closed', event.code, event.reason);
-      // WebSocket closes automatically after streaming completes
-      onComplete();
+      // Only call onComplete if we haven't already completed or errored
+      // Backend closes WebSocket after streaming completes
+      safeComplete();
     };
     
   } catch (error) {
     console.error('Error establishing WebSocket connection:', error);
-    onError(error as Error);
+    safeError(error as Error);
   }
   
   // Return cleanup function to close WebSocket if needed
