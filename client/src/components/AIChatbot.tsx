@@ -72,7 +72,12 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
     "Browse Exhibitors",
     "Navigate the Venue",
     "Hotel Recommendations",
-    "Live Announcements"
+    "Food & Dining Guide",
+    "On-Site Facilities",
+    "Special Offers",
+    "Networking Tips",
+    "Download Venue Map",
+    "Download Venue Guide"
   ],
   exhibitor: [
     "Connect with potential buyers",
@@ -91,6 +96,20 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
     "Event performance",
     "Real-time insights"
   ]
+};
+
+// Contextual prompts for quick actions - adds context when sending to chatbot
+const quickActionPrompts: Record<string, string> = {
+  "View Event Schedule": "Show me the complete event schedule for Gulfood 2026, including all conferences, seminars, and special events happening each day from January 26-30, 2026.",
+  "Browse Exhibitors": "Help me browse and discover exhibitors at Gulfood 2026. I'd like to see exhibitors by category, country, or sector so I can find companies relevant to my interests.",
+  "Navigate the Venue": "I need help navigating the Gulfood 2026 venue. Can you explain the layout of Dubai Exhibition Centre (DEC) and Dubai World Trade Centre (DWTC), including how to get between halls and key locations?",
+  "Hotel Recommendations": "Can you recommend hotels near the Gulfood 2026 venues (Dubai Exhibition Centre and Dubai World Trade Centre)? I'd like options with different price ranges and information about transportation to the event.",
+  "Food & Dining Guide": "What food and dining options are available at the Gulfood 2026 venues? Tell me about restaurants, cafes, food courts, and any special dining experiences during the event.",
+  "On-Site Facilities": "What facilities and amenities are available on-site at Gulfood 2026? I'd like to know about ATMs, prayer rooms, first aid, Wi-Fi, charging stations, lounges, and other visitor services.",
+  "Special Offers": "Are there any special offers, promotions, or exclusive deals available for Gulfood 2026 visitors? This could include early bird registration, group discounts, hotel packages, or exhibitor promotions.",
+  "Networking Tips": "Can you give me practical networking tips for Gulfood 2026? I want to make the most of my visit by connecting with the right people, including how to approach exhibitors, use the mobile app, and maximize networking opportunities.",
+  "Download Venue Map": "I'd like to download a venue map for Gulfood 2026. Can you provide me with PDF maps for both Dubai Exhibition Centre (DEC) and Dubai World Trade Centre (DWTC) showing all halls, exhibitor locations, and key facilities?",
+  "Download Venue Guide": "Can you provide me with the official Gulfood 2026 venue guide? I'd like a comprehensive PDF guide with exhibitor listings, event schedule, venue maps, transportation info, and visitor information."
 };
 
 interface Message {
@@ -805,9 +824,11 @@ export default function AIChatbot() {
       return;
     }
     
-    const userMessage: Message = { role: "user", content: action };
+    // Use contextual prompt if available, otherwise use the action label
+    const messageContent = quickActionPrompts[action] || action;
+    const userMessage: Message = { role: "user", content: messageContent };
     setMessages(prev => [...prev, userMessage]);
-    handleStreamingChat(action);
+    handleStreamingChat(messageContent);
   };
 
   const contactSalesMutation = useMutation({
