@@ -1322,6 +1322,9 @@ export default function AIChatbot() {
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
+                        a: ({ node, ...props }) => (
+                          <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" />
+                        ),
                         table: ({ node, ...props }) => (
                           <table className="w-full border-collapse my-2 text-xs" {...props} />
                         ),
@@ -1392,6 +1395,9 @@ export default function AIChatbot() {
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
+                        a: ({ node, ...props }) => (
+                          <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" />
+                        ),
                         table: ({ node, ...props }) => (
                           <table className="w-full border-collapse my-2 text-xs" {...props} />
                         ),

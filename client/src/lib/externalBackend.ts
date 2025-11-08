@@ -54,6 +54,8 @@ export function streamChatResponse(
   let ws: WebSocket | null = null;
   let hasCompleted = false;
   let hasErrored = false;
+  let eotEncountered = false;
+  let tokenBuffer = '';
   
   const safeComplete = () => {
     if (!hasCompleted && !hasErrored) {
@@ -66,6 +68,39 @@ export function streamChatResponse(
     if (!hasErrored && !hasCompleted) {
       hasErrored = true;
       onError(error);
+    }
+  };
+  
+  const processToken = (token: string) => {
+    if (eotEncountered) {
+      return;
+    }
+    
+    tokenBuffer += token;
+    
+    const eotIndex = tokenBuffer.indexOf('<EOT>');
+    
+    if (eotIndex !== -1) {
+      eotEncountered = true;
+      const beforeEOT = tokenBuffer.substring(0, eotIndex);
+      if (beforeEOT) {
+        onToken(beforeEOT);
+      }
+      tokenBuffer = '';
+    } else {
+      const safeLength = tokenBuffer.length - 4;
+      if (safeLength > 0) {
+        const safeContent = tokenBuffer.substring(0, safeLength);
+        onToken(safeContent);
+        tokenBuffer = tokenBuffer.substring(safeLength);
+      }
+    }
+  };
+  
+  const flushBuffer = () => {
+    if (!eotEncountered && tokenBuffer.length > 0) {
+      onToken(tokenBuffer);
+      tokenBuffer = '';
     }
   };
   
@@ -96,16 +131,14 @@ export function streamChatResponse(
       try {
         const data = JSON.parse(event.data);
         
-        // Check if this is a token or completion message
         if (data.token) {
-          onToken(data.token);
+          processToken(data.token);
         } else if (data.type === 'complete' || data.complete === true) {
-          // Stream completed successfully - mark as complete
+          flushBuffer();
           safeComplete();
         }
       } catch (parseError) {
-        // If it's not JSON, treat it as a raw token
-        onToken(event.data);
+        processToken(event.data);
       }
     };
     
@@ -116,8 +149,7 @@ export function streamChatResponse(
     
     ws.onclose = (event) => {
       console.log('WebSocket connection closed', event.code, event.reason);
-      // Only call onComplete if we haven't already completed or errored
-      // Backend closes WebSocket after streaming completes
+      flushBuffer();
       safeComplete();
     };
     
@@ -126,7 +158,6 @@ export function streamChatResponse(
     safeError(error as Error);
   }
   
-  // Return cleanup function to close WebSocket if needed
   return () => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.close();
