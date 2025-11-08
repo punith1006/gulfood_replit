@@ -54,7 +54,7 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  getExhibitors(search?: string, sector?: string, country?: string, hall?: string, stand?: string): Promise<Exhibitor[]>;
+  getExhibitors(search?: string, sector?: string, country?: string, hall?: string, stand?: string, venue?: string): Promise<Exhibitor[]>;
   getExhibitor(id: number): Promise<Exhibitor | undefined>;
   getExhibitorByCompanyName(companyName: string, exhibitorId?: number): Promise<Exhibitor | undefined>;
   createExhibitor(exhibitor: InsertExhibitor): Promise<Exhibitor>;
@@ -147,7 +147,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getExhibitors(search?: string, sector?: string, country?: string, hall?: string, stand?: string): Promise<Exhibitor[]> {
+  async getExhibitors(search?: string, sector?: string, country?: string, hall?: string, stand?: string, venue?: string): Promise<Exhibitor[]> {
     const conditions = [];
     
     if (search) {
@@ -176,6 +176,10 @@ export class DatabaseStorage implements IStorage {
     
     if (country && country !== "all") {
       conditions.push(eq(exhibitors.country, country));
+    }
+    
+    if (venue && venue !== "all") {
+      conditions.push(eq(exhibitors.venue, venue));
     }
     
     if (hall && hall !== "all") {
