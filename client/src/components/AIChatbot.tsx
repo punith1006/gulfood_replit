@@ -270,6 +270,7 @@ const getScoreVariant = (score: number): "default" | "secondary" | "destructive"
 };
 
 function RightNowContent() {
+  const { userRole } = useRole();
   const { data: announcements, isLoading: announcementsLoading } = useQuery<any[]>({
     queryKey: ['/api/announcements'],
   });
@@ -278,11 +279,28 @@ function RightNowContent() {
     queryKey: ['/api/sessions'],
   });
 
-  const activeAnnouncements = announcements?.filter(a => a.isActive) || [];
+  // Map role to capitalized format for targetAudience matching
+  const roleAudienceMap: Record<string, string> = {
+    'visitor': 'Visitor',
+    'exhibitor': 'Exhibitor',
+    'organizer': 'Organizer'
+  };
+  const userAudience = userRole ? roleAudienceMap[userRole] : null;
+
+  // Filter announcements: active AND (targetAudience is "All" or matches user role)
+  const activeAnnouncements = announcements?.filter(a => {
+    if (!a.isActive) return false;
+    if (!userAudience) return a.targetAudience === 'All'; // Show only "All" if no role selected
+    return a.targetAudience === 'All' || a.targetAudience === userAudience;
+  }) || [];
+
+  // Filter sessions: active, upcoming AND (targetAudience is "All" or matches user role)
   const upcomingSessions = sessions?.filter(s => {
     if (!s.isActive) return false;
     const sessionDate = new Date(s.sessionDate);
-    return sessionDate >= new Date();
+    if (sessionDate < new Date()) return false;
+    if (!userAudience) return s.targetAudience === 'All'; // Show only "All" if no role selected
+    return s.targetAudience === 'All' || s.targetAudience === userAudience;
   }) || [];
 
   if (announcementsLoading || sessionsLoading) {
@@ -532,13 +550,30 @@ export default function AIChatbot() {
     queryKey: ['/api/exhibitors'],
   });
 
-  // Calculate unread count
+  // Calculate unread count with role-based filtering
   const unreadCount = useMemo(() => {
-    const activeAnnouncements = announcements?.filter(a => a.isActive) || [];
+    // Map role to capitalized format for targetAudience matching
+    const roleAudienceMap: Record<string, string> = {
+      'visitor': 'Visitor',
+      'exhibitor': 'Exhibitor',
+      'organizer': 'Organizer'
+    };
+    const userAudience = userRole ? roleAudienceMap[userRole] : null;
+
+    // Filter announcements: active AND (targetAudience is "All" or matches user role)
+    const activeAnnouncements = announcements?.filter(a => {
+      if (!a.isActive) return false;
+      if (!userAudience) return a.targetAudience === 'All';
+      return a.targetAudience === 'All' || a.targetAudience === userAudience;
+    }) || [];
+
+    // Filter sessions: active, upcoming AND (targetAudience is "All" or matches user role)
     const upcomingSessions = sessions?.filter(s => {
       if (!s.isActive) return false;
       const sessionDate = new Date(s.sessionDate);
-      return sessionDate >= new Date();
+      if (sessionDate < new Date()) return false;
+      if (!userAudience) return s.targetAudience === 'All';
+      return s.targetAudience === 'All' || s.targetAudience === userAudience;
     }) || [];
     
     const unreadAnnouncements = activeAnnouncements.filter(
@@ -550,7 +585,7 @@ export default function AIChatbot() {
     ).length;
     
     return unreadAnnouncements + unreadSessions;
-  }, [announcements, sessions, viewedItems]);
+  }, [announcements, sessions, viewedItems, userRole]);
 
   // Derive user message count from messages array (single source of truth)
   const userMessageCount = useMemo(() => {
@@ -648,14 +683,31 @@ export default function AIChatbot() {
     }
   }, [mainTab]);
 
-  // Mark all items as read when switching to Radar tab
+  // Mark all items as read when switching to Radar tab (with role-based filtering)
   useEffect(() => {
     if (mainTab === "radar" && announcements && sessions) {
-      const activeAnnouncements = announcements.filter(a => a.isActive);
+      // Map role to capitalized format for targetAudience matching
+      const roleAudienceMap: Record<string, string> = {
+        'visitor': 'Visitor',
+        'exhibitor': 'Exhibitor',
+        'organizer': 'Organizer'
+      };
+      const userAudience = userRole ? roleAudienceMap[userRole] : null;
+
+      // Filter announcements: active AND (targetAudience is "All" or matches user role)
+      const activeAnnouncements = announcements.filter(a => {
+        if (!a.isActive) return false;
+        if (!userAudience) return a.targetAudience === 'All';
+        return a.targetAudience === 'All' || a.targetAudience === userAudience;
+      });
+
+      // Filter sessions: active, upcoming AND (targetAudience is "All" or matches user role)
       const upcomingSessions = sessions.filter(s => {
         if (!s.isActive) return false;
         const sessionDate = new Date(s.sessionDate);
-        return sessionDate >= new Date();
+        if (sessionDate < new Date()) return false;
+        if (!userAudience) return s.targetAudience === 'All';
+        return s.targetAudience === 'All' || s.targetAudience === userAudience;
       });
       
       const allAnnouncementIds = activeAnnouncements.map(a => a.id);
@@ -666,7 +718,7 @@ export default function AIChatbot() {
         sessions: allSessionIds
       });
     }
-  }, [mainTab, announcements, sessions]);
+  }, [mainTab, announcements, sessions, userRole]);
 
   // Use a ref to track the latest value of hasInteractedWithInitialLeadCapture
   const hasInteractedRef = useRef(hasInteractedWithInitialLeadCapture);
