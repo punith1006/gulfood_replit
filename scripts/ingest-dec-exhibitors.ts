@@ -9,12 +9,12 @@ interface ParsedExhibitor {
   hall: string;
   stand?: string;
   country: string;
-  venue: string;
+  venue?: string;
   logoUrl?: string;
   exhibitorUrl?: string;
 }
 
-const INPUT_FILE = join(process.cwd(), 'data', 'dec-exhibitors-parsed.json');
+const INPUT_FILE = join(process.cwd(), 'data', 'dec-exhibitors-clean.json');
 
 // Normalize name for fuzzy matching
 function normalizeName(name: string): string {
@@ -89,6 +89,11 @@ async function ingestExhibitors() {
   let skippedCount = 0;
   
   for (const parsed of parsedExhibitors) {
+    // Ensure venue is set to DEC for all exhibitors
+    if (!parsed.venue) {
+      parsed.venue = 'Dubai Exhibition Centre';
+    }
+    
     console.log(`\n📋 Processing: ${parsed.name} (${parsed.country})`);
     console.log(`   Hall: ${parsed.hall}, Stand: ${parsed.stand || 'N/A'}`);
     
