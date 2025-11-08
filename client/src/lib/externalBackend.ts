@@ -157,16 +157,26 @@ export function streamChatResponse(
     };
     
     ws.onmessage = (event) => {
+      console.log('[DEBUG] WebSocket message received:', event.data);
+      
       try {
         const data = JSON.parse(event.data);
+        console.log('[DEBUG] Parsed WebSocket data:', data);
         
         if (data.token) {
           processToken(data.token);
+        } else if (data.suggestions && Array.isArray(data.suggestions)) {
+          // Suggestions arrived as a separate message
+          console.log('[DEBUG] Suggestions message received:', data.suggestions);
+          postEOTBuffer = JSON.stringify(data);
         } else if (data.type === 'complete' || data.complete === true) {
           flushBuffer();
           safeComplete();
+        } else {
+          console.log('[DEBUG] Unknown message type:', data);
         }
       } catch (parseError) {
+        console.log('[DEBUG] Non-JSON message, treating as token:', event.data);
         processToken(event.data);
       }
     };
