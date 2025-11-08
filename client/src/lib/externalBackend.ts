@@ -64,22 +64,17 @@ export function streamChatResponse(
       
       // Try to parse suggestions from post-EOT content
       let suggestions: string[] | undefined;
-      console.log('[DEBUG] Post-EOT buffer content:', postEOTBuffer);
       if (postEOTBuffer.trim()) {
         try {
           const parsed = JSON.parse(postEOTBuffer.trim());
-          console.log('[DEBUG] Parsed post-EOT JSON:', parsed);
           if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
             suggestions = parsed.suggestions;
-            console.log('[DEBUG] Extracted suggestions:', suggestions);
           }
         } catch (error) {
           console.error('Failed to parse post-EOT suggestions:', error);
-          console.error('[DEBUG] Raw post-EOT content:', postEOTBuffer);
         }
       }
       
-      console.log('[DEBUG] Calling onComplete with suggestions:', suggestions);
       onComplete(suggestions);
     }
   };
@@ -106,8 +101,6 @@ export function streamChatResponse(
       eotEncountered = true;
       const beforeEOT = tokenBuffer.substring(0, eotIndex);
       const afterEOT = tokenBuffer.substring(eotIndex + 5); // Skip '<EOT>'
-      
-      console.log('[DEBUG] <EOT> encountered! Before:', beforeEOT.substring(0, 50), 'After:', afterEOT);
       
       if (beforeEOT) {
         onToken(beforeEOT);
@@ -157,18 +150,14 @@ export function streamChatResponse(
     };
     
     ws.onmessage = (event) => {
-      console.log('[DEBUG] WebSocket message received:', event.data);
-      
       try {
         const data = JSON.parse(event.data);
-        console.log('[DEBUG] Parsed WebSocket data:', data);
         
         if (data && typeof data === 'object' && data.token) {
           // Token wrapped in object
           processToken(data.token);
         } else if (data && typeof data === 'object' && data.suggestions && Array.isArray(data.suggestions)) {
           // Suggestions arrived as a separate message
-          console.log('[DEBUG] Suggestions message received:', data.suggestions);
           postEOTBuffer = JSON.stringify(data);
         } else if (data && typeof data === 'object' && (data.type === 'complete' || data.complete === true)) {
           // Completion signal
@@ -176,13 +165,10 @@ export function streamChatResponse(
           safeComplete();
         } else if (typeof data === 'string' || typeof data === 'number') {
           // Bare primitive - treat as token
-          console.log('[DEBUG] Bare primitive token:', data);
           processToken(String(data));
-        } else {
-          console.log('[DEBUG] Unknown message type:', data);
         }
       } catch (parseError) {
-        console.log('[DEBUG] Non-JSON message, treating as token:', event.data);
+        // Non-JSON message - treat as token
         processToken(event.data);
       }
     };
