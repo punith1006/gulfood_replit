@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 import { useRole, type UserRole } from "@/contexts/RoleContext";
 import { useChatbot } from "@/contexts/ChatbotContext";
 import ReactMarkdown from "react-markdown";
@@ -1312,7 +1313,7 @@ export default function AIChatbot() {
                   className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message ${
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm chatbot-message break-words ${
                       message.role === "user"
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted text-foreground"
@@ -1324,6 +1325,21 @@ export default function AIChatbot() {
                       components={{
                         a: ({ node, ...props }) => (
                           <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" />
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong className="font-bold" {...props} />
+                        ),
+                        em: ({ node, ...props }) => (
+                          <em className="italic" {...props} />
+                        ),
+                        code: ({ node, inline, className, ...props }) => 
+                          inline ? (
+                            <code className={cn("bg-muted px-1 py-0.5 rounded text-xs font-mono", className)} {...props} />
+                          ) : (
+                            <code className={cn("block bg-muted p-2 rounded my-2 text-xs font-mono overflow-x-auto", className)} {...props} />
+                          ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote className="border-l-4 border-primary pl-3 my-2 italic text-muted-foreground" {...props} />
                         ),
                         table: ({ node, ...props }) => (
                           <table className="w-full border-collapse my-2 text-xs" {...props} />
@@ -1391,12 +1407,27 @@ export default function AIChatbot() {
               {/* Display streaming response as it arrives */}
               {isStreaming && streamingResponse && (
                 <div className="flex flex-col items-start">
-                  <div className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm bg-muted text-foreground">
+                  <div className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm bg-muted text-foreground break-words">
                     <ReactMarkdown 
                       remarkPlugins={[remarkGfm]}
                       components={{
                         a: ({ node, ...props }) => (
                           <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80" />
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong className="font-bold" {...props} />
+                        ),
+                        em: ({ node, ...props }) => (
+                          <em className="italic" {...props} />
+                        ),
+                        code: ({ node, inline, className, ...props }) => 
+                          inline ? (
+                            <code className={cn("bg-muted px-1 py-0.5 rounded text-xs font-mono", className)} {...props} />
+                          ) : (
+                            <code className={cn("block bg-muted p-2 rounded my-2 text-xs font-mono overflow-x-auto", className)} {...props} />
+                          ),
+                        blockquote: ({ node, ...props }) => (
+                          <blockquote className="border-l-4 border-primary pl-3 my-2 italic text-muted-foreground" {...props} />
                         ),
                         table: ({ node, ...props }) => (
                           <table className="w-full border-collapse my-2 text-xs" {...props} />
