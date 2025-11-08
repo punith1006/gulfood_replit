@@ -80,13 +80,15 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
     "Download Venue Guide"
   ],
   exhibitor: [
-    "Connect with potential buyers",
-    "Schedule Consultation",
-    "Competitor analysis",
-    "Booth location tips",
-    "Marketing strategies",
-    "Networking opportunities",
-    "Event logistics"
+    "Discover Why Exhibit",
+    "Review Booth Packages",
+    "Understand Costs & ROI",
+    "Explore Success Stories",
+    "Meet Sales",
+    "Navigate Registration Steps",
+    "Secure Early-Bird Offers",
+    "Choose the Right Hall",
+    "Compare with Other Shows"
   ],
   organizer: [
     "View registration trends",
@@ -100,6 +102,7 @@ const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
 
 // Contextual prompts for quick actions - adds context when sending to chatbot
 const quickActionPrompts: Record<string, string> = {
+  // Visitor quick action prompts
   "View Event Schedule": "Show me the complete event schedule for Gulfood 2026, including all conferences, seminars, and special events happening each day from January 26-30, 2026.",
   "Browse Exhibitors": "Help me browse and discover exhibitors at Gulfood 2026. I'd like to see exhibitors by category, country, or sector so I can find companies relevant to my interests.",
   "Navigate the Venue": "I need help navigating the Gulfood 2026 venue. Can you explain the layout of Dubai Exhibition Centre (DEC) and Dubai World Trade Centre (DWTC), including how to get between halls and key locations?",
@@ -109,7 +112,17 @@ const quickActionPrompts: Record<string, string> = {
   "Special Offers": "Are there any special offers, promotions, or exclusive deals available for Gulfood 2026 visitors? This could include early bird registration, group discounts, hotel packages, or exhibitor promotions.",
   "Networking Tips": "Can you give me practical networking tips for Gulfood 2026? I want to make the most of my visit by connecting with the right people, including how to approach exhibitors, use the mobile app, and maximize networking opportunities.",
   "Download Venue Map": "I'd like to download a venue map for Gulfood 2026. Can you provide me with PDF maps for both Dubai Exhibition Centre (DEC) and Dubai World Trade Centre (DWTC) showing all halls, exhibitor locations, and key facilities?",
-  "Download Venue Guide": "Can you provide me with the official Gulfood 2026 venue guide? I'd like a comprehensive PDF guide with exhibitor listings, event schedule, venue maps, transportation info, and visitor information."
+  "Download Venue Guide": "Can you provide me with the official Gulfood 2026 venue guide? I'd like a comprehensive PDF guide with exhibitor listings, event schedule, venue maps, transportation info, and visitor information.",
+  
+  // Exhibitor (prospective) quick action prompts
+  "Discover Why Exhibit": "I'm considering exhibiting at Gulfood 2026. Can you explain the value proposition for exhibitors? I'd like to understand the visitor profile, buyer attendance statistics from previous years, what makes Gulfood unique compared to other F&B trade shows, and the key benefits of exhibiting.",
+  "Review Booth Packages": "Walk me through the available booth packages for Gulfood 2026. I need to understand the different booth sizes, what's included in shell scheme versus raw space options, the pricing tiers, standard inclusions (furniture, lighting, signage), and any optional add-ons available.",
+  "Understand Costs & ROI": "Help me estimate the total cost and potential ROI for exhibiting at Gulfood 2026. I want to know about typical lead volumes exhibitors generate, average deal sizes by sector, all-in costs including booth, marketing, travel, and any data on measurable outcomes from past exhibitors.",
+  "Explore Success Stories": "Share some success stories and case studies from recent Gulfood exhibitors. I'd like to hear about specific results companies achieved, which halls or sectors they exhibited in, innovative tactics they used, and any testimonials or measurable ROI they reported.",
+  "Navigate Registration Steps": "Outline the complete exhibitor registration process for Gulfood 2026. What are the application requirements, documentation needed, vetting timeline, approval process, contract terms, deposit structure, payment milestones, and key deadlines I need to be aware of?",
+  "Secure Early-Bird Offers": "What early-bird incentives, discounts, or special offers are currently available for Gulfood 2026 exhibitors? I need details on deposit requirements, payment schedules, cancellation or modification policies, and all important booking deadlines to maximize savings.",
+  "Choose the Right Hall": "Help me choose the best hall and location for my product category at Gulfood 2026. I want recommendations based on sector clustering, differences between DWTC and DEC venues, expected footfall patterns, proximity to complementary exhibitors, and visibility factors.",
+  "Compare with Other Shows": "How does Gulfood 2026 compare to other leading global F&B trade shows like SIAL Paris, Anuga, or Food & Hotel Asia? I want to understand differences in audience reach, buyer quality, international attendance, cost-to-value ratio, and unique advantages of each show."
 };
 
 interface Message {
@@ -809,8 +822,8 @@ export default function AIChatbot() {
       return;
     }
     
-    // Handle "Schedule Consultation" action
-    if (action === "Schedule Consultation") {
+    // Handle "Schedule Consultation" and "Meet Sales" actions - open appointment booking
+    if (action === "Schedule Consultation" || action === "Meet Sales") {
       // Pre-fill form with session lead info if available
       const leadInfo = sessionManager.getLeadInfo();
       if (leadInfo.email && leadInfo.name) {
