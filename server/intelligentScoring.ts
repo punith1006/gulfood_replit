@@ -527,51 +527,91 @@ ATTENDEE ORGANIZATION:
    Description: ${ex.description?.substring(0, 250)}...`;
   }).join('\n\n');
 
-  const prompt = `You are an intelligent matchmaking system for Gulfood 2026.
+  const prompt = `You are an intelligent matchmaking system for Gulfood 2026 that finds both OBVIOUS matches and HIDDEN strategic opportunities.
 
 ${orgContext}
 
 ATTENDEE PROFILE:
 - Role: ${role}
-- **PRIMARY INTERESTS: ${interestCategories.length > 0 ? interestCategories.join(', ') : 'General (no specific sectors)'}**
+- Interest Categories: ${interestCategories.length > 0 ? interestCategories.join(', ') : 'General (no specific sectors)'}
 - Goals: ${attendanceIntents.join(', ') || 'Networking'}
 
-CRITICAL PERSONALIZATION RULE:
-**ALL matchReasoning MUST BE WRITTEN IN SECOND PERSON FROM THE ATTENDEE'S POV**
-- Use "you", "your", "you'll" - NEVER use third person
-- ALWAYS mention: "${role}" (their role)
-- ALWAYS connect to: "${attendanceIntents.join(', ')}" (their goals)
-- ALWAYS reference: "${interestCategories.join(', ')}" (their interests)
+═══════════════════════════════════════════════════════════════
+STEP 1: SEMANTIC ANALYSIS - Understand the TRUE Business Need
+═══════════════════════════════════════════════════════════════
 
-PERSONALIZATION EXAMPLES (CITE SPECIFIC EXHIBITOR DETAILS):
-✅ EXCELLENT: "As a ${role} ${attendanceIntents[0] ? `looking to ${attendanceIntents[0].toLowerCase()}` : 'attending Gulfood'}, you'll find their [specific product from exhibitor.products] directly supports your ${interestCategories[0] || 'business'} objectives."
-✅ GOOD: "Their [mention specific product/offering from description] aligns perfectly with your focus on ${interestCategories.join(' and ')}, making them an ideal partner for your ${role} goals."
-❌ BAD: "This exhibitor offers dairy products." (no personalization, third person, too generic)
-❌ BAD: "Limited alignment with your interests." (no specific exhibitor details cited)
-❌ BAD: "Direct match in dairy sector." (too generic, no user perspective, no specific products mentioned)
+Before scoring, analyze what this attendee REALLY needs by combining role + goals + interests:
 
-CRITICAL SCORING RULE:
-**INTEREST CATEGORY MATCH IS THE #1 PRIORITY**
-- If attendee has specific interest categories, exhibitors in those sectors MUST score 70-95%
-- Exhibitors NOT in the interest categories should score 20-50% (unless exceptional strategic fit)
-- Preferred exhibitors ([USER PREFERRED] tag) should score 90-95%
+EXAMPLE SEMANTIC INTERPRETATIONS:
+- "Head of Procurement" + "Source suppliers" + "Bakery" = Needs B2B wholesale manufacturers/bulk ingredient suppliers
+- "Product Manager" + "Discover innovations" + "Beverages" = Needs trend-forward brands with innovative products
+- "Distributor" + "Expand portfolio" + "Dairy" = Needs manufacturers offering distribution rights
+- "Restaurant Owner" + "Source products" + "Meat & Poultry" = Needs reliable food service suppliers with consistent quality
+- "Retail Buyer" + "Find new products" + "Snacks" = Needs consumer brands with shelf-ready products
 
-TASK: Score each exhibitor's match with this attendee (0-100) based on:
-1. **⭐ INTEREST CATEGORY MATCH (HIGHEST WEIGHT)** - Does exhibitor's sector directly match attendee's interest categories?
-   - Direct match (e.g., "Dairy Products" interest + "Dairy Products" sector) = 70-95%
-   - No match = Start at 20-50% baseline
-2. **Product Relevance** - Do exhibitor's products align with attendee's business needs?
-3. **Business Model Fit** - Are they potential suppliers, partners, or customers?
-4. **Geographic Synergy** - Do their markets align?
-5. **Strategic Value** - Could this drive real business outcomes?
+Your semantic interpretation of "${role}" + "${attendanceIntents.join(', ')}" + "${interestCategories.join(', ')}":
+[Think: What business model do they need? B2B wholesale? Consumer brands? Ingredients? Equipment? Services?]
 
-SCORING GUIDELINES (ENFORCED):
-- **90-100%**: Preferred exhibitors [USER PREFERRED] OR perfect sector + product match
-- **75-89%**: Direct interest category match + strong product relevance
-- **60-74%**: Direct interest category match + moderate product fit
-- **40-59%**: Weak interest category match OR exceptional fit despite sector mismatch
-- **20-39%**: No interest category match, limited strategic value
-- **0-19%**: No alignment whatsoever
+═══════════════════════════════════════════════════════════════
+STEP 2: MULTI-DIMENSIONAL SCORING - Find Direct & Hidden Value
+═══════════════════════════════════════════════════════════════
+
+Score each exhibitor (0-100) across FIVE dimensions:
+
+1️⃣ **SEMANTIC FIT (30 points)** - Does exhibitor's business model match the TRUE need?
+   - Procurement role → Manufacturer/wholesaler = HIGH | Retail brand = MEDIUM | Service provider = LOW
+   - Product Manager → Innovative brands = HIGH | Traditional suppliers = MEDIUM
+   - Distributor → Manufacturers seeking distribution = HIGH | Direct-to-consumer brands = LOW
+   - Restaurant owner → Food service suppliers = HIGH | Consumer packaged goods = MEDIUM
+
+2️⃣ **CATEGORY RELEVANCE (20 points)** - Direct interest category match?
+   - Exact sector match (Dairy interest + Dairy exhibitor) = 18-20 points
+   - Adjacent category (Bakery interest + Ingredients exhibitor) = 10-15 points
+   - Unrelated category = 0-5 points
+
+3️⃣ **PRODUCT PORTFOLIO DEPTH (20 points)** - Specific products solve their needs?
+   - Deep portfolio in target area with unique offerings = 18-20 points
+   - Standard product range in target area = 10-15 points
+   - Limited or generic offerings = 0-8 points
+
+4️⃣ **HIDDEN STRATEGIC OPPORTUNITIES (20 points)** - Complementary/adjacent value?
+   **CRITICAL: ALWAYS actively look for hidden opportunities beyond obvious category match!**
+   
+   EXAMPLES OF HIDDEN OPPORTUNITIES TO FIND:
+   - Bakery buyer → Packaging suppliers, Flour/ingredient suppliers, Cold storage logistics
+   - Dairy distributor → Refrigeration equipment, Packaging materials, Quality testing services
+   - Beverage PM → Bottling equipment, Flavor ingredient suppliers, Sustainable packaging innovators
+   - Restaurant owner → Food service equipment, Supply chain software, Waste management solutions
+   
+   SCORING:
+   - Upstream supplier (ingredients for their production) = 15-20 points
+   - Downstream partner (packaging, logistics, distribution) = 15-20 points
+   - Complementary service (equipment, technology, consulting) = 10-15 points
+   - Cross-sector innovation opportunity = 8-12 points
+   - No hidden value = 0 points
+
+5️⃣ **GEOGRAPHIC & MARKET ALIGNMENT (10 points)** - Markets/regions align?
+   - Same target markets/regions = 8-10 points
+   - Overlapping markets = 4-7 points
+   - Different markets but MENA opportunity = 2-5 points
+   - No alignment = 0 points
+
+TOTAL SCORE = Sum of all five dimensions (max 100)
+
+**MANDATORY REQUIREMENT**: For your TOP recommendations, actively identify and score hidden strategic opportunities.
+Don't just default to direct category matches - think creatively about upstream/downstream/complementary value!
+
+SCORING BANDS:
+- **90-100**: Preferred exhibitors [USER PREFERRED] OR perfect semantic + category + portfolio fit
+- **75-89**: Strong semantic fit + direct category match + deep product portfolio
+- **60-74**: Good semantic fit + category match OR exceptional hidden opportunity despite different sector
+- **40-59**: Moderate semantic fit OR strong hidden opportunity in adjacent/complementary area
+- **20-39**: Weak semantic fit + limited strategic value OR only networking opportunity
+- **0-19**: No alignment whatsoever - wrong business model, wrong sector, no opportunities
+
+═══════════════════════════════════════════════════════════════
+STEP 3: PERSONALIZED REASONING - Explain Direct & Hidden Value
+═══════════════════════════════════════════════════════════════
 
 EXHIBITORS TO SCORE:
 ${exhibitorsList}
@@ -580,50 +620,68 @@ Return a JSON array with this structure for EACH exhibitor:
 [
   {
     "exhibitorId": <number>,
-    "matchScore": <number 0-100>,
-    "matchReasoning": "<WHY THIS MATTERS TO YOU - written in second person from attendee's perspective>",
-    "relevanceFactors": ["<factor 1>", "<factor 2>"]
+    "matchScore": <number 0-100, sum of five dimensions>,
+    "matchReasoning": "<WHY THIS MATTERS TO YOU - explain direct match AND/OR hidden opportunity>",
+    "relevanceFactors": ["<dimension 1>", "<dimension 2>", "<hidden opportunity if applicable>"]
   }
 ]
 
-**CRITICAL: matchReasoning MUST BE PERSONALIZED FROM ATTENDEE'S PERSPECTIVE**
-- Write in SECOND PERSON ("you", "your") - NOT third person
-- Explicitly reference their role: "${role}"
-- Connect to their goals: "${attendanceIntents.join(', ')}"
-- Tie to their interest categories: "${interestCategories.join(', ')}"
-- **MANDATORY: Cite SPECIFIC products/offerings from the exhibitor's Description or Products field - DO NOT just say "World Food sector" or generic category names**
+**PERSONALIZATION RULES - Write from Attendee's Perspective:**
+✅ Use SECOND PERSON ("you", "your", "you'll") - NEVER third person
+✅ Reference their role: "${role}"
+✅ Connect to their goals: "${attendanceIntents.join(', ')}"
+✅ Cite SPECIFIC products from exhibitor's Description/Products field
+✅ Explain strategic value - WHY does this exhibitor matter for their business?
+✅ **MANDATORY**: For scores 60+, if exhibitor has Hidden Opportunities score >10, MUST mention the hidden opportunity in matchReasoning
 
-**FORBIDDEN GENERIC PHRASES - DO NOT USE THESE:**
-❌ "World Food sector aligns"
-❌ "focus on World Food"
-❌ "Dairy sector matches"
-❌ "their offerings align"
-❌ "can help you discover"
-❌ "support your objectives"
+**EXPLAINING DIRECT MATCHES vs HIDDEN OPPORTUNITIES:**
 
-**REQUIRED SPECIFICITY - USE THESE PATTERNS:**
-✅ "their [biscuits/cookies/confectionery] align with your ${interestCategories[0] || 'business'} procurement needs"
-✅ "As a ${role}, their [milk/cheese/yogurt products] directly support your goals to ${attendanceIntents[0] || 'network'}"
-✅ "their [spices/condiments/masala] offerings match your interest in ${interestCategories.join(', ')}"
+**DIRECT MATCH** (High Semantic + Category Fit) - Use when Category Relevance = 18-20 points:
+✅ "As a ${role} ${attendanceIntents[0] ? `aiming to ${attendanceIntents[0].toLowerCase()}` : 'attending Gulfood'}, their [specific products] directly match your ${interestCategories[0] || 'business'} needs, offering [specific business value like 'bulk wholesale pricing' or 'private label options']."
 
-**EXAMPLES:**
-- EXCELLENT: "As a Head of Procurement sourcing suppliers, their biscuits, cookies, and confectionery products directly match your Bakery & Confectionery interests."
-- GOOD: "Their dairy product range (milk, cheese, yogurt) aligns with your procurement goals in Dairy Products."
-- BAD: "World Food sector aligns with your Head of Procurement goals" (forbidden generic phrase!)
-- BAD: "Their offerings can help you discover new products" (no specific products cited!)
+**HIDDEN OPPORTUNITY** (Complementary/Adjacent Value) - Use when Hidden Opportunities score = 10-20 points:
+✅ "While not directly in ${interestCategories[0] || 'your sector'}, their [packaging/logistics/ingredient] expertise could optimize your [production/distribution/supply chain], creating strategic value for your ${attendanceIntents[0] || 'business goals'}."
+✅ "As a ${role}, their [equipment/technology/service] solutions present an upstream/downstream opportunity to enhance your ${attendanceIntents[0] || 'operations'} in ${interestCategories.join(' and ')}."
+✅ "Their position as [ingredient supplier/packaging partner/logistics provider] creates complementary value for your ${role} goals in ${interestCategories[0] || 'this sector'}."
 
-Be REALISTIC. Most exhibitors should score 40-70 unless there's exceptional alignment.
-Preferred exhibitors should score 90-95% (user explicitly interested).
+**MIXED VALUE** (Both Direct + Hidden) - Use when both Category Relevance AND Hidden Opportunities are high:
+✅ "Their [products] match your ${interestCategories[0]} needs, and their [complementary service/capability] adds strategic value to your [supply chain/operations]."
+
+**CROSS-SECTOR INNOVATION** - Use when Category Relevance is low but Hidden Opportunities is 8+:
+✅ "Though from a different sector, their innovative [technology/method/approach] could bring fresh value to your ${interestCategories[0] || 'business'} strategy as a ${role}."
+
+**FORBIDDEN GENERIC PHRASES:**
+❌ "World Food sector aligns" | ❌ "their offerings support your objectives" 
+❌ "can help you discover" | ❌ "Dairy sector matches"
+❌ "limited alignment" | ❌ "networking opportunity"
+
+**REQUIRED SPECIFICITY:**
+✅ Cite actual products: "their biscuits, cookies, confectionery" NOT "bakery products"
+✅ Explain business value: "bulk wholesale pricing for procurement" NOT "aligns with goals"
+✅ Identify strategic opportunity: "cold chain logistics expertise could optimize distribution" NOT "logistics services available"
+
+**RELEVANCE FACTORS - Tag the Match Type:**
+- Use descriptive tags like: "Direct category match", "B2B wholesale fit", "Innovative product portfolio", "Upstream supplier opportunity", "Packaging partner potential", "Geographic market alignment", "Distribution rights available", "Cross-sector innovation"
+
+**SCORE DISTRIBUTION GUIDANCE:**
+- 90-100 points: ~5-10% of exhibitors (exceptional fits + preferred)
+- 75-89 points: ~15-20% of exhibitors (strong semantic + category match)
+- 60-74 points: ~20-25% of exhibitors (good fits or strong hidden opportunities)
+- 40-59 points: ~30-35% of exhibitors (moderate fits or interesting adjacent value)
+- 20-39 points: ~20-25% of exhibitors (weak fits, limited value)
+- 0-19 points: ~5-10% of exhibitors (no alignment)
+
+Be REALISTIC and DIFFERENTIATED. Not everything is 80+. Hidden opportunities in adjacent sectors can score 60-75 if valuable.
 
 CRITICAL JSON FORMATTING RULES:
 - Return ONLY valid JSON array, no markdown, no explanations
 - Use double quotes for all strings
 - Escape any quotes inside strings with backslash
-- Keep matchReasoning short (1-2 sentences max)
-- Keep relevanceFactors brief (3-5 words each)
+- Keep matchReasoning concise (1-2 sentences max)
+- Keep relevanceFactors brief (3-5 words each, max 3 factors)
 - No newlines in string values
 
-Return format: [{"exhibitorId": 1, "matchScore": 85, "matchReasoning": "...", "relevanceFactors": ["...", "..."]}]`;
+Return format: [{"exhibitorId": 1, "matchScore": 85, "matchReasoning": "As a Head of Procurement sourcing suppliers, their biscuits and confectionery products directly match your Bakery needs with bulk wholesale capabilities.", "relevanceFactors": ["Direct category match", "B2B wholesale fit", "Deep product portfolio"]}]`;
 
   const completion = await openai.chat.completions.create({
     model: "gpt-4o",
