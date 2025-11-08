@@ -128,6 +128,7 @@ const quickActionPrompts: Record<string, string> = {
 interface Message {
   role: "user" | "assistant";
   content: string;
+  suggestions?: string[];
 }
 
 // Helper functions for NLP extraction
@@ -744,10 +745,11 @@ export default function AIChatbot() {
         accumulatedResponse += token;
         setStreamingResponse(accumulatedResponse);
       },
-      () => {
+      (suggestions?: string[]) => {
         setMessages(prev => [...prev, { 
           role: "assistant", 
-          content: accumulatedResponse 
+          content: accumulatedResponse,
+          suggestions: suggestions
         }]);
         setStreamingResponse('');
         setIsStreaming(false);
@@ -1440,6 +1442,30 @@ export default function AIChatbot() {
                       Thanks for your feedback!
                     </div>
                   )} */}
+                  
+                  {/* Suggested Questions - Display only for the latest AI message */}
+                  {message.role === "assistant" && message.suggestions && message.suggestions.length > 0 && idx === messages.length - 1 && (
+                    <div className="flex flex-wrap gap-2 mt-3 max-w-[80%]">
+                      {message.suggestions.map((suggestion, suggestionIdx) => (
+                        <button
+                          key={suggestionIdx}
+                          onClick={() => {
+                            if (!isStreaming) {
+                              setInput(suggestion);
+                              setTimeout(() => {
+                                handleSend();
+                              }, 100);
+                            }
+                          }}
+                          className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-full cursor-pointer hover-elevate active-elevate-2 transition-colors"
+                          data-testid={`button-suggestion-${suggestionIdx}`}
+                          disabled={isStreaming}
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
               {/* Display streaming response as it arrives */}

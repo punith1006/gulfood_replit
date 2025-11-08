@@ -39,14 +39,14 @@ export async function createConversation(): Promise<string> {
  * @param input - User's message or query
  * @param conversationId - The conversation UUID from createConversation
  * @param onToken - Callback function called for each token received
- * @param onComplete - Callback function called when stream completes
+ * @param onComplete - Callback function called when stream completes (with optional suggestions)
  * @param onError - Callback function called on error
  */
 export function streamChatResponse(
   input: string,
   conversationId: string,
   onToken: (token: string) => void,
-  onComplete: () => void,
+  onComplete: (suggestions?: string[]) => void,
   onError: (error: Error) => void
 ): () => void {
   const wsUrl = 'wss://stu.globalknowledgetech.com:8000/generate/response/stream';
@@ -56,11 +56,26 @@ export function streamChatResponse(
   let hasErrored = false;
   let eotEncountered = false;
   let tokenBuffer = '';
+  let postEOTBuffer = '';  // Buffer for content after <EOT>
   
   const safeComplete = () => {
     if (!hasCompleted && !hasErrored) {
       hasCompleted = true;
-      onComplete();
+      
+      // Try to parse suggestions from post-EOT content
+      let suggestions: string[] | undefined;
+      if (postEOTBuffer.trim()) {
+        try {
+          const parsed = JSON.parse(postEOTBuffer.trim());
+          if (parsed.suggestions && Array.isArray(parsed.suggestions)) {
+            suggestions = parsed.suggestions;
+          }
+        } catch (error) {
+          console.error('Failed to parse post-EOT suggestions:', error);
+        }
+      }
+      
+      onComplete(suggestions);
     }
   };
   
@@ -73,6 +88,8 @@ export function streamChatResponse(
   
   const processToken = (token: string) => {
     if (eotEncountered) {
+      // After <EOT>, accumulate content for suggestions parsing
+      postEOTBuffer += token;
       return;
     }
     
@@ -83,9 +100,14 @@ export function streamChatResponse(
     if (eotIndex !== -1) {
       eotEncountered = true;
       const beforeEOT = tokenBuffer.substring(0, eotIndex);
+      const afterEOT = tokenBuffer.substring(eotIndex + 5); // Skip '<EOT>'
+      
       if (beforeEOT) {
         onToken(beforeEOT);
       }
+      
+      // Start capturing post-EOT content
+      postEOTBuffer = afterEOT;
       tokenBuffer = '';
     } else {
       const safeLength = tokenBuffer.length - 4;
