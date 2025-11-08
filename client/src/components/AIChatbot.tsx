@@ -48,6 +48,38 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import { createConversation, streamChatResponse } from "@/lib/externalBackend";
 
+/**
+ * Pre-processes AI response content before markdown parsing to prevent numbers from being
+ * hidden due to list marker interpretation. Adds zero-width space to protect patterns like:
+ * - "5000+ exhibitors" → would become "+ exhibitors" (unordered list)
+ * - "5.6 million" → would become ". million" (markdown list parsing artifact)
+ * - "50% growth" → would become "% growth" if at line start
+ * - "$5.6 million" → currency with decimals
+ * - "5,000-7,500 range" → numeric ranges with hyphens/dashes
+ * 
+ * Works for both streaming and stored content without breaking code blocks.
+ */
+function protectNumericPatterns(content: string): string {
+  return content.split('\n').map(line => {
+    if (/^\s*[\d,]+[+*]\s/.test(line)) {
+      return '\u200B' + line;
+    }
+    if (/^\s*[\d,]+\.\d/.test(line)) {
+      return '\u200B' + line;
+    }
+    if (/^\s*[\d,]+%/.test(line)) {
+      return '\u200B' + line;
+    }
+    if (/^\s*[$€£¥]\s*[\d,]/.test(line)) {
+      return '\u200B' + line;
+    }
+    if (/^\s*[\d,]+\s*[-–—]\s*[\d,]/.test(line)) {
+      return '\u200B' + line;
+    }
+    return line;
+  }).join('\n');
+}
+
 const ATTENDANCE_INTENTS = [
   "Discover new products and innovations",
   "Meet potential suppliers and partners",
@@ -1410,7 +1442,7 @@ export default function AIChatbot() {
                         )
                       }}
                     >
-                      {message.content}
+                      {protectNumericPatterns(message.content)}
                     </ReactMarkdown>
                   </div>
                   {/* Feedback buttons disabled pending external backend feedback support */}
@@ -1524,7 +1556,7 @@ export default function AIChatbot() {
                         )
                       }}
                     >
-                      {streamingResponse}
+                      {protectNumericPatterns(streamingResponse)}
                     </ReactMarkdown>
                   </div>
                   <div className="flex items-center gap-1 mt-1 ml-2 text-xs text-muted-foreground">
