@@ -45,6 +45,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
+import { createConversation, streamChatResponse } from "@/lib/externalBackend";
 
 const ATTENDANCE_INTENTS = [
   "Discover new products and innovations",
@@ -329,6 +330,11 @@ export default function AIChatbot() {
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, boolean>>({});
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [isGeneratingItinerary, setIsGeneratingItinerary] = useState(false);
+  
+  // External backend integration state
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [streamingResponse, setStreamingResponse] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState(false);
   
   // Track viewed announcements and sessions for notification badge
   const [viewedItems, setViewedItems] = useState<{ announcements: number[]; sessions: number[] }>(() => {
@@ -643,6 +649,25 @@ export default function AIChatbot() {
     }
   }, [userRole, isOpen]);
   
+  // Initialize conversation with external backend when chatbot opens
+  useEffect(() => {
+    if (isOpen && !conversationId) {
+      createConversation()
+        .then((uuid) => {
+          setConversationId(uuid);
+          console.log('Conversation created:', uuid);
+        })
+        .catch((error) => {
+          console.error('Failed to create conversation:', error);
+          toast({
+            title: "Connection Error",
+            description: "Failed to initialize chat. Please refresh and try again.",
+            variant: "destructive",
+          });
+        });
+    }
+  }, [isOpen, conversationId, toast]);
+  
   // Trigger widgets when user sends 3rd message
   useEffect(() => {
     if (userMessageCount >= 3 && userRole) {
@@ -662,37 +687,52 @@ export default function AIChatbot() {
     }
   }, [userMessageCount, userRole, hasTriggeredLeadCapture, hasTriggeredRegistrationShare]);
 
-  const chatMutation = useMutation({
-    mutationFn: async ({ message, role }: { message: string; role: string | null }) => {
-      const capitalizedRole = role 
-        ? role.charAt(0).toUpperCase() + role.slice(1)
-        : null;
-      const res = await apiRequest("POST", "/api/chat", { 
-        sessionId, 
-        message,
-        userRole: capitalizedRole
+  // Streaming chat function using external backend
+  const handleStreamingChat = (message: string) => {
+    if (!conversationId) {
+      toast({
+        title: "Not Ready",
+        description: "Chat is still initializing. Please wait a moment.",
+        variant: "destructive",
       });
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
-    },
-    onError: (error: any) => {
-      console.error("Chat mutation error:", error);
-      console.error("Error details:", {
-        message: error?.message,
-        response: error?.response,
-        status: error?.status
-      });
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: "I'm sorry, I'm having trouble processing that right now. Please try again."
-      }]);
+      return;
     }
-  });
+    
+    setIsStreaming(true);
+    setStreamingResponse('');
+    let accumulatedResponse = '';
+    
+    const cleanup = streamChatResponse(
+      message,
+      conversationId,
+      (token: string) => {
+        accumulatedResponse += token;
+        setStreamingResponse(accumulatedResponse);
+      },
+      () => {
+        setMessages(prev => [...prev, { 
+          role: "assistant", 
+          content: accumulatedResponse 
+        }]);
+        setStreamingResponse('');
+        setIsStreaming(false);
+      },
+      (error: Error) => {
+        console.error("Streaming chat error:", error);
+        setMessages(prev => [...prev, {
+          role: "assistant",
+          content: "I'm sorry, I'm having trouble processing that right now. Please try again."
+        }]);
+        setStreamingResponse('');
+        setIsStreaming(false);
+      }
+    );
+    
+    return cleanup;
+  };
 
   const handleSend = () => {
-    if (!input.trim() || chatMutation.isPending) return;
+    if (!input.trim() || isStreaming) return;
 
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -732,12 +772,12 @@ export default function AIChatbot() {
       }
     }
     
-    chatMutation.mutate({ message: input, role: userRole });
+    handleStreamingChat(input);
     setInput("");
   };
 
   const handleQuickAction = (action: string) => {
-    if (chatMutation.isPending) return;
+    if (isStreaming) return;
     
     // Handle "Register Today" action by opening registration URL
     if (action === "Register Today") {
@@ -767,7 +807,7 @@ export default function AIChatbot() {
     
     const userMessage: Message = { role: "user", content: action };
     setMessages(prev => [...prev, userMessage]);
-    chatMutation.mutate({ message: action, role: userRole });
+    handleStreamingChat(action);
   };
 
   const contactSalesMutation = useMutation({
@@ -1314,7 +1354,9 @@ export default function AIChatbot() {
                       {message.content}
                     </ReactMarkdown>
                   </div>
-                  {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
+                  {/* Feedback buttons disabled pending external backend feedback support */}
+                  {/* TODO: Re-enable feedback buttons once the external backend API supports feedback collection */}
+                  {/* {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
                     <div className="flex gap-2 mt-1 ml-2">
                       <Button
                         size="sm"
@@ -1340,10 +1382,55 @@ export default function AIChatbot() {
                     <div className="text-xs text-muted-foreground mt-1 ml-2">
                       Thanks for your feedback!
                     </div>
-                  )}
+                  )} */}
                 </div>
               ))}
-              {chatMutation.isPending && (
+              {/* Display streaming response as it arrives */}
+              {isStreaming && streamingResponse && (
+                <div className="flex flex-col items-start">
+                  <div className="max-w-[80%] rounded-2xl px-4 py-2.5 text-sm bg-muted text-foreground">
+                    <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        table: ({ node, ...props }) => (
+                          <table className="w-full border-collapse my-2 text-xs" {...props} />
+                        ),
+                        thead: ({ node, ...props }) => (
+                          <thead className="border-b border-border" {...props} />
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th className="text-left py-1.5 px-2 font-semibold" {...props} />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td className="py-1.5 px-2 border-t border-border/50" {...props} />
+                        ),
+                        tr: ({ node, ...props }) => (
+                          <tr className="hover-elevate" {...props} />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul className="list-disc list-inside space-y-1 my-2" {...props} />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol className="list-decimal list-inside space-y-1 my-2" {...props} />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="leading-relaxed" {...props} />
+                        ),
+                        p: ({ node, ...props }) => (
+                          <p className="my-1" {...props} />
+                        )
+                      }}
+                    >
+                      {streamingResponse}
+                    </ReactMarkdown>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1 ml-2 text-xs text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Generating response...</span>
+                  </div>
+                </div>
+              )}
+              {isStreaming && !streamingResponse && (
                 <div className="flex justify-start">
                   <div className="bg-muted text-foreground rounded-2xl px-4 py-2.5 text-sm flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1711,13 +1798,13 @@ export default function AIChatbot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                disabled={chatMutation.isPending}
+                disabled={isStreaming}
                 data-testid="input-chat-message"
               />
               <Button 
                 size="icon" 
                 onClick={handleSend}
-                disabled={chatMutation.isPending || !input.trim()}
+                disabled={isStreaming || !input.trim()}
                 data-testid="button-send-message"
               >
                 <Send className="w-4 h-4" />
@@ -2559,7 +2646,15 @@ export default function AIChatbot() {
             </p>
           </div>
           <ScrollArea className="flex-1 p-4">
-            <RightNowContent />
+            {/* RightNowContent temporarily disabled during external backend integration */}
+            {/* <RightNowContent /> */}
+            <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+              <Sparkles className="w-12 h-12 text-muted-foreground/50 mb-4" />
+              <h4 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h4>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Event Radar with live announcements and session updates will be available shortly.
+              </p>
+            </div>
           </ScrollArea>
         </div>
       )}
