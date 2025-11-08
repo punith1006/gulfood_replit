@@ -163,15 +163,21 @@ export function streamChatResponse(
         const data = JSON.parse(event.data);
         console.log('[DEBUG] Parsed WebSocket data:', data);
         
-        if (data.token) {
+        if (data && typeof data === 'object' && data.token) {
+          // Token wrapped in object
           processToken(data.token);
-        } else if (data.suggestions && Array.isArray(data.suggestions)) {
+        } else if (data && typeof data === 'object' && data.suggestions && Array.isArray(data.suggestions)) {
           // Suggestions arrived as a separate message
           console.log('[DEBUG] Suggestions message received:', data.suggestions);
           postEOTBuffer = JSON.stringify(data);
-        } else if (data.type === 'complete' || data.complete === true) {
+        } else if (data && typeof data === 'object' && (data.type === 'complete' || data.complete === true)) {
+          // Completion signal
           flushBuffer();
           safeComplete();
+        } else if (typeof data === 'string' || typeof data === 'number') {
+          // Bare primitive - treat as token
+          console.log('[DEBUG] Bare primitive token:', data);
+          processToken(String(data));
         } else {
           console.log('[DEBUG] Unknown message type:', data);
         }
