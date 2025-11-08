@@ -67,13 +67,12 @@ const ATTENDANCE_INTENTS = [
 
 const roleQuickActions: Record<Exclude<UserRole, null>, string[]> = {
   visitor: [
-    "Register Today",
-    "Find exhibitors for me",
-    "Schedule Consultation",
-    "Show travel & route options",
-    "Plan my Journey",
-    "Navigate the venue",
-    "Hotel recommendations"
+    "Register Now",
+    "View Event Schedule",
+    "Browse Exhibitors",
+    "Navigate the Venue",
+    "Hotel Recommendations",
+    "Live Announcements"
   ],
   exhibitor: [
     "Connect with potential buyers",
@@ -780,8 +779,8 @@ export default function AIChatbot() {
   const handleQuickAction = (action: string) => {
     if (isStreaming) return;
     
-    // Handle "Register Today" action by opening registration URL
-    if (action === "Register Today") {
+    // Handle "Register Now" action by opening registration URL
+    if (action === "Register Now") {
       setHasRegistered(true);
       window.open('https://visit.gulfood.com/reg/taTvFu6IraZ5MsCnrdzbHutAykNXdxkNXqaJunHZMSi?utm_source=www.gulfood.com&utm_medium=referral', '_blank');
       toast({
@@ -1332,12 +1331,14 @@ export default function AIChatbot() {
                         em: ({ node, ...props }) => (
                           <em className="italic" {...props} />
                         ),
-                        code: ({ node, inline, className, ...props }) => 
-                          inline ? (
+                        code: ({ node, className, ...props }: any) => {
+                          const inline = props.inline;
+                          return inline ? (
                             <code className={cn("bg-muted px-1 py-0.5 rounded text-xs font-mono", className)} {...props} />
                           ) : (
                             <code className={cn("block bg-muted p-2 rounded my-2 text-xs font-mono overflow-x-auto", className)} {...props} />
-                          ),
+                          );
+                        },
                         blockquote: ({ node, ...props }) => (
                           <blockquote className="border-l-4 border-primary pl-3 my-2 italic text-muted-foreground" {...props} />
                         ),
@@ -1420,12 +1421,14 @@ export default function AIChatbot() {
                         em: ({ node, ...props }) => (
                           <em className="italic" {...props} />
                         ),
-                        code: ({ node, inline, className, ...props }) => 
-                          inline ? (
+                        code: ({ node, className, ...props }: any) => {
+                          const inline = props.inline;
+                          return inline ? (
                             <code className={cn("bg-muted px-1 py-0.5 rounded text-xs font-mono", className)} {...props} />
                           ) : (
                             <code className={cn("block bg-muted p-2 rounded my-2 text-xs font-mono overflow-x-auto", className)} {...props} />
-                          ),
+                          );
+                        },
                         blockquote: ({ node, ...props }) => (
                           <blockquote className="border-l-4 border-primary pl-3 my-2 italic text-muted-foreground" {...props} />
                         ),
