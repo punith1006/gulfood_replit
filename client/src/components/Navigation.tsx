@@ -9,7 +9,6 @@ export default function Navigation() {
 
   const navItems = [
     { label: "Home", path: "/" },
-    { label: "Visitors", path: "/visitors" },
     { label: "Exhibitors", path: "/exhibitors" },
   ];
 
