@@ -391,6 +391,9 @@ export default function AIChatbot() {
   // Track if journey tab should be highlighted
   const [highlightJourneyTab, setHighlightJourneyTab] = useState(false);
   
+  // Track if Quick Actions section is expanded (default: true/expanded)
+  const [quickActionsExpanded, setQuickActionsExpanded] = useState(true);
+  
   // Journey form state
   const [journeyFormData, setJourneyFormData] = useState({
     organization: '',
@@ -1887,54 +1890,80 @@ export default function AIChatbot() {
             
             {userRole && (
               <div className="mt-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">Quick actions:</div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs h-auto py-1"
-                    onClick={() => setUserRole(null)}
-                    data-testid="button-change-role"
-                  >
-                    Change role
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {roleQuickActions[userRole].map((action, idx) => (
-                    <Badge
-                      key={idx}
-                      variant="secondary"
-                      className="cursor-pointer hover-elevate text-xs"
-                      onClick={() => handleQuickAction(action)}
-                      data-testid={`badge-quick-action-${idx}`}
-                    >
-                      {action}
-                    </Badge>
-                  ))}
-                </div>
-                {userRole === "exhibitor" && (
-                  <Button
-                    className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
-                    onClick={() => setShowContactSales(true)}
-                    data-testid="button-contact-sales"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Contact Sales
-                  </Button>
-                )}
-                {userRole === "visitor" && showRegistrationShare && hasRegistered && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowRegistrationShare(false)}
-                      className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
-                      data-testid="button-close-registration-share"
-                      aria-label="Close registration share widget"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                    <RegistrationShareWidget compact={true} />
+                <Collapsible open={quickActionsExpanded} onOpenChange={setQuickActionsExpanded}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">Quick actions:</div>
+                    <div className="flex items-center gap-1">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs h-auto py-1 px-2"
+                          data-testid="button-toggle-quick-actions"
+                        >
+                          {quickActionsExpanded ? (
+                            <>
+                              <ChevronDown className="w-3 h-3 mr-1" />
+                              Minimize
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-3 h-3 mr-1 rotate-180" />
+                              Expand
+                            </>
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-auto py-1 px-2"
+                        onClick={() => setUserRole(null)}
+                        data-testid="button-change-role"
+                      >
+                        Change role
+                      </Button>
+                    </div>
                   </div>
-                )}
+                  <CollapsibleContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {roleQuickActions[userRole].map((action, idx) => (
+                        <Badge
+                          key={idx}
+                          variant="secondary"
+                          className="cursor-pointer hover-elevate text-xs"
+                          onClick={() => handleQuickAction(action)}
+                          data-testid={`badge-quick-action-${idx}`}
+                        >
+                          {action}
+                        </Badge>
+                      ))}
+                    </div>
+                    {userRole === "exhibitor" && (
+                      <Button
+                        className="w-full gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white shadow-lg no-default-hover-elevate"
+                        onClick={() => setShowContactSales(true)}
+                        data-testid="button-contact-sales"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Contact Sales
+                      </Button>
+                    )}
+                    {userRole === "visitor" && showRegistrationShare && hasRegistered && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowRegistrationShare(false)}
+                          className="absolute -top-1 -right-1 z-10 w-5 h-5 rounded-full bg-muted hover-elevate flex items-center justify-center"
+                          data-testid="button-close-registration-share"
+                          aria-label="Close registration share widget"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        <RegistrationShareWidget compact={true} />
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
                 {messages.length > 2 && userRole && hasRegistered && (
                   <div className="pt-3 mt-2 border-t border-border" data-testid="referral-widget-container">
                     <ReferralWidget 
