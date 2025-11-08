@@ -736,6 +736,17 @@ export default function AIChatbot() {
     }
   }, [isOpen, conversationId, toast]);
   
+  // Debug: Log messages when they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const latestMessage = messages[messages.length - 1];
+      console.log('[DEBUG] Messages updated. Latest:', latestMessage);
+      if (latestMessage.role === 'assistant' && latestMessage.suggestions) {
+        console.log('[DEBUG] Latest AI message HAS suggestions:', latestMessage.suggestions);
+      }
+    }
+  }, [messages]);
+  
   // Trigger widgets when user sends 3rd message
   useEffect(() => {
     if (userMessageCount >= 3 && userRole) {
@@ -778,11 +789,14 @@ export default function AIChatbot() {
         setStreamingResponse(accumulatedResponse);
       },
       (suggestions?: string[]) => {
-        setMessages(prev => [...prev, { 
-          role: "assistant", 
+        console.log('[DEBUG] onComplete called with suggestions:', suggestions);
+        const newMessage = { 
+          role: "assistant" as const, 
           content: accumulatedResponse,
           suggestions: suggestions
-        }]);
+        };
+        console.log('[DEBUG] Creating new message:', newMessage);
+        setMessages(prev => [...prev, newMessage]);
         setStreamingResponse('');
         setIsStreaming(false);
       },
