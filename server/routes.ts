@@ -1675,27 +1675,48 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           ].filter(Boolean);
           
           // Boost if exhibitor sector matches any normalized sector
-          if (normalizedSectors.length > 0 && exhibitorSectors.some(exhSector => 
+          const hasSectorMatch = normalizedSectors.length > 0 && exhibitorSectors.some(exhSector => 
             normalizedSectors.some(normSector => 
               exhSector.toLowerCase() === normSector.toLowerCase() ||
               exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
               normSector.toLowerCase().includes(exhSector.toLowerCase())
             )
-          )) {
+          );
+          
+          if (hasSectorMatch) {
             score += 20;
           }
           
           // Boost preferred exhibitors
-          if (preferredExhibitorIds && preferredExhibitorIds.includes(exhibitor.id)) {
+          const isPreferred = preferredExhibitorIds && preferredExhibitorIds.includes(exhibitor.id);
+          if (isPreferred) {
             score = 92;
+          }
+          
+          // Generate contextual fallback reasoning
+          let matchReasoning = "";
+          if (isPreferred) {
+            matchReasoning = "You specifically selected this exhibitor as a visit priority";
+          } else {
+            // Build contextual message using role, goals, and exhibitor details
+            const roleContext = role ? `As a ${role}` : "As an attendee";
+            const goalContext = attendanceIntents && attendanceIntents.length > 0 
+              ? ` aiming to ${attendanceIntents[0].toLowerCase()}`
+              : "";
+            const exhibitorValue = exhibitor.description 
+              ? `their ${exhibitor.sector.toLowerCase()} offerings`
+              : `their presence in the ${exhibitor.sector} sector`;
+            const interestMatch = hasSectorMatch && interestCategories.length > 0
+              ? ` align with your ${interestCategories[0]} interests`
+              : " may present relevant opportunities for your business goals";
+            
+            matchReasoning = `${roleContext}${goalContext}, ${exhibitorValue}${interestMatch}.`;
           }
           
           return {
             exhibitorId: exhibitor.id,
             matchScore: Math.min(100, score),
-            matchReasoning: preferredExhibitorIds && preferredExhibitorIds.includes(exhibitor.id)
-              ? "You selected this exhibitor as a priority"
-              : `Relevant to your interests in ${exhibitor.sector}`,
+            matchReasoning,
             relevanceFactors: [exhibitor.sector, exhibitor.country]
           };
         }).sort((a, b) => b.matchScore - a.matchScore);
