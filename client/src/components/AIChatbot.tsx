@@ -1800,17 +1800,17 @@ export default function AIChatbot() {
           <div className="p-2 border-t border-border space-y-2">
             <div className="flex gap-2">
               <Input
-                placeholder="Ask me anything..."
+                placeholder={!userRole ? "Please select your role (Visitor/Exhibitor) to start chatting..." : "Ask me anything..."}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSend()}
-                disabled={isStreaming}
+                disabled={isStreaming || !userRole}
                 data-testid="input-chat-message"
               />
               <Button 
                 size="icon" 
                 onClick={handleSend}
-                disabled={isStreaming || !input.trim()}
+                disabled={isStreaming || !input.trim() || !userRole}
                 data-testid="button-send-message"
               >
                 <Send className="w-4 h-4" />
