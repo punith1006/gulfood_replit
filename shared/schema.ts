@@ -61,6 +61,56 @@ export const SECTOR_NORMALIZATION: Record<string, string[]> = {
   ]
 };
 
+// Category-specific keywords for semantic matching
+// These keywords help identify exhibitors relevant to each category
+export const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  "Bakery & Confectionery": ["bakery", "bread", "pastry", "cake", "cookie", "biscuit", "confectionery", "chocolate", "candy", "sweet", "dessert", "patisserie", "croissant", "donut", "muffin", "bagel", "baking"],
+  "Dairy Products": ["dairy", "milk", "cheese", "yogurt", "butter", "cream", "ice cream", "lactose", "whey", "casein"],
+  "Beverages": ["beverage", "drink", "juice", "water", "soda", "soft drink", "energy drink", "sports drink"],
+  "Coffee & Tea": ["coffee", "tea", "espresso", "cappuccino", "latte", "herbal tea", "green tea", "black tea", "chai"],
+  "Meat & Poultry": ["meat", "beef", "chicken", "pork", "lamb", "turkey", "poultry", "sausage", "ham", "bacon"],
+  "Seafood": ["seafood", "fish", "salmon", "tuna", "shrimp", "crab", "lobster", "shellfish", "marine"],
+  "Fresh Produce": ["fresh", "fruit", "vegetable", "produce", "organic", "farm", "harvest"],
+  "Frozen Food": ["frozen", "freeze", "ice", "refrigerated", "cold storage"],
+  "Canned & Preserved Food": ["canned", "preserved", "tinned", "jarred", "pickled", "canning"],
+  "Organic & Natural Products": ["organic", "natural", "bio", "sustainable", "eco", "green"],
+  "Plant-Based & Vegan": ["vegan", "plant-based", "vegetarian", "meat-free", "dairy-free"],
+  "Snacks & Nuts": ["snack", "nut", "almond", "cashew", "peanut", "chip", "crisp", "popcorn"],
+  "Spices & Condiments": ["spice", "condiment", "sauce", "seasoning", "masala", "curry", "pepper", "salt", "herb"],
+  "Pulses, Grains & Cereals": ["pulse", "grain", "cereal", "rice", "wheat", "lentil", "bean", "oat", "barley"],
+  "Fats & Oils": ["oil", "fat", "olive oil", "vegetable oil", "palm oil", "butter oil", "ghee"],
+  "Ingredients & Food Additives": ["ingredient", "additive", "flavoring", "preservative", "emulsifier"],
+  "Food Packaging & Machinery": ["packaging", "machinery", "equipment", "container", "wrapping", "bottling"],
+  "Catering Equipment & Supplies": ["catering", "equipment", "supplies", "kitchen", "restaurant", "commercial"],
+  "Halal Products": ["halal", "islamic", "sharia"],
+  "Kosher Products": ["kosher", "jewish", "rabbinical"],
+  "Health, Wellness & Free-From": ["health", "wellness", "gluten-free", "sugar-free", "low-fat", "diet", "nutrition"],
+  "Private Label": ["private label", "own brand", "store brand", "white label"],
+  "Retail & Distribution": ["retail", "distribution", "wholesale", "supply chain", "logistics"],
+  "Power Brands": ["brand", "trademark", "label"],
+  "World Food": ["food", "cuisine", "culinary"],
+  "Grocery Trade": ["grocery", "supermarket", "retail", "trade"]
+};
+
+// Helper function to check if exhibitor matches category keywords
+export function exhibitorMatchesCategory(
+  exhibitor: { description: string; products?: string[] | null; sector: string; sectors?: string[] | null },
+  category: string
+): boolean {
+  const keywords = CATEGORY_KEYWORDS[category] || [];
+  if (keywords.length === 0) return true; // If no keywords defined, allow match
+  
+  const searchText = [
+    exhibitor.description,
+    ...(exhibitor.products || []),
+    exhibitor.sector,
+    ...(exhibitor.sectors || [])
+  ].join(" ").toLowerCase();
+  
+  // Check if any keyword appears in the exhibitor's text
+  return keywords.some(keyword => searchText.includes(keyword.toLowerCase()));
+}
+
 // Helper function to normalize interest categories to database sectors
 export function normalizeInterestCategories(categories: string[]): string[] {
   const normalizedSectors = new Set<string>();

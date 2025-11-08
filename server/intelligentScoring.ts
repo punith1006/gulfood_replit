@@ -522,9 +522,9 @@ ATTENDEE ORGANIZATION:
     const isPreferred = preferredExhibitorIds.includes(ex.id);
     return `${idx + 1}. ${ex.name} (ID: ${ex.id})${isPreferred ? ' [USER PREFERRED]' : ''}
    Sector: ${ex.sector}
-   Products: ${ex.products?.slice(0, 3).join(', ') || 'N/A'}
+   Products: ${ex.products?.slice(0, 5).join(', ') || 'N/A'}
    Country: ${ex.country}
-   Description: ${ex.description?.substring(0, 100)}...`;
+   Description: ${ex.description?.substring(0, 250)}...`;
   }).join('\n\n');
 
   const prompt = `You are an intelligent matchmaking system for Gulfood 2026.
@@ -543,11 +543,12 @@ CRITICAL PERSONALIZATION RULE:
 - ALWAYS connect to: "${attendanceIntents.join(', ')}" (their goals)
 - ALWAYS reference: "${interestCategories.join(', ')}" (their interests)
 
-PERSONALIZATION EXAMPLES:
-✅ GOOD: "As a ${role} ${attendanceIntents[0] ? `looking to ${attendanceIntents[0].toLowerCase()}` : 'attending Gulfood'}, you'll find their ${interestCategories[0] || 'offerings'} directly support your procurement objectives."
-✅ GOOD: "Their dairy products align perfectly with your focus on ${interestCategories.join(' and ')}, making them an ideal supplier for your ${role} goals."
-❌ BAD: "This exhibitor offers dairy products." (no personalization, third person)
-❌ BAD: "Direct match in dairy sector." (too generic, no user perspective)
+PERSONALIZATION EXAMPLES (CITE SPECIFIC EXHIBITOR DETAILS):
+✅ EXCELLENT: "As a ${role} ${attendanceIntents[0] ? `looking to ${attendanceIntents[0].toLowerCase()}` : 'attending Gulfood'}, you'll find their [specific product from exhibitor.products] directly supports your ${interestCategories[0] || 'business'} objectives."
+✅ GOOD: "Their [mention specific product/offering from description] aligns perfectly with your focus on ${interestCategories.join(' and ')}, making them an ideal partner for your ${role} goals."
+❌ BAD: "This exhibitor offers dairy products." (no personalization, third person, too generic)
+❌ BAD: "Limited alignment with your interests." (no specific exhibitor details cited)
+❌ BAD: "Direct match in dairy sector." (too generic, no user perspective, no specific products mentioned)
 
 CRITICAL SCORING RULE:
 **INTEREST CATEGORY MATCH IS THE #1 PRIORITY**
@@ -590,8 +591,26 @@ Return a JSON array with this structure for EACH exhibitor:
 - Explicitly reference their role: "${role}"
 - Connect to their goals: "${attendanceIntents.join(', ')}"
 - Tie to their interest categories: "${interestCategories.join(', ')}"
-- Example GOOD: "As a ${role} focused on ${attendanceIntents[0] || 'networking'}, you'll find their ${interestCategories[0] || 'products'} align with your procurement needs"
-- Example BAD: "This exhibitor offers dairy products" (too generic, no personalization)
+- **MANDATORY: Cite SPECIFIC products/offerings from the exhibitor's Description or Products field - DO NOT just say "World Food sector" or generic category names**
+
+**FORBIDDEN GENERIC PHRASES - DO NOT USE THESE:**
+❌ "World Food sector aligns"
+❌ "focus on World Food"
+❌ "Dairy sector matches"
+❌ "their offerings align"
+❌ "can help you discover"
+❌ "support your objectives"
+
+**REQUIRED SPECIFICITY - USE THESE PATTERNS:**
+✅ "their [biscuits/cookies/confectionery] align with your ${interestCategories[0] || 'business'} procurement needs"
+✅ "As a ${role}, their [milk/cheese/yogurt products] directly support your goals to ${attendanceIntents[0] || 'network'}"
+✅ "their [spices/condiments/masala] offerings match your interest in ${interestCategories.join(', ')}"
+
+**EXAMPLES:**
+- EXCELLENT: "As a Head of Procurement sourcing suppliers, their biscuits, cookies, and confectionery products directly match your Bakery & Confectionery interests."
+- GOOD: "Their dairy product range (milk, cheese, yogurt) aligns with your procurement goals in Dairy Products."
+- BAD: "World Food sector aligns with your Head of Procurement goals" (forbidden generic phrase!)
+- BAD: "Their offerings can help you discover new products" (no specific products cited!)
 
 Be REALISTIC. Most exhibitors should score 40-70 unless there's exceptional alignment.
 Preferred exhibitors should score 90-95% (user explicitly interested).

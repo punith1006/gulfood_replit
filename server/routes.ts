@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema, normalizeInterestCategories } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema, normalizeInterestCategories, exhibitorMatchesCategory } from "@shared/schema";
 import { googleCalendar } from "./googleCalendar";
 import { sendAppointmentConfirmation } from "./emailService";
 import OpenAI from "openai";
@@ -1564,21 +1564,31 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         const normalizedSectors = normalizeInterestCategories(interestCategories);
         console.log(`📋 Normalized to database sectors: ${normalizedSectors.join(', ')}`);
         
-        // Separate exhibitors into matching and non-matching
+        // Separate exhibitors into matching and non-matching using both sector AND keyword matching
         const matchingExhibitors = filteredExhibitors.filter(e => {
-          // Check both e.sector (string) and e.sectors (array) fields
+          // Check both e.sector (string) and e.sectors (array) fields for sector match
           const exhibitorSectors = [
             e.sector,
             ...(e.sectors || [])
           ].filter(Boolean);
           
-          return exhibitorSectors.some(exhSector => 
+          const sectorMatches = exhibitorSectors.some(exhSector => 
             normalizedSectors.some(normSector => 
               exhSector.toLowerCase() === normSector.toLowerCase() ||
               exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
               normSector.toLowerCase().includes(exhSector.toLowerCase())
             )
           );
+          
+          // If sector matches, also check keyword matching for granular filtering
+          if (sectorMatches) {
+            // Check if exhibitor matches any of the user's selected categories by keywords
+            return interestCategories.some((category: string) => 
+              exhibitorMatchesCategory(e, category)
+            );
+          }
+          
+          return false;
         });
         
         const nonMatchingExhibitors = filteredExhibitors.filter(e => {
@@ -1587,13 +1597,21 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
             ...(e.sectors || [])
           ].filter(Boolean);
           
-          return !exhibitorSectors.some(exhSector => 
+          const sectorMatches = exhibitorSectors.some(exhSector => 
             normalizedSectors.some(normSector => 
               exhSector.toLowerCase() === normSector.toLowerCase() ||
               exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
               normSector.toLowerCase().includes(exhSector.toLowerCase())
             )
           );
+          
+          if (sectorMatches) {
+            return !interestCategories.some((category: string) => 
+              exhibitorMatchesCategory(e, category)
+            );
+          }
+          
+          return true;
         });
         
         // Prioritize matching exhibitors (40) + include some variety (10)
@@ -1602,7 +1620,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           ...nonMatchingExhibitors.slice(0, 10)
         ];
         
-        console.log(`✅ Prioritized ${matchingExhibitors.length} matching exhibitors, ${nonMatchingExhibitors.length} other exhibitors`);
+        console.log(`✅ Prioritized ${matchingExhibitors.length} keyword-matching exhibitors, ${nonMatchingExhibitors.length} other exhibitors`);
         console.log(`Analyzing top ${exhibitorsToScore.length} exhibitors (${Math.min(40, matchingExhibitors.length)} matching + ${Math.min(10, nonMatchingExhibitors.length)} variety)`);
       } else {
         // No specific interests - take first 50
@@ -1623,7 +1641,21 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
 
       console.log(`✅ Generated ${exhibitorMatches.length} exhibitor matches`);
 
-      // Fallback: If intelligent scoring failed, use simple keyword-based matching
+      // Apply minimum relevance score threshold to filter out low-quality matches
+      const MIN_RELEVANCE_THRESHOLD = 60;
+      const beforeFilterCount = exhibitorMatches.length;
+      const filteredMatches = exhibitorMatches.filter(match => match.matchScore >= MIN_RELEVANCE_THRESHOLD);
+      
+      if (filteredMatches.length < beforeFilterCount) {
+        console.log(`🔍 Filtered out ${beforeFilterCount - filteredMatches.length} exhibitors below ${MIN_RELEVANCE_THRESHOLD}% relevance threshold`);
+        console.log(`✅ ${filteredMatches.length} high-relevance exhibitors remain`);
+      }
+      
+      // Replace exhibitorMatches with filtered version
+      exhibitorMatches.length = 0;
+      exhibitorMatches.push(...filteredMatches);
+
+      // Fallback: If intelligent scoring failed or all scores were below threshold, use simple keyword-based matching
       if (exhibitorMatches.length === 0) {
         console.warn('⚠️  Intelligent scoring returned no matches, using fallback matching...');
         
