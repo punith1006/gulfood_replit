@@ -167,22 +167,23 @@ export async function extractTopics(
     const isVisitor = !userRole || userRole === 'visitor' || userRole === 'attendee';
     const isExhibitor = userRole === 'exhibitor';
 
-    const allText = messages
-      .filter((m: any) => m.role === 'user')
-      .map((m: any) => m.content || '')
-      .join(' ');
+    for (const message of messages) {
+      if (message.role === 'user') {
+        const messageContent = message.content || '';
+        
+        if (isVisitor) {
+          const topic = detectTopic(messageContent, VISITOR_TOPICS);
+          if (topic) {
+            visitorTopicCounts.set(topic, (visitorTopicCounts.get(topic) || 0) + 1);
+          }
+        }
 
-    if (isVisitor) {
-      const topic = detectTopic(allText, VISITOR_TOPICS);
-      if (topic) {
-        visitorTopicCounts.set(topic, (visitorTopicCounts.get(topic) || 0) + 1);
-      }
-    }
-
-    if (isExhibitor) {
-      const topic = detectTopic(allText, EXHIBITOR_TOPICS);
-      if (topic) {
-        exhibitorTopicCounts.set(topic, (exhibitorTopicCounts.get(topic) || 0) + 1);
+        if (isExhibitor) {
+          const topic = detectTopic(messageContent, EXHIBITOR_TOPICS);
+          if (topic) {
+            exhibitorTopicCounts.set(topic, (exhibitorTopicCounts.get(topic) || 0) + 1);
+          }
+        }
       }
     }
   }
