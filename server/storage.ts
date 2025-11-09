@@ -98,6 +98,7 @@ export interface IStorage {
   
   getLeads(status?: string, category?: string): Promise<Lead[]>;
   getLeadByEmail(email: string): Promise<Lead | undefined>;
+  getLeadBySessionId(sessionId: string): Promise<Lead | undefined>;
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined>;
   updateLeadCategory(id: number, leadCategory: string): Promise<Lead | undefined>;

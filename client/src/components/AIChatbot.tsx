@@ -391,7 +391,7 @@ export default function AIChatbot() {
   const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary } = useChatbot();
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(() => sessionManager.getOrCreateSessionId());
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [mainTab, setMainTab] = useState("chat"); // Main 4-tab navigation

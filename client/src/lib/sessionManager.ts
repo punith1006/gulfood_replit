@@ -10,22 +10,22 @@ export interface LeadInfo {
 
 export const sessionManager = {
   getOrCreateSessionId(): string {
-    let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    let sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
     
     if (!sessionId) {
       sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+      localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
     }
     
     return sessionId;
   },
 
   getSessionId(): string | null {
-    return sessionStorage.getItem(SESSION_STORAGE_KEY);
+    return localStorage.getItem(SESSION_STORAGE_KEY);
   },
 
   clearSession(): void {
-    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(SESSION_STORAGE_KEY);
     sessionStorage.removeItem(LEAD_EMAIL_KEY);
     sessionStorage.removeItem(LEAD_NAME_KEY);
   },
