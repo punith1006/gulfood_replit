@@ -152,9 +152,9 @@ export default function JourneyAnalytics() {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-bold" data-testid="text-total-journeys">{analytics.overview.totalJourneys}</p>
+            <p className="text-2xl font-bold" data-testid="text-total-journeys">{analytics.overview.totalJourneys ?? 0}</p>
             <p className="text-xs text-muted-foreground">
-              {analytics.overview.journeysLast24h} in last 24 hours
+              {analytics.overview.journeysLast24h ?? 0} in last 24 hours
             </p>
           </div>
         </Card>
@@ -165,9 +165,9 @@ export default function JourneyAnalytics() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="space-y-1">
-            <p className="text-2xl font-bold" data-testid="text-unique-visitors">{analytics.overview.uniqueVisitors}</p>
+            <p className="text-2xl font-bold" data-testid="text-unique-visitors">{analytics.overview.uniqueVisitors ?? 0}</p>
             <p className="text-xs text-muted-foreground">
-              {analytics.overview.averageJourneysPerVisitor.toFixed(1)} avg journeys per visitor
+              {(analytics.overview.averageJourneysPerVisitor ?? 0).toFixed(1)} avg journeys per visitor
             </p>
           </div>
         </Card>
