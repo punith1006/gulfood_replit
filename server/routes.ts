@@ -1545,9 +1545,56 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         leadId = newLead.id;
       }
 
-      // Enrich organization data with web search/AI analysis
-      console.log('🔍 Enriching organization data...');
-      const organizationEnrichment = await enrichOrganization(organization, true);
+      // Two-tier caching: Check database cache first, then enrich if needed
+      console.log('🔍 Checking organization profile cache...');
+      let organizationEnrichment;
+      const cachedProfile = await storage.getOrganizationProfile(organization);
+      const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      
+      if (cachedProfile && cachedProfile.updatedAt) {
+        const cacheAge = Date.now() - new Date(cachedProfile.updatedAt).getTime();
+        const isFresh = cacheAge < CACHE_TTL_MS;
+        
+        if (isFresh) {
+          console.log(`✅ Using cached organization profile (${Math.floor(cacheAge / (24 * 60 * 60 * 1000))} days old)`);
+          organizationEnrichment = cachedProfile.enrichmentData as any;
+        } else {
+          console.log(`⏰ Cached profile is stale (${Math.floor(cacheAge / (24 * 60 * 60 * 1000))} days old), refreshing...`);
+          organizationEnrichment = await enrichOrganization(organization, false);
+          
+          // Update existing profile with fresh data
+          await storage.updateOrganizationProfile(cachedProfile.id, {
+            industry: organizationEnrichment.industry,
+            companySize: organizationEnrichment.companySize,
+            products: organizationEnrichment.products,
+            recentNews: organizationEnrichment.recentNews,
+            targetMarkets: organizationEnrichment.targetMarkets,
+            confidenceScore: organizationEnrichment.confidenceScore,
+            dataSource: 'openai',
+            enrichmentData: organizationEnrichment as any
+          });
+          console.log(`✅ Organization profile updated in cache`);
+        }
+      } else {
+        console.log('📝 No cached profile found, enriching organization data...');
+        organizationEnrichment = await enrichOrganization(organization, false);
+        
+        // Save new profile to database cache using user-supplied organization name for consistent lookups
+        await storage.createOrganizationProfile({
+          organizationName: organization,
+          normalizedName: organization.toLowerCase().trim(),
+          industry: organizationEnrichment.industry || [],
+          companySize: organizationEnrichment.companySize,
+          products: organizationEnrichment.products || [],
+          recentNews: organizationEnrichment.recentNews || [],
+          targetMarkets: organizationEnrichment.targetMarkets || [],
+          confidenceScore: organizationEnrichment.confidenceScore,
+          dataSource: 'openai',
+          enrichmentData: organizationEnrichment as any
+        });
+        console.log(`✅ Organization profile saved to cache`);
+      }
+      
       console.log(`✅ Organization enriched: ${organizationEnrichment.organizationName} (confidence: ${organizationEnrichment.confidenceScore}%)`);
 
       if (!openai) {

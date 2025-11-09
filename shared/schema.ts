@@ -397,6 +397,22 @@ export const itineraries = pgTable("itineraries", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const organizationProfiles = pgTable("organization_profiles", {
+  id: serial("id").primaryKey(),
+  organizationName: text("organization_name").notNull(),
+  normalizedName: text("normalized_name").notNull().unique(),
+  industry: text("industry").array().default([]),
+  companySize: text("company_size"),
+  products: text("products").array().default([]),
+  recentNews: text("recent_news").array().default([]),
+  targetMarkets: text("target_markets").array().default([]),
+  confidenceScore: integer("confidence_score").notNull().default(0),
+  dataSource: text("data_source"),
+  enrichmentData: jsonb("enrichment_data"), // Full enrichment data
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
 export const exhibitorAssessments = pgTable("exhibitor_assessments", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
@@ -618,6 +634,16 @@ export const insertItinerarySchema = createInsertSchema(itineraries).omit({
   totalDays: z.number().default(5)
 });
 
+export const insertOrganizationProfileSchema = createInsertSchema(organizationProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+}).extend({
+  organizationName: z.string().min(2),
+  normalizedName: z.string(),
+  confidenceScore: z.number().min(0).max(100)
+});
+
 export const insertExhibitorAssessmentSchema = createInsertSchema(exhibitorAssessments).omit({
   id: true,
   createdAt: true
@@ -683,6 +709,9 @@ export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 
 export type Itinerary = typeof itineraries.$inferSelect;
 export type InsertItinerary = z.infer<typeof insertItinerarySchema>;
+
+export type OrganizationProfile = typeof organizationProfiles.$inferSelect;
+export type InsertOrganizationProfile = z.infer<typeof insertOrganizationProfileSchema>;
 
 export type ExhibitorAssessment = typeof exhibitorAssessments.$inferSelect;
 export type InsertExhibitorAssessment = z.infer<typeof insertExhibitorAssessmentSchema>;

@@ -18,6 +18,7 @@ import {
   journeyPlans,
   appointments,
   itineraries,
+  organizationProfiles,
   exhibitorAssessments,
   type Exhibitor,
   type InsertExhibitor,
@@ -51,6 +52,8 @@ import {
   type InsertAppointment,
   type Itinerary,
   type InsertItinerary,
+  type OrganizationProfile,
+  type InsertOrganizationProfile,
   type ExhibitorAssessment,
   type InsertExhibitorAssessment,
   type ExhibitorAnalytics
@@ -147,6 +150,10 @@ export interface IStorage {
   getItineraryBySessionId(sessionId: string): Promise<Itinerary | undefined>;
   createItinerary(itinerary: InsertItinerary): Promise<Itinerary>;
   getItineraries(sessionId?: string): Promise<Itinerary[]>;
+  
+  getOrganizationProfile(organizationName: string): Promise<OrganizationProfile | undefined>;
+  createOrganizationProfile(profile: InsertOrganizationProfile): Promise<OrganizationProfile>;
+  updateOrganizationProfile(id: number, profile: Partial<InsertOrganizationProfile>): Promise<OrganizationProfile | undefined>;
   
   getExhibitorAssessment(id: number): Promise<ExhibitorAssessment | undefined>;
   getExhibitorAssessmentBySessionId(sessionId: string, companyName: string): Promise<ExhibitorAssessment | undefined>;
@@ -1092,6 +1099,37 @@ export class DatabaseStorage implements IStorage {
   async createExhibitorAssessment(assessment: InsertExhibitorAssessment): Promise<ExhibitorAssessment> {
     const [created] = await db.insert(exhibitorAssessments).values(assessment).returning();
     return created;
+  }
+
+  async getOrganizationProfile(organizationName: string): Promise<OrganizationProfile | undefined> {
+    const normalizedName = organizationName.toLowerCase().trim();
+    const [profile] = await db
+      .select()
+      .from(organizationProfiles)
+      .where(eq(organizationProfiles.normalizedName, normalizedName))
+      .limit(1);
+    return profile;
+  }
+
+  async createOrganizationProfile(profile: InsertOrganizationProfile): Promise<OrganizationProfile> {
+    const normalizedProfile = {
+      ...profile,
+      normalizedName: profile.organizationName.toLowerCase().trim()
+    };
+    const [created] = await db.insert(organizationProfiles).values(normalizedProfile).returning();
+    return created;
+  }
+
+  async updateOrganizationProfile(id: number, profile: Partial<InsertOrganizationProfile>): Promise<OrganizationProfile | undefined> {
+    const [updated] = await db
+      .update(organizationProfiles)
+      .set({
+        ...profile,
+        updatedAt: sql`NOW()`
+      })
+      .where(eq(organizationProfiles.id, id))
+      .returning();
+    return updated;
   }
 }
 
