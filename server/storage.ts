@@ -156,7 +156,7 @@ export interface IStorage {
   updateOrganizationProfile(id: number, profile: Partial<InsertOrganizationProfile>): Promise<OrganizationProfile | undefined>;
   
   getExhibitorAssessment(id: number): Promise<ExhibitorAssessment | undefined>;
-  getExhibitorAssessmentBySessionId(sessionId: string, companyName: string): Promise<ExhibitorAssessment | undefined>;
+  getExhibitorAssessmentBySessionId(sessionId: string, companyName: string, primaryGoal: string, country: string): Promise<ExhibitorAssessment | undefined>;
   createExhibitorAssessment(assessment: InsertExhibitorAssessment): Promise<ExhibitorAssessment>;
 }
 
@@ -1083,13 +1083,15 @@ export class DatabaseStorage implements IStorage {
     return assessment;
   }
 
-  async getExhibitorAssessmentBySessionId(sessionId: string, companyName: string): Promise<ExhibitorAssessment | undefined> {
+  async getExhibitorAssessmentBySessionId(sessionId: string, companyName: string, primaryGoal: string, country: string): Promise<ExhibitorAssessment | undefined> {
     const [assessment] = await db
       .select()
       .from(exhibitorAssessments)
       .where(and(
         eq(exhibitorAssessments.sessionId, sessionId),
-        eq(exhibitorAssessments.companyName, companyName)
+        eq(exhibitorAssessments.companyName, companyName),
+        eq(exhibitorAssessments.primaryGoal, primaryGoal),
+        eq(exhibitorAssessments.country, country)
       ))
       .orderBy(desc(exhibitorAssessments.createdAt))
       .limit(1);
