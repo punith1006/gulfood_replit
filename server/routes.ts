@@ -11,6 +11,8 @@ import bcrypt from "bcryptjs";
 import { requireOrganizerAuth, requireExhibitorAuth, generateOrganizerToken, generateExhibitorToken, type AuthRequest } from "./middleware/auth";
 import { enrichOrganization } from './organizationEnrichment';
 import { calculateRelevanceScore as calculateIntelligentRelevanceScore, calculateExhibitorMatchScores } from './intelligentScoring';
+import { researchCompany, type CompanyResearchData } from './companyResearch';
+import { evaluateAssessment, type AssessmentToEvaluate } from './assessmentEvaluator';
 // Semantic matcher no longer used - replaced with AI evaluation
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -2123,141 +2125,6 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
-  app.post("/api/exhibitor-assessment", async (req, res) => {
-    try {
-      const { companyName, websiteUrl, primaryGoal, country, sessionId } = req.body;
-      
-      if (!companyName || !primaryGoal || !country || !sessionId) {
-        return res.status(400).json({ error: "Company name, primary goal, country, and session ID are required" });
-      }
-
-      if (websiteUrl) {
-        try {
-          new URL(websiteUrl);
-        } catch {
-          return res.status(400).json({ error: "Invalid website URL format" });
-        }
-      }
-
-      if (!openai) {
-        return res.status(503).json({ 
-          error: "AI assessment is currently unavailable. Please configure OPENAI_API_KEY to enable this feature." 
-        });
-      }
-
-      const existing = await storage.getExhibitorAssessmentBySessionId(sessionId, companyName, primaryGoal, country);
-      if (existing) {
-        return res.json(existing);
-      }
-
-      console.log(`\n=== EXHIBITOR ASSESSMENT REQUEST ===`);
-      console.log(`Company: ${companyName}`);
-      console.log(`Website: ${websiteUrl || 'Not provided'}`);
-      console.log(`Primary Goal: ${primaryGoal}`);
-      console.log(`Country: ${country}`);
-
-      const exhibitors = await storage.getExhibitors();
-      const journeyPlans = await storage.getJourneyPlans();
-
-      const prompt = `Analyze "${companyName}" (${websiteUrl || 'website not provided'}) as a prospective exhibitor for Gulfood 2026.
-
-PRIMARY GOAL: ${primaryGoal}
-COUNTRY: ${country}
-
-Gulfood 2026 is the world's largest food & beverage exhibition in Dubai (Jan 26-30, 2026).
-
-CRITICAL: Your assessment must be STRATEGICALLY and OPPORTUNISTICALLY tailored to their PRIMARY GOAL: "${primaryGoal}"
-- Different goals require completely different analyses and recommendations
-- A company pursuing "Launch new products" needs different strategic advice than one seeking "Generate leads and sales"
-- Country context (${country}) should inform market positioning and geographic opportunities
-
-ANALYSIS TASKS:
-1. Extract company data: Industry, primary products, target markets, company size
-2. Categorize products into Gulfood categories: ${GULFOOD_CATEGORIES.slice(0, 10).join(', ')}... (and ${GULFOOD_CATEGORIES.length - 10} more)
-3. Calculate STRATEGIC RELEVANCE score (0-100%) based on PRIMARY GOAL alignment:
-   - Product-category fit with F&B industry (30%)
-   - Strategic goal alignment - how well Gulfood enables their "${primaryGoal}" (30%)
-   - Geographic/market opportunities from ${country} perspective (20%)
-   - Opportunistic advantages (timing, innovation, market gaps) (20%)
-4. Generate goal-specific, actionable recommendations
-
-SCORING GUIDANCE:
-- "Launch new products" → High scores for companies with innovative/new F&B products ready for market
-- "Generate leads and sales" → High scores for established companies with proven track record
-- "Brand awareness" → High scores for companies with strong brand positioning or marketing budgets
-- "Network with distributors" → High scores for companies seeking market expansion via partnerships
-- "Market research" → Moderate scores for companies exploring new markets or categories
-- "Find partners" → High scores for companies with complementary offerings or expansion plans
-
-Return JSON:
-{
-  "extractedData": {
-    "industry": "string",
-    "products": ["array"],
-    "targetMarkets": ["array"],
-    "companySize": "string",
-    "categories": ["Gulfood categories"]
-  },
-  "relevanceScore": number,
-  "scoreBreakdown": {
-    "productFit": number,
-    "strategicGoalAlignment": number,
-    "geographicOpportunities": number,
-    "opportunisticAdvantages": number,
-    "explanation": "Detailed explanation focusing on strategic fit for '${primaryGoal}' goal and ${country} market context"
-  },
-  "recommendations": {
-    "boothSize": "string (e.g., '18 sqm', '36 sqm') - size appropriate for their ${primaryGoal}",
-    "location": "string (recommended hall/area based on their goal and product category)",
-    "budget": "string (range in USD aligned with expected ROI for ${primaryGoal})",
-    "roiProjection": "string (specific outcomes achievable for '${primaryGoal}' goal)",
-    "actionItems": ["array of 3-5 goal-specific next steps tailored to ${primaryGoal}"]
-  }
-}
-
-Be realistic and goal-specific. If the company is not F&B related, score below 40%. ENSURE recommendations and scoring directly address "${primaryGoal}" - different goals must produce materially different assessments.`;
-
-      console.log('Calling OpenAI for exhibitor assessment...');
-      
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert exhibition consultant for Gulfood 2026. Provide honest, data-driven assessments."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.7
-      });
-
-      const aiResponse = JSON.parse(completion.choices[0].message.content || "{}");
-      
-      const assessment = await storage.createExhibitorAssessment({
-        sessionId,
-        companyName,
-        websiteUrl: websiteUrl || null,
-        primaryGoal,
-        country,
-        extractedData: aiResponse.extractedData || {},
-        relevanceScore: aiResponse.relevanceScore || 0,
-        scoreBreakdown: aiResponse.scoreBreakdown || {},
-        recommendations: aiResponse.recommendations || {}
-      });
-
-      console.log(`Assessment complete: ${assessment.relevanceScore}% relevance`);
-      console.log(`=== ASSESSMENT COMPLETE ===\n`);
-
-      res.json(assessment);
-    } catch (error) {
-      console.error("Error generating exhibitor assessment:", error);
-      res.status(500).json({ error: "Failed to generate exhibitor assessment" });
-    }
-  });
 
   app.post("/api/appointments/book", async (req, res) => {
     try {
@@ -2407,6 +2274,357 @@ Be realistic and goal-specific. If the company is not F&B related, score below 4
     } catch (error) {
       console.error("Error cancelling appointment:", error);
       res.status(500).json({ error: "Failed to cancel appointment" });
+    }
+  });
+
+  app.post("/api/exhibitor-assessment", async (req, res) => {
+    try {
+      // Extract request data
+      const { companyName, websiteUrl, primaryGoals, country, sessionId } = req.body;
+      
+      // Validate required fields
+      if (!companyName || !websiteUrl || !primaryGoals || !Array.isArray(primaryGoals) || !country || !sessionId) {
+        return res.status(400).json({ 
+          error: "Missing required fields. Please provide companyName, websiteUrl, primaryGoals (array), country, and sessionId." 
+        });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "AI service is currently unavailable. Please configure OPENAI_API_KEY to enable exhibitor assessments." 
+        });
+      }
+
+      console.log(`🚀 Starting exhibitor assessment for: ${companyName}`);
+      console.log(`📊 Primary goals: ${primaryGoals.join(', ')}`);
+      console.log(`🌍 Country: ${country}`);
+
+      // ========================================
+      // PHASE 1: RESEARCH & CACHING
+      // ========================================
+      console.log('📚 Phase 1: Research & Caching');
+      
+      // Check cache
+      let researchData: CompanyResearchData;
+      const cachedResearch = await storage.getCachedResearch(sessionId, companyName, websiteUrl, primaryGoals, country);
+      
+      if (cachedResearch && cachedResearch.researchData) {
+        console.log('✅ Using cached research data');
+        researchData = cachedResearch.researchData as CompanyResearchData;
+      } else {
+        console.log('🔍 No cache found, performing fresh research...');
+        
+        // Perform research
+        researchData = await researchCompany(companyName, websiteUrl, country, primaryGoals);
+        
+        // Cache the research data with 7-day TTL
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await storage.cacheCompanyResearch({
+          sessionId,
+          companyName,
+          websiteUrl,
+          primaryGoals,
+          country,
+          researchData,
+          confidenceScore: researchData.confidenceScore,
+          dataSource: researchData.dataSource,
+          expiresAt
+        });
+        
+        console.log(`✅ Research completed (confidence: ${researchData.confidenceScore}%) and cached`);
+      }
+
+      // ========================================
+      // PHASE 2: INITIAL ASSESSMENT GENERATION
+      // ========================================
+      console.log('🎯 Phase 2: Initial Assessment Generation');
+      
+      // Use first goal for now (until frontend supports multiple)
+      const primaryGoal = primaryGoals[0];
+      
+      const assessmentPrompt = `You are an expert trade show consultant analyzing whether a company should exhibit at Gulfood 2026, the world's largest annual food & beverage trade show in Dubai (January 26-30, 2026).
+
+COMPANY RESEARCH DATA:
+Company Name: ${companyName}
+Website: ${websiteUrl}
+Country: ${country}
+Primary Goal: ${primaryGoal}
+
+Industry: ${researchData.industry.join(', ')}
+Products/Services: ${researchData.products.join(', ')}
+Company Size: ${researchData.companySize}
+Business Model: ${researchData.businessModel}
+Target Markets: ${researchData.targetMarkets.join(', ')}
+Market Presence: ${researchData.marketPresence}
+Sustainability: ${researchData.sustainability}
+Recent News: ${researchData.recentNews.length > 0 ? researchData.recentNews.join('; ') : 'No recent news available'}
+
+Research Confidence: ${researchData.confidenceScore}%
+Data Summary: ${researchData.searchSummary}
+
+ASSESSMENT TASK:
+Generate a comprehensive exhibitor assessment including:
+
+1. **Extracted Data** (JSON object):
+   - industry: string (primary industry)
+   - products: array of strings (main products/services)
+   - targetMarkets: array of strings (key markets)
+   - companySize: string (small/medium/large/enterprise)
+   - businessModel: string (e.g., manufacturer, distributor)
+   - sustainability: string (sustainability practices)
+
+2. **Relevance Score** (0-100):
+   - How well does this company fit Gulfood 2026?
+   - Consider: industry alignment, products, goals, geographic relevance
+   - Be realistic and evidence-based
+
+3. **Score Breakdown** (JSON object with 4 scores, each 0-100):
+   - productFit: How well their products align with Gulfood categories
+   - strategicGoalAlignment: How well Gulfood supports their primary goal
+   - geographicOpportunities: Relevance of Dubai/MENA market for them
+   - opportunisticAdvantages: Unique advantages they'd gain from exhibiting
+
+4. **Recommendations** (array of 3-4 objects):
+   Each recommendation should have:
+   - title: string (concise recommendation)
+   - description: string (detailed explanation)
+   - priority: "high" | "medium" | "low"
+   - rationale: string (why this recommendation matters)
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "extractedData": { ... },
+  "relevanceScore": number,
+  "scoreBreakdown": {
+    "productFit": number,
+    "strategicGoalAlignment": number,
+    "geographicOpportunities": number,
+    "opportunisticAdvantages": number
+  },
+  "recommendations": [
+    {
+      "title": string,
+      "description": string,
+      "priority": string,
+      "rationale": string
+    }
+  ]
+}`;
+
+      const assessmentCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are an expert trade show consultant. Return only valid JSON." },
+          { role: "user", content: assessmentPrompt }
+        ],
+        temperature: 0.7,
+        response_format: { type: "json_object" }
+      });
+
+      const assessmentContent = assessmentCompletion.choices[0].message.content || "{}";
+      let initialAssessment = JSON.parse(assessmentContent);
+      
+      console.log(`✅ Initial assessment generated (score: ${initialAssessment.relevanceScore}/100)`);
+
+      // ========================================
+      // SAVE PRELIMINARY ASSESSMENT (to get assessmentId)
+      // ========================================
+      console.log('💾 Saving preliminary assessment to get ID...');
+      
+      const preliminaryAssessment = await storage.createExhibitorAssessment({
+        sessionId,
+        companyName,
+        websiteUrl,
+        primaryGoal,
+        country,
+        extractedData: initialAssessment.extractedData,
+        relevanceScore: initialAssessment.relevanceScore,
+        scoreBreakdown: initialAssessment.scoreBreakdown,
+        recommendations: initialAssessment.recommendations,
+        validationIterations: 0,
+        isValidated: false
+      });
+      
+      const assessmentId = preliminaryAssessment.id;
+      console.log(`✅ Preliminary assessment saved (ID: ${assessmentId})`);
+
+      // ========================================
+      // PHASE 3: VALIDATION LOOP (MAX 2 ITERATIONS)
+      // ========================================
+      console.log('🔎 Phase 3: Validation Loop');
+      
+      let currentAssessment = initialAssessment;
+      let iterationCount = 0;
+      const MAX_ITERATIONS = 2;
+      let finalEvaluation = null;
+
+      while (iterationCount < MAX_ITERATIONS) {
+        iterationCount++;
+        console.log(`🔄 Validation iteration ${iterationCount}/${MAX_ITERATIONS}`);
+        
+        // Prepare assessment for evaluation
+        const assessmentToEvaluate: AssessmentToEvaluate = {
+          companyName,
+          websiteUrl,
+          primaryGoal,
+          country,
+          extractedData: currentAssessment.extractedData,
+          relevanceScore: currentAssessment.relevanceScore,
+          scoreBreakdown: currentAssessment.scoreBreakdown,
+          recommendations: currentAssessment.recommendations
+        };
+        
+        // Evaluate assessment
+        const evaluation = await evaluateAssessment(assessmentToEvaluate, researchData, primaryGoals, country);
+        finalEvaluation = evaluation;
+        
+        console.log(`📊 Validation score: ${evaluation.validationScore}/100, Passed: ${evaluation.passed}`);
+        
+        // Log evaluation with assessmentId
+        try {
+          await storage.createEvaluationLog({
+            assessmentId: assessmentId,
+            sessionId,
+            companyName,
+            iterationNumber: iterationCount,
+            evaluatorFeedback: evaluation.evaluatorFeedback,
+            validationScore: evaluation.validationScore,
+            issuesFound: evaluation.issuesFound || [],
+            passed: evaluation.passed,
+            assessmentSnapshot: currentAssessment
+          });
+          console.log(`📝 Evaluation log saved for iteration ${iterationCount}`);
+        } catch (logError) {
+          console.error(`⚠️  Failed to save evaluation log for iteration ${iterationCount}:`, logError);
+        }
+        
+        if (evaluation.passed) {
+          console.log('✅ Assessment passed validation!');
+          break;
+        }
+        
+        if (iterationCount < MAX_ITERATIONS) {
+          console.log('🔧 Regenerating assessment with improvement feedback...');
+          
+          // Regenerate with improvement feedback
+          const regenerationPrompt = `You previously generated an exhibitor assessment that needs improvement.
+
+ORIGINAL ASSESSMENT:
+${JSON.stringify(currentAssessment, null, 2)}
+
+EVALUATOR FEEDBACK:
+${evaluation.evaluatorFeedback}
+
+ISSUES FOUND:
+${evaluation.issuesFound.join('\n')}
+
+IMPROVEMENT SUGGESTIONS:
+${evaluation.improvementSuggestions.join('\n')}
+
+COMPANY RESEARCH DATA (for reference):
+Company: ${companyName}
+Industry: ${researchData.industry.join(', ')}
+Products: ${researchData.products.join(', ')}
+Company Size: ${researchData.companySize}
+Target Markets: ${researchData.targetMarkets.join(', ')}
+
+TASK:
+Generate an improved assessment that addresses all the issues and suggestions above.
+Maintain the same JSON structure as the original assessment.
+
+Return ONLY a valid JSON object with the improved assessment.`;
+
+          const regenerationCompletion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: "You are an expert trade show consultant improving an assessment based on feedback. Return only valid JSON." },
+              { role: "user", content: regenerationPrompt }
+            ],
+            temperature: 0.7,
+            response_format: { type: "json_object" }
+          });
+
+          const regeneratedContent = regenerationCompletion.choices[0].message.content || "{}";
+          currentAssessment = JSON.parse(regeneratedContent);
+          
+          console.log(`✅ Assessment regenerated (new score: ${currentAssessment.relevanceScore}/100)`);
+        }
+      }
+
+      // Ensure we have a final evaluation before proceeding
+      if (!finalEvaluation) {
+        return res.status(500).json({
+          error: 'Failed to complete validation',
+          message: 'Assessment validation did not complete successfully'
+        });
+      }
+
+      // ========================================
+      // PHASE 4: FINALIZATION
+      // ========================================
+      console.log(`✅ Finalization phase: Updating assessment ${assessmentId} with validation metadata`);
+      
+      let finalAssessment;
+      let updateAttempts = 0;
+      const MAX_UPDATE_ATTEMPTS = 2;
+
+      while (updateAttempts < MAX_UPDATE_ATTEMPTS) {
+        try {
+          updateAttempts++;
+          finalAssessment = await storage.updateAssessmentWithValidation(assessmentId, {
+            validationIterations: iterationCount,
+            validationScore: finalEvaluation.validationScore,
+            evaluatorFeedback: finalEvaluation.evaluatorFeedback,
+            isValidated: finalEvaluation.passed,
+            extractedData: currentAssessment.extractedData,
+            relevanceScore: currentAssessment.relevanceScore,
+            scoreBreakdown: currentAssessment.scoreBreakdown,
+            recommendations: currentAssessment.recommendations
+          });
+          
+          if (finalAssessment) {
+            break; // Success
+          }
+        } catch (updateError) {
+          console.error(`❌ Attempt ${updateAttempts} to update assessment failed:`, updateError);
+          if (updateAttempts >= MAX_UPDATE_ATTEMPTS) {
+            // All attempts failed - return error to frontend
+            return res.status(500).json({
+              error: 'Failed to save validated assessment',
+              message: 'Assessment was generated and validated but could not be saved to database',
+              details: updateError instanceof Error ? updateError.message : 'Unknown error'
+            });
+          }
+          // Wait a bit before retry
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      if (!finalAssessment) {
+        return res.status(500).json({
+          error: 'Failed to retrieve validated assessment',
+          message: 'Assessment update returned no data'
+        });
+      }
+
+      console.log(`✅ Assessment ${assessmentId} finalized with ${iterationCount} iterations, validation score: ${finalEvaluation.validationScore}`);
+
+      return res.json({
+        ...finalAssessment,
+        researchConfidence: researchData.confidenceScore,
+        researchSummary: researchData.searchSummary
+      });
+
+    } catch (error: any) {
+      console.error("❌ Error in exhibitor assessment:", error);
+      
+      // Return partial results with error message
+      res.status(500).json({ 
+        error: "Failed to complete exhibitor assessment",
+        details: error.message,
+        phase: "unknown",
+        message: "An error occurred during assessment generation. Please try again or contact support if the issue persists."
+      });
     }
   });
 

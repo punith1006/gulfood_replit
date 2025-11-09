@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq, ilike, or, sql, desc, and } from "drizzle-orm";
+import { eq, ilike, or, sql, desc, and, gt } from "drizzle-orm";
 import {
   exhibitors,
   companyAnalyses,
@@ -20,6 +20,8 @@ import {
   itineraries,
   organizationProfiles,
   exhibitorAssessments,
+  companyResearchCache,
+  assessmentEvaluationLogs,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -56,6 +58,10 @@ import {
   type InsertOrganizationProfile,
   type ExhibitorAssessment,
   type InsertExhibitorAssessment,
+  type CompanyResearchCache,
+  type InsertCompanyResearchCache,
+  type AssessmentEvaluationLog,
+  type InsertAssessmentEvaluationLog,
   type ExhibitorAnalytics
 } from "@shared/schema";
 
@@ -158,6 +164,14 @@ export interface IStorage {
   getExhibitorAssessment(id: number): Promise<ExhibitorAssessment | undefined>;
   getExhibitorAssessmentBySessionId(sessionId: string, companyName: string, primaryGoal: string, country: string): Promise<ExhibitorAssessment | undefined>;
   createExhibitorAssessment(assessment: InsertExhibitorAssessment): Promise<ExhibitorAssessment>;
+  
+  getCachedResearch(sessionId: string, companyName: string, websiteUrl: string, primaryGoals: string[], country: string): Promise<CompanyResearchCache | undefined>;
+  cacheCompanyResearch(cache: InsertCompanyResearchCache): Promise<CompanyResearchCache>;
+  
+  createEvaluationLog(log: InsertAssessmentEvaluationLog): Promise<AssessmentEvaluationLog>;
+  getEvaluationLogsByAssessment(assessmentId: number): Promise<AssessmentEvaluationLog[]>;
+  
+  updateAssessmentWithValidation(id: number, updates: Partial<InsertExhibitorAssessment>): Promise<ExhibitorAssessment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1130,6 +1144,67 @@ export class DatabaseStorage implements IStorage {
         updatedAt: sql`NOW()`
       })
       .where(eq(organizationProfiles.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getCachedResearch(
+    sessionId: string,
+    companyName: string,
+    websiteUrl: string,
+    primaryGoals: string[],
+    country: string
+  ): Promise<CompanyResearchCache | undefined> {
+    const [cached] = await db
+      .select()
+      .from(companyResearchCache)
+      .where(
+        and(
+          eq(companyResearchCache.sessionId, sessionId),
+          eq(companyResearchCache.companyName, companyName),
+          eq(companyResearchCache.websiteUrl, websiteUrl),
+          sql`${companyResearchCache.primaryGoals} = ${primaryGoals}`,
+          eq(companyResearchCache.country, country),
+          gt(companyResearchCache.expiresAt, sql`NOW()`)
+        )
+      )
+      .orderBy(desc(companyResearchCache.createdAt))
+      .limit(1);
+    return cached;
+  }
+
+  async cacheCompanyResearch(cache: InsertCompanyResearchCache): Promise<CompanyResearchCache> {
+    const [created] = await db
+      .insert(companyResearchCache)
+      .values(cache)
+      .returning();
+    return created;
+  }
+
+  async createEvaluationLog(log: InsertAssessmentEvaluationLog): Promise<AssessmentEvaluationLog> {
+    const [created] = await db
+      .insert(assessmentEvaluationLogs)
+      .values(log)
+      .returning();
+    return created;
+  }
+
+  async getEvaluationLogsByAssessment(assessmentId: number): Promise<AssessmentEvaluationLog[]> {
+    return await db
+      .select()
+      .from(assessmentEvaluationLogs)
+      .where(eq(assessmentEvaluationLogs.assessmentId, assessmentId))
+      .orderBy(desc(assessmentEvaluationLogs.createdAt));
+  }
+
+  async updateAssessmentWithValidation(
+    id: number,
+    updates: Partial<InsertExhibitorAssessment>
+  ): Promise<ExhibitorAssessment | undefined> {
+    const [updated] = await db
+      .update(exhibitorAssessments)
+      .set(updates)
+      .where(eq(exhibitorAssessments.id, id))
       .returning();
     return updated;
   }

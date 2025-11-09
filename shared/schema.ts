@@ -413,6 +413,34 @@ export const organizationProfiles = pgTable("organization_profiles", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+export const companyResearchCache = pgTable("company_research_cache", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  companyName: text("company_name").notNull(),
+  websiteUrl: text("website_url").notNull(),
+  primaryGoals: text("primary_goals").array().notNull(),
+  country: text("country").notNull(),
+  researchData: jsonb("research_data").notNull(), // Web search results: industry, products, news, size, business model, markets, sustainability
+  confidenceScore: integer("confidence_score").notNull().default(0), // 0-100
+  dataSource: text("data_source"), // e.g., "web_search", "company_website"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull() // 7-day TTL
+});
+
+export const assessmentEvaluationLogs = pgTable("assessment_evaluation_logs", {
+  id: serial("id").primaryKey(),
+  assessmentId: integer("assessment_id"), // Link to exhibitor_assessments (null for in-progress)
+  sessionId: text("session_id").notNull(),
+  companyName: text("company_name").notNull(),
+  iterationNumber: integer("iteration_number").notNull(), // 1 or 2
+  evaluatorFeedback: text("evaluator_feedback").notNull(),
+  validationScore: integer("validation_score").notNull(), // 0-100
+  issuesFound: text("issues_found").array(),
+  passed: boolean("passed").notNull(),
+  assessmentSnapshot: jsonb("assessment_snapshot"), // The assessment being evaluated
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 export const exhibitorAssessments = pgTable("exhibitor_assessments", {
   id: serial("id").primaryKey(),
   sessionId: text("session_id").notNull(),
@@ -424,6 +452,10 @@ export const exhibitorAssessments = pgTable("exhibitor_assessments", {
   relevanceScore: integer("relevance_score").notNull(), // 0-100
   scoreBreakdown: jsonb("score_breakdown"), // Detailed breakdown of score components
   recommendations: jsonb("recommendations"), // Booth size, location, budget, ROI projections
+  validationIterations: integer("validation_iterations").default(0), // Number of validation iterations
+  validationScore: integer("validation_score"), // Final validation score from evaluator (0-100)
+  evaluatorFeedback: text("evaluator_feedback"), // Summary feedback from evaluator
+  isValidated: boolean("is_validated").default(false), // Whether assessment passed validation
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -644,6 +676,36 @@ export const insertOrganizationProfileSchema = createInsertSchema(organizationPr
   confidenceScore: z.number().min(0).max(100)
 });
 
+export const insertCompanyResearchCacheSchema = createInsertSchema(companyResearchCache).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  sessionId: z.string(),
+  companyName: z.string().min(2, "Company name is required"),
+  websiteUrl: z.string().url("Invalid URL"),
+  primaryGoals: z.array(z.string()).min(1, "At least one goal is required"),
+  country: z.string().min(2, "Country is required"),
+  researchData: z.any(),
+  confidenceScore: z.number().min(0).max(100).default(0),
+  dataSource: z.string().optional(),
+  expiresAt: z.date()
+});
+
+export const insertAssessmentEvaluationLogSchema = createInsertSchema(assessmentEvaluationLogs).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  assessmentId: z.number().optional(),
+  sessionId: z.string(),
+  companyName: z.string(),
+  iterationNumber: z.number().min(1).max(2),
+  evaluatorFeedback: z.string(),
+  validationScore: z.number().min(0).max(100),
+  issuesFound: z.array(z.string()).optional(),
+  passed: z.boolean(),
+  assessmentSnapshot: z.any().optional()
+});
+
 export const insertExhibitorAssessmentSchema = createInsertSchema(exhibitorAssessments).omit({
   id: true,
   createdAt: true
@@ -656,7 +718,11 @@ export const insertExhibitorAssessmentSchema = createInsertSchema(exhibitorAsses
   relevanceScore: z.number().min(0).max(100),
   extractedData: z.any().optional(),
   scoreBreakdown: z.any().optional(),
-  recommendations: z.any().optional()
+  recommendations: z.any().optional(),
+  validationIterations: z.number().min(0).max(2).default(0).optional(),
+  validationScore: z.number().min(0).max(100).optional(),
+  evaluatorFeedback: z.string().optional(),
+  isValidated: z.boolean().default(false).optional()
 });
 
 export type Exhibitor = typeof exhibitors.$inferSelect;
@@ -712,6 +778,12 @@ export type InsertItinerary = z.infer<typeof insertItinerarySchema>;
 
 export type OrganizationProfile = typeof organizationProfiles.$inferSelect;
 export type InsertOrganizationProfile = z.infer<typeof insertOrganizationProfileSchema>;
+
+export type CompanyResearchCache = typeof companyResearchCache.$inferSelect;
+export type InsertCompanyResearchCache = z.infer<typeof insertCompanyResearchCacheSchema>;
+
+export type AssessmentEvaluationLog = typeof assessmentEvaluationLogs.$inferSelect;
+export type InsertAssessmentEvaluationLog = z.infer<typeof insertAssessmentEvaluationLogSchema>;
 
 export type ExhibitorAssessment = typeof exhibitorAssessments.$inferSelect;
 export type InsertExhibitorAssessment = z.infer<typeof insertExhibitorAssessmentSchema>;
