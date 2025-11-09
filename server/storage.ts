@@ -1155,6 +1155,9 @@ export class DatabaseStorage implements IStorage {
     primaryGoals: string[],
     country: string
   ): Promise<CompanyResearchCache | undefined> {
+    const sortedGoals = [...primaryGoals].sort();
+    const goalsJson = JSON.stringify(sortedGoals);
+    
     const [cached] = await db
       .select()
       .from(companyResearchCache)
@@ -1163,7 +1166,7 @@ export class DatabaseStorage implements IStorage {
           eq(companyResearchCache.sessionId, sessionId),
           eq(companyResearchCache.companyName, companyName),
           eq(companyResearchCache.websiteUrl, websiteUrl),
-          sql`${companyResearchCache.primaryGoals} = ${primaryGoals}`,
+          sql`array_to_json(${companyResearchCache.primaryGoals})::text = ${goalsJson}`,
           eq(companyResearchCache.country, country),
           gt(companyResearchCache.expiresAt, sql`NOW()`)
         )

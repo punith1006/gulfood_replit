@@ -2304,9 +2304,10 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       // ========================================
       console.log('📚 Phase 1: Research & Caching');
       
-      // Check cache
+      // Check cache (sort goals for consistent cache lookups)
+      const sortedGoals = [...primaryGoals].sort();
       let researchData: CompanyResearchData;
-      const cachedResearch = await storage.getCachedResearch(sessionId, companyName, websiteUrl, primaryGoals, country);
+      const cachedResearch = await storage.getCachedResearch(sessionId, companyName, websiteUrl, sortedGoals, country);
       
       if (cachedResearch && cachedResearch.researchData) {
         console.log('✅ Using cached research data');
@@ -2317,13 +2318,13 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         // Perform research
         researchData = await researchCompany(companyName, websiteUrl, country, primaryGoals);
         
-        // Cache the research data with 7-day TTL
+        // Cache the research data with 7-day TTL (with sorted goals for consistent cache keys)
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         await storage.cacheCompanyResearch({
           sessionId,
           companyName,
           websiteUrl,
-          primaryGoals,
+          primaryGoals: sortedGoals,
           country,
           researchData,
           confidenceScore: researchData.confidenceScore,
