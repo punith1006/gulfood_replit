@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, ChevronDown, Calendar, SlidersHorizontal, Info } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Users, Building2, BarChart3, UserPlus, ThumbsUp, ThumbsDown, Download, UserCheck, Globe, MessageSquare, Bell, Target, Droplet, Zap, Package, TrendingUp, ShoppingCart, Award, FileDown, CheckCircle2, AlertCircle, ChevronDown, Calendar, SlidersHorizontal, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -465,7 +465,7 @@ export default function AIChatbot() {
   const [exhibitorFormData, setExhibitorFormData] = useState({
     companyName: '',
     websiteUrl: '',
-    primaryGoal: '',
+    primaryGoals: [] as string[],
     country: ''
   });
   const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
@@ -2499,7 +2499,10 @@ export default function AIChatbot() {
                 <form className="space-y-4" onSubmit={async (e) => {
                   e.preventDefault();
                   
-                  if (!exhibitorFormData.companyName || !exhibitorFormData.primaryGoal || !exhibitorFormData.country) {
+                  if (!exhibitorFormData.companyName || 
+                      !exhibitorFormData.websiteUrl || 
+                      exhibitorFormData.primaryGoals.length === 0 || 
+                      !exhibitorFormData.country) {
                     toast({ title: "Please fill in all required fields", variant: "destructive" });
                     return;
                   }
@@ -2534,35 +2537,59 @@ export default function AIChatbot() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="website-url">Website URL (Optional)</Label>
+                    <Label htmlFor="website-url">Website URL *</Label>
                     <Input
                       id="website-url"
                       type="url"
                       value={exhibitorFormData.websiteUrl}
                       onChange={(e) => setExhibitorFormData(prev => ({ ...prev, websiteUrl: e.target.value }))}
                       placeholder="https://www.example.com"
+                      required
                       data-testid="input-website-url"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="primary-goal">Primary Goal *</Label>
-                    <Select
-                      value={exhibitorFormData.primaryGoal}
-                      onValueChange={(value) => setExhibitorFormData(prev => ({ ...prev, primaryGoal: value }))}
-                    >
-                      <SelectTrigger id="primary-goal" data-testid="select-primary-goal">
-                        <SelectValue placeholder="Select your primary goal..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Launch new products">Launch new products</SelectItem>
-                        <SelectItem value="Generate leads and sales">Generate leads and sales</SelectItem>
-                        <SelectItem value="Brand awareness">Brand awareness</SelectItem>
-                        <SelectItem value="Network with distributors">Network with distributors</SelectItem>
-                        <SelectItem value="Market research">Market research</SelectItem>
-                        <SelectItem value="Find partners">Find partners</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>Primary Goals *</Label>
+                      {exhibitorFormData.primaryGoals.length > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                          {exhibitorFormData.primaryGoals.length} selected
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        "Launch new products or services",
+                        "Generate leads and sales",
+                        "Build brand awareness",
+                        "Network with industry professionals",
+                        "Explore partnership opportunities",
+                        "Learn about market trends"
+                      ].map((goal, index) => (
+                        <div key={goal} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`goal-${index}`}
+                            checked={exhibitorFormData.primaryGoals.includes(goal)}
+                            onCheckedChange={(checked) => {
+                              setExhibitorFormData(prev => ({
+                                ...prev,
+                                primaryGoals: checked
+                                  ? [...prev.primaryGoals, goal]
+                                  : prev.primaryGoals.filter(g => g !== goal)
+                              }));
+                            }}
+                            data-testid={`checkbox-goal-${index}`}
+                          />
+                          <label
+                            htmlFor={`goal-${index}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {goal}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -2599,6 +2626,34 @@ export default function AIChatbot() {
               </>
             ) : null}
             
+            {isGeneratingAssessment && (
+              <div className="space-y-4 p-6 border rounded-lg bg-muted/50" data-testid="assessment-progress">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                  <span className="font-medium">Generating Your Assessment...</span>
+                </div>
+                
+                <div className="space-y-2 text-sm text-muted-foreground pl-8">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    <span>Researching your company on the internet</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+                    <span>Generating relevance scores and recommendations</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
+                    <span>Validating assessment quality (up to 2 iterations)</span>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground pl-8">
+                  This process may take 30-60 seconds to ensure accurate results.
+                </p>
+              </div>
+            )}
+            
             {exhibitorAssessment ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -2609,7 +2664,7 @@ export default function AIChatbot() {
                     onClick={() => {
                       setExhibitorAssessment(null);
                       setJourneyType(null);
-                      setExhibitorFormData({ companyName: '', websiteUrl: '', primaryGoal: '', country: '' });
+                      setExhibitorFormData({ companyName: '', websiteUrl: '', primaryGoals: [], country: '' });
                     }}
                     data-testid="button-new-assessment"
                   >
@@ -2688,6 +2743,72 @@ export default function AIChatbot() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {exhibitorAssessment.isValidated !== undefined && (
+                  <Card data-testid="validation-quality">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5" />
+                        Assessment Quality & Validation
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Validation Status</p>
+                          <div className="flex items-center gap-2">
+                            {exhibitorAssessment.isValidated ? (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <span className="font-medium text-green-600">Validated</span>
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                <span className="font-medium text-yellow-600">Partial Validation</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {exhibitorAssessment.validationScore !== undefined && (
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Validation Score</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-bold" data-testid="text-validation-score">{exhibitorAssessment.validationScore}%</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {exhibitorAssessment.validationIterations !== undefined && exhibitorAssessment.validationIterations > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Quality Iterations</p>
+                          <p className="text-sm" data-testid="text-validation-iterations">
+                            This assessment was refined through <span className="font-medium">{exhibitorAssessment.validationIterations}</span> quality check{exhibitorAssessment.validationIterations > 1 ? 's' : ''} to ensure accuracy.
+                          </p>
+                        </div>
+                      )}
+                      
+                      {exhibitorAssessment.researchConfidence !== undefined && (
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Research Data Confidence</p>
+                          <div className="flex items-center gap-2">
+                            <Progress value={exhibitorAssessment.researchConfidence} className="flex-1" data-testid="progress-research-confidence" />
+                            <span className="text-sm font-medium">{exhibitorAssessment.researchConfidence}%</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {exhibitorAssessment.evaluatorFeedback && (
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">Quality Assessment Notes</p>
+                          <p className="text-sm bg-muted p-3 rounded-md">{exhibitorAssessment.evaluatorFeedback}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {exhibitorAssessment.extractedData && (
                   <Card>
