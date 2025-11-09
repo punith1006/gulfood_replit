@@ -23,14 +23,17 @@ const FALLBACK_KEYWORDS = [
 ];
 
 const TOPIC_KEYWORDS = {
-  'pricing': ['price', 'cost', 'fee', 'payment', 'how much'],
-  'booth location': ['booth', 'hall', 'location', 'where', 'find'],
-  'schedule': ['when', 'time', 'schedule', 'session', 'hours'],
-  'contact info': ['contact', 'email', 'phone', 'reach'],
-  'exhibitor details': ['exhibitor', 'company', 'product', 'what do they'],
-  'registration': ['register', 'sign up', 'ticket', 'attend'],
-  'facilities': ['parking', 'wifi', 'restaurant', 'facilities'],
-  'product sourcing': ['buy', 'purchase', 'supplier', 'source']
+  'pricing': ['price', 'cost', 'fee', 'payment', 'how much', 'pricing', 'expensive', 'cheap', 'budget'],
+  'booth location': ['booth', 'hall', 'location', 'where', 'find', 'stand', 'pavilion', 'zone', 'area'],
+  'schedule': ['when', 'time', 'schedule', 'session', 'hours', 'timing', 'date', 'day', 'program', 'agenda'],
+  'contact info': ['contact', 'email', 'phone', 'reach', 'call', 'number', 'address', 'get in touch'],
+  'exhibitor details': ['exhibitor', 'company', 'product', 'what do they', 'who is', 'tell me about', 'information about', 'details'],
+  'registration': ['register', 'sign up', 'ticket', 'attend', 'entry', 'admission', 'badge', 'pass'],
+  'facilities': ['parking', 'wifi', 'restaurant', 'facilities', 'restroom', 'amenities', 'services', 'food', 'dining'],
+  'product sourcing': ['buy', 'purchase', 'supplier', 'source', 'order', 'procure', 'vendor', 'seller'],
+  'networking': ['meet', 'network', 'appointment', 'meeting', 'connect', 'introduction', 'business card'],
+  'navigation': ['how to get', 'directions', 'route', 'way to', 'navigate', 'walk to', 'map'],
+  'event info': ['what is', 'about the event', 'gulfood', 'trade show', 'exhibition', 'fair']
 };
 
 export async function detectFallback(message: any): Promise<boolean> {
@@ -78,10 +81,17 @@ export async function getFallbackStats(
       )
     );
 
+  const conversationMap = new Map(
+    conversations.map(conv => [conv.sessionId, conv])
+  );
+
   let totalBotResponses = 0;
   let fallbackCount = 0;
   const fallbackTopicCounts = new Map<string, number>();
   const dislikeTopicCounts = new Map<string, number>();
+  
+  let orphanedFeedbackCount = 0;
+  const orphanedSessions = new Set<string>();
 
   for (const conv of conversations) {
     const messages = Array.isArray(conv.messages) ? conv.messages : [];
@@ -121,6 +131,18 @@ export async function getFallbackStats(
         }
       }
     }
+  }
+
+  for (const fb of feedback) {
+    if (fb.isAccurate === false && !conversationMap.has(fb.sessionId)) {
+      orphanedFeedbackCount++;
+      orphanedSessions.add(fb.sessionId);
+    }
+  }
+
+  if (orphanedFeedbackCount > 0) {
+    console.warn(`[Analytics] Found ${orphanedFeedbackCount} orphaned feedback records from ${orphanedSessions.size} sessions without conversations`);
+    console.warn(`[Analytics] Orphaned sessions:`, Array.from(orphanedSessions));
   }
 
   const fallbackRate = totalBotResponses > 0 
