@@ -24,6 +24,8 @@ const FALLBACK_KEYWORDS = [
 
 const TOPIC_KEYWORDS = {
   'pricing': ['price', 'cost', 'fee', 'payment', 'how much', 'pricing', 'expensive', 'cheap', 'budget'],
+  'promotions & offers': ['promotion', 'offer', 'deal', 'discount', 'special', 'early bird', 'package', 'promo', 'exclusive', 'group discount', 'group rate'],
+  'accommodation': ['hotel', 'stay', 'accommodation', 'lodging', 'room', 'booking', 'sleep', 'place to stay'],
   'booth location': ['booth', 'hall', 'location', 'where', 'find', 'stand', 'pavilion', 'zone', 'area'],
   'schedule': ['when', 'time', 'schedule', 'session', 'hours', 'timing', 'date', 'day', 'program', 'agenda'],
   'contact info': ['contact', 'email', 'phone', 'reach', 'call', 'number', 'address', 'get in touch'],
