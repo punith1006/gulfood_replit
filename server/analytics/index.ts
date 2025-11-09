@@ -1,4 +1,3 @@
-import { analyticsCache } from './cache';
 import { getConversationMetrics, type ConversationMetrics } from './conversationMetrics';
 import { getSentimentDistribution, extractTopics, getSentimentJourney, type SentimentDistribution, type TopicItem, type SentimentJourneyData } from './sentimentTopics';
 import { getFallbackStats, type FallbackStats } from './fallbacks';
@@ -20,15 +19,7 @@ export async function getChatbotAnalytics(
   startDate: Date,
   endDate: Date
 ): Promise<ChatbotAnalytics> {
-  const cacheKey = `chatbot-${startDate.toISOString()}-${endDate.toISOString()}`;
-  const cached = analyticsCache.get<ChatbotAnalytics>(cacheKey);
-  
-  if (cached) {
-    console.log('Returning cached chatbot analytics');
-    return cached;
-  }
-
-  console.log('Computing chatbot analytics...');
+  console.log('Computing real-time chatbot analytics...');
   
   const [metrics, sentiment, topics, fallbacks, peakHours, sentimentJourney] = await Promise.all([
     getConversationMetrics(startDate, endDate),
@@ -47,8 +38,6 @@ export async function getChatbotAnalytics(
     peakHours,
     sentimentJourney
   };
-
-  analyticsCache.set(cacheKey, result, 3600000);
 
   return result;
 }
