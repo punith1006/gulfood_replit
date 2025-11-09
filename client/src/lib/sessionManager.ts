@@ -1,4 +1,3 @@
-const SESSION_STORAGE_KEY = 'gulfood_session_id';
 const LEAD_EMAIL_KEY = 'gulfood_lead_email';
 const LEAD_NAME_KEY = 'gulfood_lead_name';
 
@@ -9,41 +8,37 @@ export interface LeadInfo {
 }
 
 export const sessionManager = {
+  createNewSessionId(): string {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  },
+
   getOrCreateSessionId(): string {
-    let sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
-    
-    if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
-    }
-    
-    return sessionId;
+    return this.createNewSessionId();
   },
 
   getSessionId(): string | null {
-    return localStorage.getItem(SESSION_STORAGE_KEY);
+    return null;
   },
 
   clearSession(): void {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
-    sessionStorage.removeItem(LEAD_EMAIL_KEY);
-    sessionStorage.removeItem(LEAD_NAME_KEY);
+    localStorage.removeItem(LEAD_EMAIL_KEY);
+    localStorage.removeItem(LEAD_NAME_KEY);
   },
 
   setLeadInfo(email: string, name: string): void {
-    sessionStorage.setItem(LEAD_EMAIL_KEY, email);
-    sessionStorage.setItem(LEAD_NAME_KEY, name);
+    localStorage.setItem(LEAD_EMAIL_KEY, email);
+    localStorage.setItem(LEAD_NAME_KEY, name);
   },
 
   getLeadInfo(): { email: string | null; name: string | null } {
     return {
-      email: sessionStorage.getItem(LEAD_EMAIL_KEY),
-      name: sessionStorage.getItem(LEAD_NAME_KEY)
+      email: localStorage.getItem(LEAD_EMAIL_KEY),
+      name: localStorage.getItem(LEAD_NAME_KEY)
     };
   },
 
   hasLeadInfo(): boolean {
-    return !!(sessionStorage.getItem(LEAD_EMAIL_KEY) && sessionStorage.getItem(LEAD_NAME_KEY));
+    return !!(localStorage.getItem(LEAD_EMAIL_KEY) && localStorage.getItem(LEAD_NAME_KEY));
   },
 
   async checkLeadExists(email: string): Promise<LeadInfo | null> {
