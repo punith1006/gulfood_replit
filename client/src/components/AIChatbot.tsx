@@ -2849,7 +2849,7 @@ export default function AIChatbot() {
                   </Card>
                 )}
 
-                {exhibitorAssessment.recommendations && (
+                {exhibitorAssessment.recommendations && Array.isArray(exhibitorAssessment.recommendations) && exhibitorAssessment.recommendations.length > 0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
@@ -2858,40 +2858,30 @@ export default function AIChatbot() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {exhibitorAssessment.recommendations.boothSize && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Recommended Booth Size:</span>
-                          <p className="text-sm">{exhibitorAssessment.recommendations.boothSize}</p>
+                      {exhibitorAssessment.recommendations.map((rec: any, idx: number) => (
+                        <div key={idx} className="p-4 bg-muted/30 rounded-lg border border-border space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-sm font-semibold text-foreground">{rec.title}</h4>
+                            {rec.priority && (
+                              <Badge 
+                                variant={rec.priority === 'high' ? 'default' : rec.priority === 'medium' ? 'secondary' : 'outline'}
+                                className="text-xs shrink-0"
+                              >
+                                {rec.priority}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{rec.description}</p>
+                          {rec.rationale && (
+                            <div className="pt-2 border-t border-border/50">
+                              <p className="text-xs text-muted-foreground">
+                                <span className="font-medium text-foreground">Why: </span>
+                                {rec.rationale}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {exhibitorAssessment.recommendations.location && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Ideal Location:</span>
-                          <p className="text-sm">{exhibitorAssessment.recommendations.location}</p>
-                        </div>
-                      )}
-                      {exhibitorAssessment.recommendations.budget && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Budget Range:</span>
-                          <p className="text-sm">{exhibitorAssessment.recommendations.budget}</p>
-                        </div>
-                      )}
-                      {exhibitorAssessment.recommendations.roiProjection && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">ROI Projection:</span>
-                          <p className="text-sm">{exhibitorAssessment.recommendations.roiProjection}</p>
-                        </div>
-                      )}
-                      {exhibitorAssessment.recommendations.actionItems && exhibitorAssessment.recommendations.actionItems.length > 0 && (
-                        <div>
-                          <span className="text-sm font-medium text-muted-foreground">Next Steps:</span>
-                          <ul className="list-disc list-inside space-y-1 mt-1">
-                            {exhibitorAssessment.recommendations.actionItems.map((item: string, idx: number) => (
-                              <li key={idx} className="text-sm">{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                      ))}
                     </CardContent>
                   </Card>
                 )}
