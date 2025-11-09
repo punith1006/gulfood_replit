@@ -211,6 +211,17 @@ export const chatFeedback = pgTable("chat_feedback", {
   sessionMessageIdx: uniqueIndex("session_message_idx").on(table.sessionId, table.messageIndex)
 }));
 
+export const quickActionClicks = pgTable("quick_action_clicks", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  action: text("action").notNull(),
+  userRole: text("user_role").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  sessionIdx: index("quick_action_session_idx").on(table.sessionId),
+  roleIdx: index("quick_action_role_idx").on(table.userRole)
+}));
+
 export const generatedReports = pgTable("generated_reports", {
   id: serial("id").primaryKey(),
   reportType: text("report_type").notNull(),
@@ -515,6 +526,15 @@ export const insertChatFeedbackSchema = createInsertSchema(chatFeedback).omit({
   createdAt: true
 });
 
+export const insertQuickActionClickSchema = createInsertSchema(quickActionClicks).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  sessionId: z.string().min(1, "Session ID is required"),
+  action: z.string().min(1, "Action is required"),
+  userRole: z.enum(["Visitor", "Exhibitor", "Organizer"]).default("Visitor")
+});
+
 export const insertGeneratedReportSchema = createInsertSchema(generatedReports).omit({
   id: true,
   createdAt: true
@@ -747,6 +767,9 @@ export type InsertSalesContact = z.infer<typeof insertSalesContactSchema>;
 
 export type ChatFeedback = typeof chatFeedback.$inferSelect;
 export type InsertChatFeedback = z.infer<typeof insertChatFeedbackSchema>;
+
+export type QuickActionClick = typeof quickActionClicks.$inferSelect;
+export type InsertQuickActionClick = z.infer<typeof insertQuickActionClickSchema>;
 
 export type GeneratedReport = typeof generatedReports.$inferSelect;
 export type InsertGeneratedReport = z.infer<typeof insertGeneratedReportSchema>;
