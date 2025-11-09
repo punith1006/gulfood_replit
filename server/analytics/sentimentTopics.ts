@@ -156,16 +156,48 @@ export async function getSentimentDistributionAndDaily(
     }
   }
 
-  const sortedDays = Array.from(dailyMap.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, data], index) => ({
-      day: `Day ${index + 1}`,
-      positive: data.positive,
-      neutral: data.neutral,
-      negative: data.negative
-    }));
+  const effectiveStart = new Date(Math.max(
+    startDate.getTime(),
+    endDate.getTime() - 6 * 24 * 60 * 60 * 1000
+  ));
+  
+  const dailyData: DailySentimentData[] = [];
+  const currentDay = new Date(Date.UTC(
+    effectiveStart.getUTCFullYear(),
+    effectiveStart.getUTCMonth(),
+    effectiveStart.getUTCDate()
+  ));
+  
+  const endDay = new Date(Date.UTC(
+    endDate.getUTCFullYear(),
+    endDate.getUTCMonth(),
+    endDate.getUTCDate()
+  ));
+  
+  while (currentDay <= endDay) {
+    const dayKey = currentDay.toISOString().split('T')[0];
+    const dayData = dailyMap.get(dayKey) || { positive: 0, neutral: 0, negative: 0 };
+    
+    dailyData.push({
+      day: `Day ${dailyData.length + 1}`,
+      positive: dayData.positive,
+      neutral: dayData.neutral,
+      negative: dayData.negative
+    });
+    
+    currentDay.setUTCDate(currentDay.getUTCDate() + 1);
+  }
+  
+  while (dailyData.length < 7) {
+    dailyData.push({
+      day: `Day ${dailyData.length + 1}`,
+      positive: 0,
+      neutral: 0,
+      negative: 0
+    });
+  }
 
-  return { distribution, daily: sortedDays };
+  return { distribution, daily: dailyData };
 }
 
 function detectTopic(text: string, topicMap: Record<string, string[]>): string | null {
