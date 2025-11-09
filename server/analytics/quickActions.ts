@@ -39,9 +39,10 @@ export async function getTopQuickActions(
 
   for (const row of results) {
     const item = { action: row.action, count: row.count };
-    if (row.userRole === 'Visitor') {
+    const normalizedRole = row.userRole.toLowerCase();
+    if (normalizedRole === 'visitor') {
       visitorActions.push(item);
-    } else if (row.userRole === 'Exhibitor') {
+    } else if (normalizedRole === 'exhibitor') {
       exhibitorActions.push(item);
     }
   }

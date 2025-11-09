@@ -64,6 +64,16 @@ interface SentimentJourneyData {
   resolutionRate: number;
 }
 
+interface QuickActionItem {
+  action: string;
+  count: number;
+}
+
+interface QuickActionStats {
+  visitor: QuickActionItem[];
+  exhibitor: QuickActionItem[];
+}
+
 interface ChatbotAnalytics {
   metrics: ConversationMetrics;
   sentiment: SentimentDistribution;
@@ -74,6 +84,7 @@ interface ChatbotAnalytics {
   fallbacks: FallbackStats;
   peakHours: HourlyActivity[];
   sentimentJourney: SentimentJourneyData;
+  quickActions: QuickActionStats;
 }
 
 const SENTIMENT_COLORS = {
@@ -543,6 +554,62 @@ export default function ChatbotAnalytics() {
                       });
                     })()}
                   </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
+      </Card>
+
+      <Card className="p-6" data-testid="card-quick-actions">
+        <h3 className="text-xl font-bold mb-6">Top Quick Actions</h3>
+        {isLoading ? (
+          <div className="h-[300px] bg-muted rounded animate-pulse" />
+        ) : !analytics ? (
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+            No quick actions data available
+          </div>
+        ) : (
+          <Tabs defaultValue="visitor" data-testid="tabs-quick-actions">
+            <TabsList>
+              <TabsTrigger value="visitor" data-testid="tab-visitor-actions">Visitor Actions</TabsTrigger>
+              <TabsTrigger value="exhibitor" data-testid="tab-exhibitor-actions">Exhibitor Actions</TabsTrigger>
+            </TabsList>
+            <TabsContent value="visitor">
+              {analytics.quickActions.visitor.length === 0 ? (
+                <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  No visitor quick actions clicked yet
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics.quickActions.visitor.slice(0, 10)} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="action" type="category" width={150} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="hsl(var(--chart-1))" name="Clicks" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="exhibitor">
+              {analytics.quickActions.exhibitor.length === 0 ? (
+                <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  No exhibitor quick actions clicked yet
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics.quickActions.exhibitor.slice(0, 10)} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="action" type="category" width={150} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Clicks" />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </TabsContent>
