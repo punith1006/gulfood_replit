@@ -2098,7 +2098,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         });
       }
 
-      const existing = await storage.getExhibitorAssessmentBySessionId(sessionId);
+      const existing = await storage.getExhibitorAssessmentBySessionId(sessionId, companyName);
       if (existing) {
         return res.json(existing);
       }

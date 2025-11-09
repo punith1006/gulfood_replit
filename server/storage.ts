@@ -149,7 +149,7 @@ export interface IStorage {
   getItineraries(sessionId?: string): Promise<Itinerary[]>;
   
   getExhibitorAssessment(id: number): Promise<ExhibitorAssessment | undefined>;
-  getExhibitorAssessmentBySessionId(sessionId: string): Promise<ExhibitorAssessment | undefined>;
+  getExhibitorAssessmentBySessionId(sessionId: string, companyName: string): Promise<ExhibitorAssessment | undefined>;
   createExhibitorAssessment(assessment: InsertExhibitorAssessment): Promise<ExhibitorAssessment>;
 }
 
@@ -1076,11 +1076,14 @@ export class DatabaseStorage implements IStorage {
     return assessment;
   }
 
-  async getExhibitorAssessmentBySessionId(sessionId: string): Promise<ExhibitorAssessment | undefined> {
+  async getExhibitorAssessmentBySessionId(sessionId: string, companyName: string): Promise<ExhibitorAssessment | undefined> {
     const [assessment] = await db
       .select()
       .from(exhibitorAssessments)
-      .where(eq(exhibitorAssessments.sessionId, sessionId))
+      .where(and(
+        eq(exhibitorAssessments.sessionId, sessionId),
+        eq(exhibitorAssessments.companyName, companyName)
+      ))
       .orderBy(desc(exhibitorAssessments.createdAt))
       .limit(1);
     return assessment;
