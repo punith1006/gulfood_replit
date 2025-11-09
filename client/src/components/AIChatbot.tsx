@@ -1022,8 +1022,23 @@ export default function AIChatbot() {
     setInput("");
   };
 
-  const handleQuickAction = (action: string) => {
+  const handleQuickAction = async (action: string) => {
     if (isStreaming) return;
+    
+    // Log quick action click
+    try {
+      await fetch('/api/chat/quick-action-click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          action,
+          userRole: userRole || 'Visitor'
+        })
+      });
+    } catch (error) {
+      console.error('Failed to log quick action click:', error);
+    }
     
     // Handle "Register Now" action by opening registration URL
     if (action === "Register Now") {
