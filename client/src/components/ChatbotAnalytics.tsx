@@ -74,9 +74,17 @@ interface QuickActionStats {
   exhibitor: QuickActionItem[];
 }
 
+interface DailySentimentData {
+  day: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
 interface ChatbotAnalytics {
   metrics: ConversationMetrics;
   sentiment: SentimentDistribution;
+  dailySentiment: DailySentimentData[];
   topics: {
     visitor: TopicItem[];
     exhibitor: TopicItem[];
@@ -382,10 +390,10 @@ export default function ChatbotAnalytics() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <Card className="p-6" data-testid="card-sentiment-distribution">
-          <h3 className="text-xl font-bold mb-6">Sentiment Distribution</h3>
+          <h3 className="text-xl font-bold mb-6">Sentiments</h3>
           {isLoading ? (
             <div className="h-[300px] bg-muted rounded animate-pulse" />
-          ) : !analytics || sentimentData.every(d => d.value === 0) ? (
+          ) : !analytics || !analytics.dailySentiment || analytics.dailySentiment.length === 0 ? (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">
               <div className="text-center">
                 <Meh className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -393,26 +401,33 @@ export default function ChatbotAnalytics() {
               </div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={sentimentData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {sentimentData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f97316' }}></div>
+                  <span className="text-sm">Positive</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                  <span className="text-sm">Neutral</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#a855f7' }}></div>
+                  <span className="text-sm">Negative</span>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={analytics.dailySentiment}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="positive" stackId="a" fill="#f97316" name="Positive" />
+                  <Bar dataKey="neutral" stackId="a" fill="#3b82f6" name="Neutral" />
+                  <Bar dataKey="negative" stackId="a" fill="#a855f7" name="Negative" />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
           )}
         </Card>
 

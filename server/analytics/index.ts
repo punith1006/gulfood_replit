@@ -1,5 +1,5 @@
 import { getConversationMetrics, type ConversationMetrics } from './conversationMetrics';
-import { getSentimentDistribution, extractTopics, getSentimentJourney, type SentimentDistribution, type TopicItem, type SentimentJourneyData } from './sentimentTopics';
+import { getSentimentDistributionAndDaily, extractTopics, getSentimentJourney, type SentimentDistribution, type TopicItem, type SentimentJourneyData, type DailySentimentData } from './sentimentTopics';
 import { getFallbackStats, type FallbackStats } from './fallbacks';
 import { getPeakHours, type HourlyActivity } from './peakHours';
 import { getTopQuickActions, type QuickActionStats } from './quickActions';
@@ -7,6 +7,7 @@ import { getTopQuickActions, type QuickActionStats } from './quickActions';
 export interface ChatbotAnalytics {
   metrics: ConversationMetrics;
   sentiment: SentimentDistribution;
+  dailySentiment: DailySentimentData[];
   topics: {
     visitor: TopicItem[];
     exhibitor: TopicItem[];
@@ -23,9 +24,9 @@ export async function getChatbotAnalytics(
 ): Promise<ChatbotAnalytics> {
   console.log('Computing real-time chatbot analytics...');
   
-  const [metrics, sentiment, topics, fallbacks, peakHours, sentimentJourney, quickActions] = await Promise.all([
+  const [metrics, sentimentData, topics, fallbacks, peakHours, sentimentJourney, quickActions] = await Promise.all([
     getConversationMetrics(startDate, endDate),
-    getSentimentDistribution(startDate, endDate),
+    getSentimentDistributionAndDaily(startDate, endDate),
     extractTopics(startDate, endDate),
     getFallbackStats(startDate, endDate),
     getPeakHours(startDate, endDate),
@@ -35,7 +36,8 @@ export async function getChatbotAnalytics(
 
   const result: ChatbotAnalytics = {
     metrics,
-    sentiment,
+    sentiment: sentimentData.distribution,
+    dailySentiment: sentimentData.daily,
     topics,
     fallbacks,
     peakHours,

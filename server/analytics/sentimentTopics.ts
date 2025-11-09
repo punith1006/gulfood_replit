@@ -17,6 +17,13 @@ export interface SentimentDistribution {
   Confused: number;
 }
 
+export interface DailySentimentData {
+  day: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
 export interface TopicItem {
   topic: string;
   count: number;
@@ -101,10 +108,10 @@ export async function analyzeSentiment(messages: any[]): Promise<Sentiment> {
   return 'Neutral';
 }
 
-export async function getSentimentDistribution(
+export async function getSentimentDistributionAndDaily(
   startDate: Date,
   endDate: Date
-): Promise<SentimentDistribution> {
+): Promise<{ distribution: SentimentDistribution; daily: DailySentimentData[] }> {
   const conversations = await db
     .select()
     .from(chatConversations)
@@ -123,13 +130,42 @@ export async function getSentimentDistribution(
     Confused: 0
   };
 
+  const dailyMap = new Map<string, { positive: number; neutral: number; negative: number }>();
+
   for (const conv of conversations) {
     const messages = Array.isArray(conv.messages) ? conv.messages : [];
     const sentiment = await analyzeSentiment(messages);
+    
     distribution[sentiment]++;
+    
+    const convDate = new Date(conv.createdAt);
+    const dayKey = convDate.toISOString().split('T')[0];
+    
+    if (!dailyMap.has(dayKey)) {
+      dailyMap.set(dayKey, { positive: 0, neutral: 0, negative: 0 });
+    }
+    
+    const dayData = dailyMap.get(dayKey)!;
+    
+    if (sentiment === 'Enthusiastic' || sentiment === 'Satisfied') {
+      dayData.positive++;
+    } else if (sentiment === 'Neutral') {
+      dayData.neutral++;
+    } else {
+      dayData.negative++;
+    }
   }
 
-  return distribution;
+  const sortedDays = Array.from(dailyMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, data], index) => ({
+      day: `Day ${index + 1}`,
+      positive: data.positive,
+      neutral: data.neutral,
+      negative: data.negative
+    }));
+
+  return { distribution, daily: sortedDays };
 }
 
 function detectTopic(text: string, topicMap: Record<string, string[]>): string | null {
