@@ -1019,17 +1019,17 @@ export async function generateExhibitorAssessmentPDF(reportData: {
       const breakdown = assessment.scoreBreakdown;
       const breakdownItems = [];
       
-      if (breakdown.productFit !== undefined) {
-        breakdownItems.push(`Product Fit: ${breakdown.productFit}%`);
+      if (breakdown.productEventAlignment !== undefined) {
+        breakdownItems.push(`Product-Event Alignment: ${breakdown.productEventAlignment}%`);
       }
-      if (breakdown.strategicGoalAlignment !== undefined) {
-        breakdownItems.push(`Goal Alignment: ${breakdown.strategicGoalAlignment}%`);
+      if (breakdown.businessGoalAlignment !== undefined) {
+        breakdownItems.push(`Business Goal Alignment: ${breakdown.businessGoalAlignment}%`);
       }
-      if (breakdown.geographicOpportunities !== undefined) {
-        breakdownItems.push(`Geographic Opportunities: ${breakdown.geographicOpportunities}%`);
+      if (breakdown.marketMatch !== undefined) {
+        breakdownItems.push(`Market Match: ${breakdown.marketMatch}%`);
       }
-      if (breakdown.opportunisticAdvantages !== undefined) {
-        breakdownItems.push(`Strategic Advantages: ${breakdown.opportunisticAdvantages}%`);
+      if (breakdown.roiPotential !== undefined) {
+        breakdownItems.push(`ROI Potential: ${breakdown.roiPotential}%`);
       }
       
       if (breakdownItems.length > 0) {

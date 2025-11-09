@@ -137,10 +137,10 @@ export interface AssessmentToEvaluate {
   extractedData: any;
   relevanceScore: number;
   scoreBreakdown: {
-    productFit?: number;
-    strategicGoalAlignment?: number;
-    geographicOpportunities?: number;
-    opportunisticAdvantages?: number;
+    productEventAlignment?: number;
+    businessGoalAlignment?: number;
+    marketMatch?: number;
+    roiPotential?: number;
   };
   recommendations: any;
 }
@@ -215,7 +215,7 @@ export async function evaluateAssessment(
   if (!assessment.scoreBreakdown || typeof assessment.scoreBreakdown !== 'object') {
     completenessIssues.push('ScoreBreakdown field is missing or not an object');
   } else {
-    const requiredScores = ['productFit', 'strategicGoalAlignment', 'geographicOpportunities', 'opportunisticAdvantages'];
+    const requiredScores = ['productEventAlignment', 'businessGoalAlignment', 'marketMatch', 'roiPotential'];
     const missingScores = requiredScores.filter(score => assessment.scoreBreakdown[score as keyof typeof assessment.scoreBreakdown] === undefined);
     if (missingScores.length > 0) {
       completenessIssues.push(`ScoreBreakdown is missing scores: ${missingScores.join(', ')}`);
@@ -272,10 +272,10 @@ Primary Goal: ${assessment.primaryGoal}
 
 ASSESSMENT SCORES:
 - Overall Relevance Score: ${assessment.relevanceScore}/100
-- Product Fit: ${assessment.scoreBreakdown.productFit ?? 'Not provided'}/100
-- Strategic Goal Alignment: ${assessment.scoreBreakdown.strategicGoalAlignment ?? 'Not provided'}/100
-- Geographic Opportunities: ${assessment.scoreBreakdown.geographicOpportunities ?? 'Not provided'}/100
-- Opportunistic Advantages: ${assessment.scoreBreakdown.opportunisticAdvantages ?? 'Not provided'}/100
+- Product-Event Alignment: ${assessment.scoreBreakdown.productEventAlignment ?? 'Not provided'}/100
+- Business Goal Alignment: ${assessment.scoreBreakdown.businessGoalAlignment ?? 'Not provided'}/100
+- Market Match: ${assessment.scoreBreakdown.marketMatch ?? 'Not provided'}/100
+- ROI Potential: ${assessment.scoreBreakdown.roiPotential ?? 'Not provided'}/100
 
 ASSESSMENT DATA:
 ${JSON.stringify(assessment.extractedData, null, 2)}

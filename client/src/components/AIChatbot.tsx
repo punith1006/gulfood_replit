@@ -2703,40 +2703,40 @@ export default function AIChatbot() {
                         Score Breakdown
                       </h5>
                       <div className="space-y-2">
-                        {exhibitorAssessment.scoreBreakdown?.productFit !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.productEventAlignment !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Product-Category Fit</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.productFit}%</span>
+                              <span className="text-muted-foreground">Product-Event Alignment</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.productEventAlignment}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.productFit} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.productEventAlignment} />
                           </div>
                         )}
-                        {exhibitorAssessment.scoreBreakdown?.strategicGoalAlignment !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.businessGoalAlignment !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Strategic Goal Alignment</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.strategicGoalAlignment}%</span>
+                              <span className="text-muted-foreground">Business Goal Alignment</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.businessGoalAlignment}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.strategicGoalAlignment} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.businessGoalAlignment} />
                           </div>
                         )}
-                        {exhibitorAssessment.scoreBreakdown?.geographicOpportunities !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.marketMatch !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Geographic Opportunities</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.geographicOpportunities}%</span>
+                              <span className="text-muted-foreground">Market Match</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.marketMatch}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.geographicOpportunities} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.marketMatch} />
                           </div>
                         )}
-                        {exhibitorAssessment.scoreBreakdown?.opportunisticAdvantages !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.roiPotential !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Opportunistic Advantages</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.opportunisticAdvantages}%</span>
+                              <span className="text-muted-foreground">ROI Potential</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.roiPotential}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.opportunisticAdvantages} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.roiPotential} />
                           </div>
                         )}
                       </div>

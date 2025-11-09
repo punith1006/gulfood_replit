@@ -2327,7 +2327,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     if (!assessment.scoreBreakdown || typeof assessment.scoreBreakdown !== 'object') {
       issues.push('scoreBreakdown missing or invalid');
     } else {
-      const scores = ['productFit', 'strategicGoalAlignment', 'geographicOpportunities', 'opportunisticAdvantages'];
+      const scores = ['productEventAlignment', 'businessGoalAlignment', 'marketMatch', 'roiPotential'];
       for (const score of scores) {
         if (typeof assessment.scoreBreakdown[score] !== 'number') {
           issues.push(`scoreBreakdown.${score} is missing or not a number`);
@@ -2544,10 +2544,10 @@ Generate a comprehensive exhibitor assessment including:
    - Be realistic and evidence-based
 
 3. **Score Breakdown** (JSON object) - ALL 4 SCORES REQUIRED (each 0-100):
-   - productFit: How well their products align with Gulfood categories
-   - strategicGoalAlignment: How well Gulfood supports their primary goal
-   - geographicOpportunities: Relevance of Dubai/MENA market for them
-   - opportunisticAdvantages: Unique advantages they'd gain from exhibiting
+   - productEventAlignment: How well their products align with Gulfood categories
+   - businessGoalAlignment: How well Gulfood supports their primary goal
+   - marketMatch: Relevance of Dubai/MENA market for them
+   - roiPotential: Unique advantages they'd gain from exhibiting
 
 4. **Recommendations** (array) - MINIMUM 3 REQUIRED (4 is better):
    Each recommendation MUST have ALL four fields:
@@ -2593,7 +2593,7 @@ Before returning your JSON, verify each of these requirements:
 
 □ Do ALL recommendations explicitly mention how they address "${primaryGoal}"?
 □ Have I included specific MENA/Dubai market analysis for this ${country} company?
-□ Are all 4 scores (productFit, strategicGoalAlignment, geographicOpportunities, opportunisticAdvantages) justified by research evidence?
+□ Are all 4 scores (productEventAlignment, businessGoalAlignment, marketMatch, roiPotential) justified by research evidence?
 □ Are recommendations specific to Gulfood 2026 (halls, sessions, exhibitors, concrete actions)?
 □ If sustainability was mentioned in research, did I address it in recommendations?
 □ Are scores calibrated appropriately given ${researchData.confidenceScore}% research confidence?
@@ -2618,10 +2618,10 @@ Required JSON structure:
   },
   "relevanceScore": 85,
   "scoreBreakdown": {
-    "productFit": 90,
-    "strategicGoalAlignment": 85,
-    "geographicOpportunities": 88,
-    "opportunisticAdvantages": 78
+    "productEventAlignment": 90,
+    "businessGoalAlignment": 85,
+    "marketMatch": 88,
+    "roiPotential": 78
   },
   "recommendations": [
     {
@@ -2808,10 +2808,10 @@ REQUIRED JSON STRUCTURE (you MUST include ALL these fields):
   },
   "relevanceScore": 0-100,
   "scoreBreakdown": {
-    "productFit": 0-100,
-    "strategicGoalAlignment": 0-100,
-    "geographicOpportunities": 0-100,
-    "opportunisticAdvantages": 0-100
+    "productEventAlignment": 0-100,
+    "businessGoalAlignment": 0-100,
+    "marketMatch": 0-100,
+    "roiPotential": 0-100
   },
   "recommendations": [
     {
