@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, jsonb, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, jsonb, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -207,7 +207,9 @@ export const chatFeedback = pgTable("chat_feedback", {
   feedbackText: text("feedback_text"),
   correctedResponse: text("corrected_response"),
   createdAt: timestamp("created_at").defaultNow().notNull()
-});
+}, (table) => ({
+  sessionMessageIdx: uniqueIndex("session_message_idx").on(table.sessionId, table.messageIndex)
+}));
 
 export const generatedReports = pgTable("generated_reports", {
   id: serial("id").primaryKey(),
