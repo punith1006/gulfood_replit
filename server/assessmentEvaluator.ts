@@ -317,22 +317,25 @@ VALIDATION CRITERIA:
    - Are recommendations consistent with scores?
    - Is the overall relevance score aligned with component scores?
 
-SCORING RUBRIC (be strict):
+SCORING RUBRIC (be fair but thorough):
 
-**80-100 (Pass)**: Assessment is accurate, fair, comprehensive, and strategically valuable. Minor issues only.
+**90-100 (Excellent - Pass)**: Assessment is highly accurate, comprehensive, and exceptionally strategic. All criteria met excellently.
 
-**60-79 (Fail)**: Assessment has notable issues - missing information, weak justifications, or moderate misalignment with goals/data.
+**80-89 (Good - Pass)**: Assessment is accurate, well-reasoned, and strategically valuable. May have minor areas for improvement but fundamentally sound and useful.
 
-**40-59 (Fail)**: Assessment has significant problems - factual errors, poor goal alignment, or unjustified scores.
+**70-79 (Needs Revision - Fail)**: Assessment is generally accurate but has notable gaps or weak areas that require regeneration for better quality.
 
-**0-39 (Fail)**: Assessment is fundamentally flawed - major data inconsistencies, arbitrary scoring, or complete goal misalignment.
+**50-69 (Weak - Fail)**: Assessment has significant issues - missing key information, unjustified scores, or moderate goal misalignment.
+
+**0-49 (Poor - Fail)**: Assessment is fundamentally flawed - major factual errors, arbitrary scoring, or severe misalignment.
 
 INSTRUCTIONS:
-- Be STRICT and CRITICAL. Better to regenerate than accept a mediocre assessment.
+- Be FAIR and THOROUGH. An assessment doesn't need to be perfect to pass - it needs to be accurate, useful, and well-reasoned.
 - Identify SPECIFIC, CONCRETE issues (not vague criticisms)
 - Provide ACTIONABLE improvement suggestions
 - Consider Gulfood context (food & beverage trade show in Dubai)
-- A score below 80 means the assessment should be regenerated
+- A score below 80 means the assessment should be regenerated to improve quality
+- Balance quality standards with realistic expectations - good assessments with minor gaps should pass
 
 RESPONSE FORMAT (valid JSON only):
 {
