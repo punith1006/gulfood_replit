@@ -458,6 +458,18 @@ export default function AIChatbot() {
   });
   const [isGeneratingJourney, setIsGeneratingJourney] = useState(false);
   const [journeyPlan, setJourneyPlan] = useState<any>(null);
+  
+  // Exhibitor assessment state
+  const [journeyType, setJourneyType] = useState<'visitor' | 'exhibitor' | null>(null);
+  const [exhibitorAssessment, setExhibitorAssessment] = useState<any>(null);
+  const [exhibitorFormData, setExhibitorFormData] = useState({
+    companyName: '',
+    websiteUrl: '',
+    primaryGoal: '',
+    country: ''
+  });
+  const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
+  
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showCategorySearch, setShowCategorySearch] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
@@ -2093,23 +2105,100 @@ export default function AIChatbot() {
       {mainTab === "journey" && (
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-2xl mx-auto space-y-6">
-            {!journeyPlan ? (
+            {!journeyPlan && !exhibitorAssessment ? (
               <>
-                <div className="text-center space-y-2">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                    <Globe className="w-8 h-8 text-primary" />
+                {journeyType === null ? (
+                  <div className="text-center space-y-6">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                      <Globe className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-semibold text-foreground">Choose Your Path</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Are you visiting Gulfood 2026 or exhibiting at the event?
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto">
+                      <Card className="hover-elevate cursor-pointer" onClick={() => setJourneyType('visitor')} data-testid="card-visitor-option">
+                        <CardContent className="p-6 text-center space-y-4">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center">
+                            <Users className="w-6 h-6 text-blue-500" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-foreground">I'm Visiting</h4>
+                            <p className="text-xs text-muted-foreground">Plan your personalized journey</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      <Card className="hover-elevate cursor-pointer" onClick={() => setJourneyType('exhibitor')} data-testid="card-exhibitor-option">
+                        <CardContent className="p-6 text-center space-y-4">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-green-500/10 flex items-center justify-center">
+                            <Building2 className="w-6 h-6 text-green-500" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="font-semibold text-foreground">I'm Exhibiting</h4>
+                            <p className="text-xs text-muted-foreground">Get your fit assessment</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground">Plan Your Journey</h3>
-                  {sessionManager.hasLeadInfo() ? (
-                    <p className="text-sm text-muted-foreground">
-                      Great! Let's personalize your event experience, <span className="font-semibold text-foreground">{sessionManager.getLeadInfo().name}</span>
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      To create your personalized journey, please share some details
-                    </p>
-                  )}
-                </div>
+                ) : journeyType === 'visitor' ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="text-center flex-1 space-y-2">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                          <Globe className="w-8 h-8 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground">Plan Your Journey</h3>
+                        {sessionManager.hasLeadInfo() ? (
+                          <p className="text-sm text-muted-foreground">
+                            Great! Let's personalize your event experience, <span className="font-semibold text-foreground">{sessionManager.getLeadInfo().name}</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            To create your personalized journey, please share some details
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setJourneyType(null)}
+                        data-testid="button-back-to-selector"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="text-center flex-1 space-y-2">
+                        <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Building2 className="w-8 h-8 text-green-500" />
+                        </div>
+                        <h3 className="text-xl font-semibold text-foreground">Exhibitor Fit Assessment</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Let's evaluate how well your company fits with Gulfood 2026
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setJourneyType(null)}
+                        data-testid="button-back-to-selector"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </>
+            ) : null}
+            
+            {journeyType === 'visitor' && !journeyPlan ? (
+              <>
 
                 <form className="space-y-4" onSubmit={async (e) => {
                   e.preventDefault();
@@ -2403,7 +2492,440 @@ export default function AIChatbot() {
                   </Button>
                 </form>
               </>
-            ) : (
+            ) : null}
+            
+            {journeyType === 'exhibitor' && !exhibitorAssessment ? (
+              <>
+                <form className="space-y-4" onSubmit={async (e) => {
+                  e.preventDefault();
+                  
+                  if (!exhibitorFormData.companyName || !exhibitorFormData.primaryGoal || !exhibitorFormData.country) {
+                    toast({ title: "Please fill in all required fields", variant: "destructive" });
+                    return;
+                  }
+                  
+                  setIsGeneratingAssessment(true);
+                  try {
+                    const res = await apiRequest('POST', '/api/exhibitor-assessment', {
+                      ...exhibitorFormData,
+                      sessionId: sessionManager.getOrCreateSessionId()
+                    });
+                    
+                    const assessment = await res.json();
+                    setExhibitorAssessment(assessment);
+                    toast({ title: "Assessment complete!" });
+                  } catch (error) {
+                    console.error('Failed to generate assessment:', error);
+                    toast({ title: "Failed to generate assessment", variant: "destructive" });
+                  } finally {
+                    setIsGeneratingAssessment(false);
+                  }
+                }}>
+                  <div className="space-y-2">
+                    <Label htmlFor="company-name">Company Name *</Label>
+                    <Input
+                      id="company-name"
+                      value={exhibitorFormData.companyName}
+                      onChange={(e) => setExhibitorFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                      placeholder="Your company name"
+                      required
+                      data-testid="input-company-name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="website-url">Website URL (Optional)</Label>
+                    <Input
+                      id="website-url"
+                      type="url"
+                      value={exhibitorFormData.websiteUrl}
+                      onChange={(e) => setExhibitorFormData(prev => ({ ...prev, websiteUrl: e.target.value }))}
+                      placeholder="https://www.example.com"
+                      data-testid="input-website-url"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="primary-goal">Primary Goal *</Label>
+                    <Select
+                      value={exhibitorFormData.primaryGoal}
+                      onValueChange={(value) => setExhibitorFormData(prev => ({ ...prev, primaryGoal: value }))}
+                    >
+                      <SelectTrigger id="primary-goal" data-testid="select-primary-goal">
+                        <SelectValue placeholder="Select your primary goal..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Launch new products">Launch new products</SelectItem>
+                        <SelectItem value="Generate leads and sales">Generate leads and sales</SelectItem>
+                        <SelectItem value="Brand awareness">Brand awareness</SelectItem>
+                        <SelectItem value="Network with distributors">Network with distributors</SelectItem>
+                        <SelectItem value="Market research">Market research</SelectItem>
+                        <SelectItem value="Find partners">Find partners</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country *</Label>
+                    <Input
+                      id="country"
+                      value={exhibitorFormData.country}
+                      onChange={(e) => setExhibitorFormData(prev => ({ ...prev, country: e.target.value }))}
+                      placeholder="e.g., United States, UAE, India"
+                      required
+                      data-testid="input-country"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isGeneratingAssessment}
+                    data-testid="button-generate-assessment"
+                  >
+                    {isGeneratingAssessment ? (
+                      <>
+                        <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                        Analyzing Your Company...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 w-4 h-4" />
+                        Get My Assessment
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </>
+            ) : null}
+            
+            {exhibitorAssessment ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-semibold text-foreground">Assessment Results</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setExhibitorAssessment(null);
+                      setJourneyType(null);
+                      setExhibitorFormData({ companyName: '', websiteUrl: '', primaryGoal: '', country: '' });
+                    }}
+                    data-testid="button-new-assessment"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    New Assessment
+                  </Button>
+                </div>
+
+                <Card>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="text-center space-y-3">
+                      <h4 className="text-lg font-semibold">{exhibitorAssessment.companyName}</h4>
+                      <div className="flex items-center justify-center gap-2">
+                        <Badge 
+                          variant={
+                            exhibitorAssessment.relevanceScore >= 70 ? "default" : 
+                            exhibitorAssessment.relevanceScore >= 40 ? "secondary" : 
+                            "destructive"
+                          }
+                          className="text-2xl font-bold py-2 px-4"
+                          data-testid="badge-relevance-score"
+                        >
+                          {exhibitorAssessment.relevanceScore}% Match
+                        </Badge>
+                      </div>
+                      {exhibitorAssessment.scoreBreakdown?.explanation && (
+                        <p className="text-sm text-muted-foreground">
+                          {exhibitorAssessment.scoreBreakdown.explanation}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-4 space-y-3">
+                      <h5 className="font-semibold flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        Score Breakdown
+                      </h5>
+                      <div className="space-y-2">
+                        {exhibitorAssessment.scoreBreakdown?.productFit !== undefined && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Product-Category Fit</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.productFit}%</span>
+                            </div>
+                            <Progress value={exhibitorAssessment.scoreBreakdown.productFit} />
+                          </div>
+                        )}
+                        {exhibitorAssessment.scoreBreakdown?.geographicAlignment !== undefined && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Geographic Alignment</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.geographicAlignment}%</span>
+                            </div>
+                            <Progress value={exhibitorAssessment.scoreBreakdown.geographicAlignment} />
+                          </div>
+                        )}
+                        {exhibitorAssessment.scoreBreakdown?.goalAlignment !== undefined && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Goal Alignment</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.goalAlignment}%</span>
+                            </div>
+                            <Progress value={exhibitorAssessment.scoreBreakdown.goalAlignment} />
+                          </div>
+                        )}
+                        {exhibitorAssessment.scoreBreakdown?.strategicValue !== undefined && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Strategic Value</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.strategicValue}%</span>
+                            </div>
+                            <Progress value={exhibitorAssessment.scoreBreakdown.strategicValue} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {exhibitorAssessment.extractedData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Package className="w-4 h-4" />
+                        Company Profile
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {exhibitorAssessment.extractedData.industry && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Industry:</span>
+                          <p className="text-sm">{exhibitorAssessment.extractedData.industry}</p>
+                        </div>
+                      )}
+                      {exhibitorAssessment.extractedData.products && exhibitorAssessment.extractedData.products.length > 0 && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Products:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {exhibitorAssessment.extractedData.products.slice(0, 5).map((product: string, idx: number) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">{product}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {exhibitorAssessment.extractedData.categories && exhibitorAssessment.extractedData.categories.length > 0 && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Gulfood Categories:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {exhibitorAssessment.extractedData.categories.slice(0, 5).map((cat: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">{cat}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {exhibitorAssessment.recommendations && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Target className="w-4 h-4" />
+                        Recommendations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {exhibitorAssessment.recommendations.boothSize && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Recommended Booth Size:</span>
+                          <p className="text-sm">{exhibitorAssessment.recommendations.boothSize}</p>
+                        </div>
+                      )}
+                      {exhibitorAssessment.recommendations.location && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Ideal Location:</span>
+                          <p className="text-sm">{exhibitorAssessment.recommendations.location}</p>
+                        </div>
+                      )}
+                      {exhibitorAssessment.recommendations.budget && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Budget Range:</span>
+                          <p className="text-sm">{exhibitorAssessment.recommendations.budget}</p>
+                        </div>
+                      )}
+                      {exhibitorAssessment.recommendations.roiProjection && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">ROI Projection:</span>
+                          <p className="text-sm">{exhibitorAssessment.recommendations.roiProjection}</p>
+                        </div>
+                      )}
+                      {exhibitorAssessment.recommendations.actionItems && exhibitorAssessment.recommendations.actionItems.length > 0 && (
+                        <div>
+                          <span className="text-sm font-medium text-muted-foreground">Next Steps:</span>
+                          <ul className="list-disc list-inside space-y-1 mt-1">
+                            {exhibitorAssessment.recommendations.actionItems.map((item: string, idx: number) => (
+                              <li key={idx} className="text-sm">{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                <div className="flex gap-2">
+                  {exhibitorAssessment.relevanceScore >= 70 ? (
+                    <>
+                      <Button className="flex-1" data-testid="button-reserve-booth">
+                        <Award className="w-4 h-4 mr-2" />
+                        Reserve Your Booth
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        data-testid="button-download-report"
+                        onClick={async () => {
+                          try {
+                            const pdfData = {
+                              reportType: 'exhibitor_assessment',
+                              userRole: 'Exhibitor',
+                              exhibitorAssessment: exhibitorAssessment,
+                              companyName: exhibitorAssessment.companyName
+                            };
+                            
+                            const res = await apiRequest('POST', '/api/reports/generate', pdfData);
+                            const response = await res.json();
+                            
+                            if (response.reportId) {
+                              const link = document.createElement('a');
+                              link.href = `/api/reports/${response.reportId}/download`;
+                              link.download = `Gulfood_2026_Exhibitor_Assessment.pdf`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              toast({ title: "Assessment report downloaded successfully!" });
+                            }
+                          } catch (error) {
+                            console.error('Failed to export PDF:', error);
+                            toast({ 
+                              title: "Failed to generate PDF", 
+                              description: "Please try again later.",
+                              variant: "destructive" 
+                            });
+                          }
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download PDF
+                      </Button>
+                    </>
+                  ) : exhibitorAssessment.relevanceScore >= 40 ? (
+                    <>
+                      <Button className="flex-1" data-testid="button-schedule-call">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Schedule Strategy Call
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        data-testid="button-download-report"
+                        onClick={async () => {
+                          try {
+                            const pdfData = {
+                              reportType: 'exhibitor_assessment',
+                              userRole: 'Exhibitor',
+                              exhibitorAssessment: exhibitorAssessment,
+                              companyName: exhibitorAssessment.companyName
+                            };
+                            
+                            const res = await apiRequest('POST', '/api/reports/generate', pdfData);
+                            const response = await res.json();
+                            
+                            if (response.reportId) {
+                              const link = document.createElement('a');
+                              link.href = `/api/reports/${response.reportId}/download`;
+                              link.download = `Gulfood_2026_Exhibitor_Assessment.pdf`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              toast({ title: "Assessment report downloaded successfully!" });
+                            }
+                          } catch (error) {
+                            console.error('Failed to export PDF:', error);
+                            toast({ 
+                              title: "Failed to generate PDF", 
+                              description: "Please try again later.",
+                              variant: "destructive" 
+                            });
+                          }
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download PDF
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" className="flex-1" data-testid="button-explore-alternatives">
+                        <Info className="w-4 h-4 mr-2" />
+                        Explore Alternatives
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        data-testid="button-download-report"
+                        onClick={async () => {
+                          try {
+                            const pdfData = {
+                              reportType: 'exhibitor_assessment',
+                              userRole: 'Exhibitor',
+                              exhibitorAssessment: exhibitorAssessment,
+                              companyName: exhibitorAssessment.companyName
+                            };
+                            
+                            const res = await apiRequest('POST', '/api/reports/generate', pdfData);
+                            const response = await res.json();
+                            
+                            if (response.reportId) {
+                              const link = document.createElement('a');
+                              link.href = `/api/reports/${response.reportId}/download`;
+                              link.download = `Gulfood_2026_Exhibitor_Assessment.pdf`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                              toast({ title: "Assessment report downloaded successfully!" });
+                            }
+                          } catch (error) {
+                            console.error('Failed to export PDF:', error);
+                            toast({ 
+                              title: "Failed to generate PDF", 
+                              description: "Please try again later.",
+                              variant: "destructive" 
+                            });
+                          }
+                        }}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download PDF
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {exhibitorAssessment.relevanceScore < 40 && (
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">
+                        While your current offerings may not be an ideal match for Gulfood 2026, 
+                        we have other specialized events that might better suit your needs. 
+                        Contact our team to explore alternative opportunities.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            ) : null}
+            
+            {journeyPlan ? (
               <div className="space-y-6">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div>
@@ -2831,7 +3353,7 @@ export default function AIChatbot() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
         </ScrollArea>
       )}

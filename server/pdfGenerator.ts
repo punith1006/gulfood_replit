@@ -879,6 +879,308 @@ export async function generateJourneyPlanPDF(reportData: {
   });
 }
 
+export async function generateExhibitorAssessmentPDF(reportData: {
+  assessment: any;
+  companyName: string;
+  generatedAt: string;
+}): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const assessment = reportData.assessment;
+    
+    if (!assessment) {
+      return reject(new Error('Exhibitor assessment data is missing'));
+    }
+
+    const content: Content[] = [
+      {
+        canvas: [
+          {
+            type: 'rect',
+            x: 0,
+            y: 0,
+            w: 515,
+            h: 80,
+            linearGradient: ['#f97316', '#ea580c'],
+            color: '#f97316'
+          }
+        ],
+        margin: [-40, -60, -40, 0]
+      },
+      {
+        text: 'GULFOOD 2026',
+        fontSize: 28,
+        bold: true,
+        color: '#ffffff',
+        alignment: 'center',
+        margin: [0, -65, 0, 5]
+      },
+      {
+        text: 'January 26-30, 2026 | Dubai',
+        fontSize: 12,
+        color: '#ffffff',
+        alignment: 'center',
+        margin: [0, 0, 0, 25]
+      },
+      {
+        text: 'Exhibitor Assessment Report',
+        style: 'header',
+        alignment: 'center',
+        color: '#1f2937',
+        margin: [0, 20, 0, 10]
+      },
+      {
+        text: `Generated: ${new Date(reportData.generatedAt).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' })}`,
+        style: 'metadata',
+        alignment: 'center',
+        margin: [0, 0, 0, 30]
+      }
+    ];
+
+    // Company Information
+    content.push({
+      text: 'Company Profile',
+      fontSize: 14,
+      bold: true,
+      margin: [0, 0, 0, 10]
+    });
+    
+    const companyInfo = [];
+    companyInfo.push(`Company: ${reportData.companyName}`);
+    if (assessment.country) companyInfo.push(`Country: ${assessment.country}`);
+    if (assessment.extractedData?.industry) companyInfo.push(`Industry: ${assessment.extractedData.industry}`);
+    if (assessment.primaryGoal) companyInfo.push(`Primary Goal: ${assessment.primaryGoal}`);
+    
+    content.push({
+      ul: companyInfo,
+      fontSize: 10,
+      margin: [0, 0, 0, 20]
+    });
+
+    // Relevance Score
+    const scoreColor = assessment.relevanceScore >= 70 ? '#16a34a' : 
+                       assessment.relevanceScore >= 40 ? '#ca8a04' : '#dc2626';
+    
+    content.push({
+      text: `Gulfood Fit Score: ${assessment.relevanceScore}%`,
+      fontSize: 18,
+      bold: true,
+      color: scoreColor,
+      margin: [0, 0, 0, 5]
+    });
+    
+    const scoreLabel = assessment.relevanceScore >= 70 ? 'Excellent Match' :
+                       assessment.relevanceScore >= 40 ? 'Moderate Match' : 'Limited Match';
+    
+    content.push({
+      text: scoreLabel,
+      fontSize: 12,
+      color: scoreColor,
+      margin: [0, 0, 0, 20]
+    });
+
+    // Extracted Business Insights
+    if (assessment.extractedData) {
+      content.push({
+        text: 'Business Profile Analysis',
+        fontSize: 14,
+        bold: true,
+        margin: [0, 10, 0, 10]
+      });
+      
+      const insights = [];
+      if (assessment.extractedData.products) {
+        insights.push(`Products/Services: ${assessment.extractedData.products}`);
+      }
+      if (assessment.extractedData.targetMarkets) {
+        insights.push(`Target Markets: ${assessment.extractedData.targetMarkets}`);
+      }
+      if (assessment.extractedData.categories && assessment.extractedData.categories.length > 0) {
+        insights.push(`Relevant Categories: ${assessment.extractedData.categories.join(', ')}`);
+      }
+      
+      if (insights.length > 0) {
+        content.push({
+          ul: insights,
+          fontSize: 10,
+          margin: [0, 0, 0, 15]
+        });
+      }
+    }
+
+    // Score Breakdown
+    if (assessment.recommendations?.scoreBreakdown) {
+      content.push({
+        text: 'Score Breakdown',
+        fontSize: 14,
+        bold: true,
+        margin: [0, 15, 0, 10]
+      });
+      
+      const breakdown = assessment.recommendations.scoreBreakdown;
+      const breakdownItems = [];
+      
+      if (breakdown.audienceMatch !== undefined) {
+        breakdownItems.push(`Audience Match: ${breakdown.audienceMatch}%`);
+      }
+      if (breakdown.productFit !== undefined) {
+        breakdownItems.push(`Product Category Fit: ${breakdown.productFit}%`);
+      }
+      if (breakdown.marketReach !== undefined) {
+        breakdownItems.push(`Market Reach: ${breakdown.marketReach}%`);
+      }
+      if (breakdown.growthPotential !== undefined) {
+        breakdownItems.push(`Growth Potential: ${breakdown.growthPotential}%`);
+      }
+      
+      content.push({
+        ul: breakdownItems,
+        fontSize: 10,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Booth Recommendations
+    if (assessment.recommendations?.boothSize || assessment.recommendations?.boothLocation) {
+      content.push({
+        text: 'Booth Recommendations',
+        fontSize: 14,
+        bold: true,
+        margin: [0, 15, 0, 10]
+      });
+      
+      const boothRecs = [];
+      if (assessment.recommendations.boothSize) {
+        boothRecs.push(`Recommended Size: ${assessment.recommendations.boothSize}`);
+      }
+      if (assessment.recommendations.boothLocation) {
+        boothRecs.push(`Suggested Location: ${assessment.recommendations.boothLocation}`);
+      }
+      if (assessment.recommendations.budgetRange) {
+        boothRecs.push(`Estimated Budget: ${assessment.recommendations.budgetRange}`);
+      }
+      
+      content.push({
+        ul: boothRecs,
+        fontSize: 10,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // ROI Projection
+    if (assessment.recommendations?.roiProjection) {
+      content.push({
+        text: 'ROI Projection',
+        fontSize: 14,
+        bold: true,
+        margin: [0, 15, 0, 10]
+      });
+      
+      content.push({
+        text: assessment.recommendations.roiProjection,
+        fontSize: 10,
+        lineHeight: 1.5,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Key Recommendations
+    if (assessment.recommendations?.keyPoints && assessment.recommendations.keyPoints.length > 0) {
+      content.push({
+        text: 'Strategic Recommendations',
+        fontSize: 14,
+        bold: true,
+        margin: [0, 15, 0, 10]
+      });
+      
+      content.push({
+        ol: assessment.recommendations.keyPoints,
+        fontSize: 10,
+        margin: [0, 0, 0, 15]
+      });
+    }
+
+    // Next Steps
+    content.push({
+      text: 'Next Steps',
+      fontSize: 14,
+      bold: true,
+      margin: [0, 20, 0, 10]
+    });
+    
+    const nextSteps = [];
+    if (assessment.relevanceScore >= 70) {
+      nextSteps.push('Contact our sales team to reserve your booth space');
+      nextSteps.push('Review the floor plan and select your preferred location');
+      nextSteps.push('Prepare your booth design and marketing materials');
+    } else if (assessment.relevanceScore >= 40) {
+      nextSteps.push('Schedule a strategy call with our event specialists');
+      nextSteps.push('Explore partnership opportunities with complementary exhibitors');
+      nextSteps.push('Consider targeted sponsorship packages');
+    } else {
+      nextSteps.push('Explore our other specialized food & beverage events');
+      nextSteps.push('Contact us to discuss alternative opportunities');
+      nextSteps.push('Stay updated on future events that may better match your profile');
+    }
+    
+    content.push({
+      ol: nextSteps,
+      fontSize: 10,
+      margin: [0, 0, 0, 20]
+    });
+
+    // Footer
+    content.push({
+      text: 'For more information, visit www.gulfood.com or contact our exhibitor sales team.',
+      fontSize: 9,
+      color: '#6b7280',
+      alignment: 'center',
+      margin: [0, 30, 0, 0]
+    });
+
+    const docDefinition: TDocumentDefinitions = {
+      pageSize: 'A4',
+      pageMargins: [40, 60, 40, 60],
+      content,
+      styles: {
+        header: {
+          fontSize: 24,
+          bold: true,
+          color: '#1f2937'
+        },
+        subheader: {
+          fontSize: 16,
+          color: '#6b7280'
+        },
+        metadata: {
+          fontSize: 10,
+          color: '#9ca3af',
+          italics: true
+        },
+        sectionHeader: {
+          fontSize: 18,
+          bold: true,
+          color: '#1f2937'
+        }
+      },
+      defaultStyle: {
+        font: 'Helvetica',
+        fontSize: 10,
+        color: '#374151'
+      }
+    };
+
+    const printer = new PdfPrinter(fonts);
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+    
+    const chunks: Buffer[] = [];
+    pdfDoc.on('data', (chunk) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    
+    pdfDoc.end();
+  });
+}
+
 export async function generateVisitorJourneyPDF(reportData: {
   sessionId: string;
   conversationHistory: Array<{ role: string; content: string }>;

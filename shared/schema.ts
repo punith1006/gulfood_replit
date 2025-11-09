@@ -397,6 +397,20 @@ export const itineraries = pgTable("itineraries", {
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
+export const exhibitorAssessments = pgTable("exhibitor_assessments", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  companyName: text("company_name").notNull(),
+  websiteUrl: text("website_url"),
+  primaryGoal: text("primary_goal").notNull(),
+  country: text("country").notNull(),
+  extractedData: jsonb("extracted_data"), // AI-extracted company data: industry, products, target markets, etc.
+  relevanceScore: integer("relevance_score").notNull(), // 0-100
+  scoreBreakdown: jsonb("score_breakdown"), // Detailed breakdown of score components
+  recommendations: jsonb("recommendations"), // Booth size, location, budget, ROI projections
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // ExhibitorAnalytics interface for analytics API
 export interface ExhibitorAnalytics {
   totalAppearances: number;
@@ -604,6 +618,21 @@ export const insertItinerarySchema = createInsertSchema(itineraries).omit({
   totalDays: z.number().default(5)
 });
 
+export const insertExhibitorAssessmentSchema = createInsertSchema(exhibitorAssessments).omit({
+  id: true,
+  createdAt: true
+}).extend({
+  sessionId: z.string(),
+  companyName: z.string().min(2, "Company name is required"),
+  websiteUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  primaryGoal: z.string().min(5, "Please describe your primary goal"),
+  country: z.string().min(2, "Country is required"),
+  relevanceScore: z.number().min(0).max(100),
+  extractedData: z.any().optional(),
+  scoreBreakdown: z.any().optional(),
+  recommendations: z.any().optional()
+});
+
 export type Exhibitor = typeof exhibitors.$inferSelect;
 export type InsertExhibitor = z.infer<typeof insertExhibitorSchema>;
 
@@ -654,6 +683,9 @@ export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 
 export type Itinerary = typeof itineraries.$inferSelect;
 export type InsertItinerary = z.infer<typeof insertItinerarySchema>;
+
+export type ExhibitorAssessment = typeof exhibitorAssessments.$inferSelect;
+export type InsertExhibitorAssessment = z.infer<typeof insertExhibitorAssessmentSchema>;
 
 // TypeScript interfaces for itinerary structure
 export interface ItineraryActivity {

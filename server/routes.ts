@@ -922,6 +922,31 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           const { generateVisitorJourneyPDF } = await import('./pdfGenerator.js');
           pdfBuffer = await generateVisitorJourneyPDF(reportData);
         }
+      } else if (reportType === "exhibitor_assessment") {
+        // Handle exhibitor assessment PDF generation
+        const { exhibitorAssessment, companyName } = req.body;
+        
+        if (!exhibitorAssessment || !companyName) {
+          return res.status(400).json({ error: "Exhibitor assessment data and company name are required" });
+        }
+
+        const pdfInputData = {
+          assessment: exhibitorAssessment,
+          companyName: companyName,
+          generatedAt: new Date().toISOString()
+        };
+
+        const { generateExhibitorAssessmentPDF } = await import('./pdfGenerator.js');
+        pdfBuffer = await generateExhibitorAssessmentPDF(pdfInputData);
+
+        reportData = {
+          exhibitorAssessment: pdfInputData.assessment,
+          companyName: pdfInputData.companyName,
+          generatedAt: pdfInputData.generatedAt,
+          eventName: "Gulfood 2026",
+          eventDates: "January 26-30, 2026",
+          pdfData: null
+        };
       } else {
         return res.status(400).json({ error: "Invalid report type or user role combination" });
       }
@@ -2048,6 +2073,129 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     } catch (error) {
       console.error("Error fetching available slots:", error);
       res.status(500).json({ error: "Failed to fetch available appointment slots" });
+    }
+  });
+
+  app.post("/api/exhibitor-assessment", async (req, res) => {
+    try {
+      const { companyName, websiteUrl, primaryGoal, country, sessionId } = req.body;
+      
+      if (!companyName || !primaryGoal || !country || !sessionId) {
+        return res.status(400).json({ error: "Company name, primary goal, country, and session ID are required" });
+      }
+
+      if (websiteUrl) {
+        try {
+          new URL(websiteUrl);
+        } catch {
+          return res.status(400).json({ error: "Invalid website URL format" });
+        }
+      }
+
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "AI assessment is currently unavailable. Please configure OPENAI_API_KEY to enable this feature." 
+        });
+      }
+
+      const existing = await storage.getExhibitorAssessmentBySessionId(sessionId);
+      if (existing) {
+        return res.json(existing);
+      }
+
+      console.log(`\n=== EXHIBITOR ASSESSMENT REQUEST ===`);
+      console.log(`Company: ${companyName}`);
+      console.log(`Website: ${websiteUrl || 'Not provided'}`);
+      console.log(`Primary Goal: ${primaryGoal}`);
+      console.log(`Country: ${country}`);
+
+      const exhibitors = await storage.getExhibitors();
+      const journeyPlans = await storage.getJourneyPlans();
+
+      const prompt = `Analyze "${companyName}" (${websiteUrl || 'website not provided'}) as a prospective exhibitor for Gulfood 2026.
+
+PRIMARY GOAL: ${primaryGoal}
+COUNTRY: ${country}
+
+Gulfood 2026 is the world's largest food & beverage exhibition in Dubai (Jan 26-30, 2026).
+
+ANALYSIS TASKS:
+1. Extract company data: Industry, primary products, target markets, company size
+2. Categorize products into Gulfood categories: ${GULFOOD_CATEGORIES.slice(0, 10).join(', ')}... (and ${GULFOOD_CATEGORIES.length - 10} more)
+3. Calculate relevance score (0-100%) based on:
+   - Product-category fit with F&B industry (40%)
+   - Geographic market alignment (20%)
+   - Goal alignment with exhibition value (20%)
+   - Strategic value/innovation (20%)
+4. Generate specific recommendations
+
+Return JSON:
+{
+  "extractedData": {
+    "industry": "string",
+    "products": ["array"],
+    "targetMarkets": ["array"],
+    "companySize": "string",
+    "categories": ["Gulfood categories"]
+  },
+  "relevanceScore": number,
+  "scoreBreakdown": {
+    "productFit": number,
+    "geographicAlignment": number,
+    "goalAlignment": number,
+    "strategicValue": number,
+    "explanation": "string"
+  },
+  "recommendations": {
+    "boothSize": "string (e.g., '18 sqm', '36 sqm')",
+    "location": "string (recommended hall/area)",
+    "budget": "string (range in USD)",
+    "roiProjection": "string (expected outcomes)",
+    "actionItems": ["array of specific next steps"]
+  }
+}
+
+Be realistic. If the company is not F&B related, score below 40%.`;
+
+      console.log('Calling OpenAI for exhibitor assessment...');
+      
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert exhibition consultant for Gulfood 2026. Provide honest, data-driven assessments."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.7
+      });
+
+      const aiResponse = JSON.parse(completion.choices[0].message.content || "{}");
+      
+      const assessment = await storage.createExhibitorAssessment({
+        sessionId,
+        companyName,
+        websiteUrl: websiteUrl || null,
+        primaryGoal,
+        country,
+        extractedData: aiResponse.extractedData || {},
+        relevanceScore: aiResponse.relevanceScore || 0,
+        scoreBreakdown: aiResponse.scoreBreakdown || {},
+        recommendations: aiResponse.recommendations || {}
+      });
+
+      console.log(`Assessment complete: ${assessment.relevanceScore}% relevance`);
+      console.log(`=== ASSESSMENT COMPLETE ===\n`);
+
+      res.json(assessment);
+    } catch (error) {
+      console.error("Error generating exhibitor assessment:", error);
+      res.status(500).json({ error: "Failed to generate exhibitor assessment" });
     }
   });
 

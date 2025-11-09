@@ -18,6 +18,7 @@ import {
   journeyPlans,
   appointments,
   itineraries,
+  exhibitorAssessments,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -50,6 +51,8 @@ import {
   type InsertAppointment,
   type Itinerary,
   type InsertItinerary,
+  type ExhibitorAssessment,
+  type InsertExhibitorAssessment,
   type ExhibitorAnalytics
 } from "@shared/schema";
 
@@ -144,6 +147,10 @@ export interface IStorage {
   getItineraryBySessionId(sessionId: string): Promise<Itinerary | undefined>;
   createItinerary(itinerary: InsertItinerary): Promise<Itinerary>;
   getItineraries(sessionId?: string): Promise<Itinerary[]>;
+  
+  getExhibitorAssessment(id: number): Promise<ExhibitorAssessment | undefined>;
+  getExhibitorAssessmentBySessionId(sessionId: string): Promise<ExhibitorAssessment | undefined>;
+  createExhibitorAssessment(assessment: InsertExhibitorAssessment): Promise<ExhibitorAssessment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1058,6 +1065,30 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(itineraries.createdAt));
     }
     return await db.select().from(itineraries).orderBy(desc(itineraries.createdAt));
+  }
+
+  async getExhibitorAssessment(id: number): Promise<ExhibitorAssessment | undefined> {
+    const [assessment] = await db
+      .select()
+      .from(exhibitorAssessments)
+      .where(eq(exhibitorAssessments.id, id))
+      .limit(1);
+    return assessment;
+  }
+
+  async getExhibitorAssessmentBySessionId(sessionId: string): Promise<ExhibitorAssessment | undefined> {
+    const [assessment] = await db
+      .select()
+      .from(exhibitorAssessments)
+      .where(eq(exhibitorAssessments.sessionId, sessionId))
+      .orderBy(desc(exhibitorAssessments.createdAt))
+      .limit(1);
+    return assessment;
+  }
+
+  async createExhibitorAssessment(assessment: InsertExhibitorAssessment): Promise<ExhibitorAssessment> {
+    const [created] = await db.insert(exhibitorAssessments).values(assessment).returning();
+    return created;
   }
 }
 
