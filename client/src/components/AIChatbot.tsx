@@ -487,6 +487,25 @@ export default function AIChatbot() {
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const intentDropdownRef = useRef<HTMLDivElement>(null);
   
+  // Check if lead already exists for this session on component mount
+  useEffect(() => {
+    const checkExistingLead = async () => {
+      try {
+        const response = await fetch(`/api/leads/session/${sessionId}`);
+        const data = await response.json();
+        
+        if (data.exists) {
+          setLeadCaptured(true);
+          setHasInteractedWithInitialLeadCapture(true);
+        }
+      } catch (error) {
+        console.error("Error checking existing lead:", error);
+      }
+    };
+    
+    checkExistingLead();
+  }, [sessionId]);
+  
   // Click-outside detection for category dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
