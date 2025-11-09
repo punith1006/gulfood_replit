@@ -447,7 +447,7 @@ export default function ChatbotAnalytics() {
       </div>
 
       <Card className="p-6" data-testid="card-peak-hours">
-        <h3 className="text-xl font-bold mb-6">Peak Hours of Engagement</h3>
+        <h3 className="text-xl font-bold mb-6">Peak Hours of Engagement <span className="text-sm text-muted-foreground font-normal">(GST - UTC+4)</span></h3>
         {isLoading ? (
           <div className="h-[300px] bg-muted rounded animate-pulse" />
         ) : !analytics || peakHoursData.every(d => d.conversations === 0) ? (

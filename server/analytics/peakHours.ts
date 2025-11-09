@@ -29,8 +29,10 @@ export async function getPeakHours(
 
   for (const conv of conversations) {
     if (conv.createdAt) {
-      const hour = new Date(conv.createdAt).getHours();
-      hourCounts.set(hour, (hourCounts.get(hour) || 0) + 1);
+      // Convert UTC to GST (Gulf Standard Time = UTC+4)
+      const utcHour = new Date(conv.createdAt).getUTCHours();
+      const gstHour = (utcHour + 4) % 24;
+      hourCounts.set(gstHour, (hourCounts.get(gstHour) || 0) + 1);
     }
   }
 
