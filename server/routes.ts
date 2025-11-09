@@ -2413,27 +2413,113 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       // Use first goal for now (until frontend supports multiple)
       const primaryGoal = primaryGoals[0];
       
-      const assessmentPrompt = `You are an expert trade show consultant analyzing whether a company should exhibit at Gulfood 2026, the world's largest annual food & beverage trade show in Dubai (January 26-30, 2026).
+      const assessmentPrompt = `You are an expert trade show consultant for Gulfood 2026, the world's largest annual food & beverage trade show in Dubai (January 26-30, 2026).
 
-COMPANY RESEARCH DATA:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITY STANDARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This assessment will be validated against strict quality criteria. Assessments scoring below 80/100 are REJECTED and regenerated.
+
+YOUR GOAL: Produce an assessment that scores 85+ on the FIRST attempt.
+Research confidence level: ${researchData.confidenceScore}% - calibrate your scores accordingly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. COMPANY RESEARCH DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Company Name: ${companyName}
 Website: ${websiteUrl}
 Country: ${country}
-Primary Goal: ${primaryGoal}
+Primary Goal: "${primaryGoal}" ← CRITICAL: All recommendations must directly address this goal
 
-Industry: ${researchData.industry.join(', ')}
-Products/Services: ${researchData.products.join(', ')}
-Company Size: ${researchData.companySize}
-Business Model: ${researchData.businessModel}
-Target Markets: ${researchData.targetMarkets.join(', ')}
-Market Presence: ${researchData.marketPresence}
-Sustainability: ${researchData.sustainability}
-Recent News: ${researchData.recentNews.length > 0 ? researchData.recentNews.join('; ') : 'No recent news available'}
+Verified Research:
+• Industry: ${researchData.industry.join(', ')}
+• Products/Services: ${researchData.products.join(', ')}
+• Company Size: ${researchData.companySize}
+• Business Model: ${researchData.businessModel}
+• Target Markets: ${researchData.targetMarkets.join(', ')}
+• Market Presence: ${researchData.marketPresence}
+• Sustainability: ${researchData.sustainability}
+• Recent News: ${researchData.recentNews.length > 0 ? researchData.recentNews.join('; ') : 'No recent news available'}
 
 Research Confidence: ${researchData.confidenceScore}%
-Data Summary: ${researchData.searchSummary}
+Summary: ${researchData.searchSummary}
 
-CRITICAL REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. VALIDATION CRITERIA (You will be judged on these 7 criteria)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. DATA ACCURACY: Does extractedData match the verified research above? Any contradictions or fabrications will cause failure.
+
+2. FAIRNESS & OBJECTIVITY: Are scores justified by evidence? No arbitrary score inflation. Similar factors weighted consistently.
+
+3. GOAL ALIGNMENT (CRITICAL): Does the assessment specifically address "${primaryGoal}"? Each recommendation must explicitly connect to this goal.
+
+4. GEOGRAPHIC RELEVANCE: Does the assessment analyze MENA/Dubai market opportunities for this ${country}-based company? Must mention Dubai's strategic position, MENA market potential, or regional advantages.
+
+5. STRATEGIC RELEVANCE: Are recommendations specific, actionable, and Gulfood-focused? Must reference specific halls, sessions, or concrete actions—not vague advice.
+
+6. COMPLETENESS: All sections detailed and comprehensive? Minimum 3 recommendations (4 preferred), all required fields present.
+
+7. CONSISTENCY: Do scores match explanations? Is overall relevance aligned with component scores? Recommendations consistent with scores?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. EXPLICIT QUALITY REQUIREMENTS FOR 85+ SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ GOAL ALIGNMENT REQUIREMENT:
+  Every recommendation MUST explicitly state how it addresses "${primaryGoal}"
+  Use phrases like: "This directly supports your goal of ${primaryGoal} by..."
+  
+✓ MENA/DUBAI ANALYSIS REQUIREMENT:
+  Must include specific analysis of Dubai/MENA market opportunities for ${country} companies
+  Examples: "Dubai's position as MENA trading hub...", "For ${country} exporters, UAE offers...", "MENA region represents X opportunity because..."
+  
+✓ EVIDENCE-BASED SCORING REQUIREMENT:
+  All scores must be justified by research data
+  If research confidence is ${researchData.confidenceScore}%, be appropriately conservative
+  Never inflate scores—an honest 75 beats an unjustified 90
+  
+✓ GULFOOD-SPECIFIC RECOMMENDATIONS:
+  Reference actual Gulfood 2026 elements: specific halls (e.g., "Za'abeel Hall 2-3"), pavilions, sessions
+  Include concrete actions: "Schedule meetings with...", "Attend the X session on Jan 27...", "Prepare materials focusing on..."
+  Avoid generic advice like "network more"—specify WHERE and HOW
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. COMMON FAILURE PATTERNS (These cause 70-79% scores)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ Generic recommendations that don't mention "${primaryGoal}"
+❌ Missing MENA/Dubai market analysis entirely
+❌ Inflated scores with no supporting evidence (e.g., "90" when research shows weak fit)
+❌ Vague advice: "Network with exhibitors" vs "Schedule meetings with 5 dairy suppliers in Hall 5"
+❌ Ignoring ${country}'s geographic context and market positioning
+❌ Omitting sustainability when it's mentioned in research
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. SCORING CALIBRATION GUIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+90-100 (Excellent): Exceptional fit—products perfectly aligned with Gulfood categories, strong MENA presence, goal highly supported
+80-89 (Good): Strong fit—good product alignment, relevant MENA opportunities, goal well supported
+70-79 (Moderate): Some alignment, limited MENA relevance, goal partially supported  
+60-69 (Weak): Poor alignment, minimal MENA relevance, goal not well supported
+<60 (Poor): Misaligned products, no MENA relevance, goal not supported
+
+Be honest and evidence-based. With ${researchData.confidenceScore}% research confidence, calibrate conservatively.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. QUALITY EXAMPLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXAMPLE OF 85+ QUALITY (GOOD - Gets accepted):
+✓ Recommendation explicitly states: "This aligns with your goal of ${primaryGoal} by enabling..."
+✓ Includes MENA analysis: "Dubai's role as MENA's food hub creates distribution opportunities for ${country} exporters seeking regional expansion..."
+✓ Evidence-based scores: "Product fit: 85 because dairy products align with Gulfood's largest category (dairy accounts for 30% of exhibitors)"
+✓ Specific actions: "Visit Hall 5 dairy pavilion, schedule pre-event meetings with 5 key suppliers, attend Food Innovation Summit on Jan 27"
+
+EXAMPLE OF 75 QUALITY (FAILS - Gets rejected):
+✗ Generic: "Network with relevant exhibitors to build relationships"
+✗ No MENA analysis: Missing any mention of Dubai market opportunities
+✗ Unjustified: "Opportunistic advantages: 90" with no explanation why
+✗ Vague: "Attend seminars that interest you"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. CRITICAL REQUIREMENTS - DATA STRUCTURE
 1. recommendations: MUST be an array with MINIMUM 3 actionable recommendations (preferably 4)
 2. Each recommendation MUST have ALL four fields: title, description, priority, and rationale
 3. Each field must be specific to THIS company and their goal of exhibiting at Gulfood 2026
@@ -2500,7 +2586,27 @@ EXAMPLE OF VALID RECOMMENDATIONS STRUCTURE:
   ]
 }
 
-Return ONLY a valid JSON object with this EXACT structure:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. SELF-CRITIQUE CHECKLIST - REVIEW BEFORE SUBMITTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before returning your JSON, verify each of these requirements:
+
+□ Do ALL recommendations explicitly mention how they address "${primaryGoal}"?
+□ Have I included specific MENA/Dubai market analysis for this ${country} company?
+□ Are all 4 scores (productFit, strategicGoalAlignment, geographicOpportunities, opportunisticAdvantages) justified by research evidence?
+□ Are recommendations specific to Gulfood 2026 (halls, sessions, exhibitors, concrete actions)?
+□ If sustainability was mentioned in research, did I address it in recommendations?
+□ Are scores calibrated appropriately given ${researchData.confidenceScore}% research confidence?
+□ Does extractedData match the verified research (no fabrications)?
+
+If ANY box is unchecked, REVISE your assessment before submitting. An 85+ score requires ALL boxes checked.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. OUTPUT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Return ONLY valid JSON - NO markdown, NO code blocks, NO explanations.
+
+Required JSON structure:
 {
   "extractedData": {
     "industry": "Food Distribution",
@@ -2546,15 +2652,15 @@ Return ONLY a valid JSON object with this EXACT structure:
 }`;
 
       const assessmentCompletion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // Using gpt-4o for better reasoning and quality (upgraded from gpt-4o-mini)
         messages: [
           { 
             role: "system", 
-            content: "You are an expert trade show consultant. You MUST return complete, valid JSON with ALL required fields. NEVER omit recommendations array. NEVER return empty arrays for recommendations. Each assessment MUST have at least 3 detailed recommendations." 
+            content: "You are an expert trade show consultant analyzing companies for Gulfood 2026. Your assessments will be evaluated against strict quality criteria. Focus on accuracy, goal alignment, and MENA market analysis. Return complete, valid JSON only." 
           },
           { role: "user", content: assessmentPrompt }
         ],
-        temperature: 0.7,
+        temperature: 0.3, // Lowered from 0.7 for more focused, consistent output
         response_format: { type: "json_object" }
       });
 
