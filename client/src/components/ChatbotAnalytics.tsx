@@ -469,7 +469,7 @@ export default function ChatbotAnalytics() {
       </Card>
 
       <Card className="p-6" data-testid="card-topic-analysis">
-        <h3 className="text-xl font-bold mb-6">Top Discussed Topics</h3>
+        <h3 className="text-xl font-bold mb-6">Top 10 Intents</h3>
         {isLoading ? (
           <div className="h-[300px] bg-muted rounded animate-pulse" />
         ) : !analytics ? (
@@ -488,16 +488,30 @@ export default function ChatbotAnalytics() {
                   No visitor topics detected
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.topics.visitor} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="topic" type="category" width={150} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Mentions" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="mt-4">
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center pb-3 border-b text-sm font-medium text-muted-foreground">
+                    <div></div>
+                    <div>Intent name</div>
+                    <div className="text-right">Count</div>
+                    <div className="text-right">Percentage</div>
+                  </div>
+                  <div className="divide-y">
+                    {(() => {
+                      const totalCount = analytics.topics.visitor.reduce((sum, item) => sum + item.count, 0);
+                      return analytics.topics.visitor.slice(0, 10).map((topic, idx) => {
+                        const percentage = totalCount > 0 ? ((topic.count / totalCount) * 100).toFixed(2) : '0.00';
+                        return (
+                          <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center py-3" data-testid={`topic-row-${idx}`}>
+                            <div className="text-sm font-medium text-muted-foreground">{idx + 1}.</div>
+                            <div className="text-sm font-medium capitalize">{topic.topic}</div>
+                            <div className="text-sm text-right tabular-nums">{topic.count}</div>
+                            <div className="text-sm text-right tabular-nums">{percentage}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
               )}
             </TabsContent>
             <TabsContent value="exhibitor">
@@ -506,16 +520,30 @@ export default function ChatbotAnalytics() {
                   No exhibitor topics detected
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.topics.exhibitor} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="topic" type="category" width={150} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="hsl(var(--chart-3))" name="Mentions" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="mt-4">
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center pb-3 border-b text-sm font-medium text-muted-foreground">
+                    <div></div>
+                    <div>Intent name</div>
+                    <div className="text-right">Count</div>
+                    <div className="text-right">Percentage</div>
+                  </div>
+                  <div className="divide-y">
+                    {(() => {
+                      const totalCount = analytics.topics.exhibitor.reduce((sum, item) => sum + item.count, 0);
+                      return analytics.topics.exhibitor.slice(0, 10).map((topic, idx) => {
+                        const percentage = totalCount > 0 ? ((topic.count / totalCount) * 100).toFixed(2) : '0.00';
+                        return (
+                          <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center py-3" data-testid={`topic-row-${idx}`}>
+                            <div className="text-sm font-medium text-muted-foreground">{idx + 1}.</div>
+                            <div className="text-sm font-medium capitalize">{topic.topic}</div>
+                            <div className="text-sm text-right tabular-nums">{topic.count}</div>
+                            <div className="text-sm text-right tabular-nums">{percentage}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
               )}
             </TabsContent>
           </Tabs>
