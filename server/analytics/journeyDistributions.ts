@@ -74,6 +74,7 @@ export async function getVisitDateDistribution(
 
   // Extract dates and count unique visitors per date
   const dateVisitorMap = new Map<string, Set<string>>();
+  const processedSessions = new Set<string>();
 
   // Process itinerary data (preferred source)
   for (const record of itineraryRecords) {
@@ -86,13 +87,19 @@ export async function getVisitDateDistribution(
             dateVisitorMap.set(day.date, new Set());
           }
           dateVisitorMap.get(day.date)!.add(record.sessionId);
+          processedSessions.add(record.sessionId);
         }
       }
     }
   }
 
-  // Fallback to journey plan specific dates if available
+  // Fallback to journey plan specific dates ONLY for sessions without itineraries
   for (const plan of journeyDates) {
+    // Skip if this session already has itinerary data
+    if (processedSessions.has(plan.sessionId)) {
+      continue;
+    }
+    
     if (plan.specificDates && Array.isArray(plan.specificDates)) {
       for (const date of plan.specificDates) {
         if (!dateVisitorMap.has(date)) {
