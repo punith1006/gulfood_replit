@@ -72,6 +72,27 @@ export async function getVisitDateDistribution(
       )
     );
 
+  // Helper function to normalize dates to ISO format (YYYY-MM-DD)
+  const normalizeDate = (dateStr: string): string | null => {
+    try {
+      // If already in ISO format (YYYY-MM-DD), return as-is
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+        return dateStr;
+      }
+      
+      // Parse other formats (e.g., "January 26, 2026")
+      const parsed = new Date(dateStr);
+      if (isNaN(parsed.getTime())) {
+        return null;
+      }
+      
+      // Convert to ISO format YYYY-MM-DD
+      return parsed.toISOString().split('T')[0];
+    } catch {
+      return null;
+    }
+  };
+
   // Extract dates and count unique visitors per date
   const dateVisitorMap = new Map<string, Set<string>>();
   const processedSessions = new Set<string>();
@@ -83,11 +104,14 @@ export async function getVisitDateDistribution(
     if (data && Array.isArray(data.days)) {
       for (const day of data.days) {
         if (day.date) {
-          if (!dateVisitorMap.has(day.date)) {
-            dateVisitorMap.set(day.date, new Set());
+          const normalizedDate = normalizeDate(day.date);
+          if (normalizedDate) {
+            if (!dateVisitorMap.has(normalizedDate)) {
+              dateVisitorMap.set(normalizedDate, new Set());
+            }
+            dateVisitorMap.get(normalizedDate)!.add(record.sessionId);
+            processedSessions.add(record.sessionId);
           }
-          dateVisitorMap.get(day.date)!.add(record.sessionId);
-          processedSessions.add(record.sessionId);
         }
       }
     }
@@ -102,10 +126,13 @@ export async function getVisitDateDistribution(
     
     if (plan.specificDates && Array.isArray(plan.specificDates)) {
       for (const date of plan.specificDates) {
-        if (!dateVisitorMap.has(date)) {
-          dateVisitorMap.set(date, new Set());
+        const normalizedDate = normalizeDate(date);
+        if (normalizedDate) {
+          if (!dateVisitorMap.has(normalizedDate)) {
+            dateVisitorMap.set(normalizedDate, new Set());
+          }
+          dateVisitorMap.get(normalizedDate)!.add(plan.sessionId);
         }
-        dateVisitorMap.get(date)!.add(plan.sessionId);
       }
     }
   }
