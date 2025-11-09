@@ -241,6 +241,26 @@ export async function evaluateAssessment(
   
   console.log('✅ Pre-flight completeness check passed');
 
+  // ========================================
+  // DYNAMIC THRESHOLD BASED ON RESEARCH CONFIDENCE
+  // ========================================
+  const researchConfidence = companyResearch.confidenceScore;
+  let validationThreshold: number;
+  let qualityExpectation: string;
+  
+  if (researchConfidence >= 70) {
+    validationThreshold = 85;
+    qualityExpectation = "HIGH - Comprehensive research data available, expect detailed MENA analysis and specific recommendations";
+  } else if (researchConfidence >= 40) {
+    validationThreshold = 75;
+    qualityExpectation = "MEDIUM - Limited research data available, focus on accuracy of available data and reasonable extrapolations";
+  } else {
+    validationThreshold = 70;
+    qualityExpectation = "BASIC - Minimal research data available, accept honest assessments that work with limited information";
+  }
+  
+  console.log(`📊 Research Confidence: ${researchConfidence}% → Validation Threshold: ${validationThreshold}% (${qualityExpectation.split(' - ')[0]} expectations)`);
+
   try {
     const prompt = `You are an expert evaluator validating exhibitor assessments for Gulfood 2026 trade show in Dubai. Your role is to ensure assessments are accurate, fair, and strategically valuable.
 
@@ -272,74 +292,98 @@ Target Markets: ${companyResearch.targetMarkets.join(', ')}
 Market Presence: ${companyResearch.marketPresence}
 Recent News: ${companyResearch.recentNews.length > 0 ? companyResearch.recentNews.join('; ') : 'None'}
 Sustainability: ${companyResearch.sustainability}
-Research Confidence: ${companyResearch.confidenceScore}%
+Research Confidence: ${companyResearch.confidenceScore}% ← IMPORTANT: This determines quality expectations
 Summary: ${companyResearch.searchSummary}
 
 USER CONTEXT:
 Primary Goals: ${primaryGoals.join(', ')}
 Country: ${country}
 
+⚠️ CRITICAL: QUALITY EXPECTATIONS CALIBRATED TO RESEARCH CONFIDENCE ⚠️
+Research Confidence: ${researchConfidence}%
+Expected Quality Level: ${qualityExpectation}
+Validation Threshold: ${validationThreshold}% (assessments below this fail)
+
+${researchConfidence < 70 ? `
+🔴 LIMITED DATA SCENARIO - ADJUST EXPECTATIONS:
+The research confidence is ${researchConfidence}%, indicating limited publicly available data about this company.
+In this situation, you MUST be more lenient:
+- DO NOT penalize for missing MENA market analysis if the company has no documented MENA presence
+- DO NOT penalize for generic sustainability information if none was found in research
+- DO NOT penalize for limited geographic detail if the company operates primarily in ${country}
+- DO focus on: accuracy of available data, reasonable assumptions clearly stated, honest scoring
+- DO pass assessments that work honestly with limited data rather than fabricating details
+` : `
+✅ SUFFICIENT DATA SCENARIO - NORMAL EXPECTATIONS:
+The research confidence is ${researchConfidence}%, indicating good publicly available data.
+Apply normal quality standards: expect detailed MENA analysis, specific recommendations, comprehensive coverage.
+`}
+
 VALIDATION CRITERIA:
 
-1. **Data Accuracy (Critical)**
+1. **Data Accuracy (Critical - Always Required)**
    - Do the extracted company details (industry, products, size, markets) match the verified research data?
    - Are there any factual inconsistencies or contradictions?
    - Is the assessment working with accurate information?
 
-2. **Fairness & Objectivity**
-   - Are the scores justified by the evidence?
+2. **Fairness & Objectivity (Critical - Always Required)**
+   - Are the scores justified by the AVAILABLE evidence?
    - Is there any arbitrary score inflation or deflation?
    - Are similar factors weighted consistently?
    - Is the assessment free from bias?
 
-3. **Goal Alignment**
+3. **Goal Alignment (High Priority - Always Required)**
    - Does the assessment specifically address the user's primary goal: "${assessment.primaryGoal}"?
    - Are recommendations tailored to this goal?
    - Is the relevance score appropriate given the goal?
 
-4. **Geographic Relevance**
+4. **Geographic Relevance (${researchConfidence >= 70 ? 'High Priority' : 'LENIENT - Work with available data'})**
    - Does the assessment consider the user's country (${country}) appropriately?
-   - Are MENA/Dubai market opportunities mentioned if relevant?
-   - Is Gulfood's location advantage (Dubai) considered?
+   ${researchConfidence >= 70 
+     ? '- REQUIRED: Are MENA/Dubai market opportunities thoroughly analyzed?\n   - REQUIRED: Is Gulfood\'s location advantage (Dubai) well-explained?' 
+     : '- ACCEPTABLE: Basic geographic context even if MENA details are limited due to research gaps\n   - ACCEPTABLE: General Dubai/Gulfood benefits mentioned without deep MENA analysis'}
 
-5. **Strategic Relevance**
+5. **Strategic Relevance (High Priority - Always Required)**
    - Are recommendations specific, actionable, and strategic?
    - Do they relate to Gulfood 2026 exhibiting opportunities?
    - Are they relevant to the food & beverage industry?
 
-6. **Completeness**
+6. **Completeness (${researchConfidence >= 70 ? 'Strict' : 'LENIENT - Accept gaps where data unavailable'})**
    - Are all score components present and justified?
-   - Are key sections (products, goals, geography) adequately covered?
-   - Is critical information missing?
+   ${researchConfidence >= 70
+     ? '- REQUIRED: Are all key sections (products, goals, geography, sustainability) comprehensively covered?'
+     : '- ACCEPTABLE: Key sections covered with honest acknowledgment where data is limited (e.g., "sustainability information not available")'}
+   - Is critical information missing without explanation?
 
-7. **Consistency**
+7. **Consistency (High Priority - Always Required)**
    - Do the scores match the explanations?
    - Are recommendations consistent with scores?
    - Is the overall relevance score aligned with component scores?
 
-SCORING RUBRIC (be fair but thorough):
+SCORING RUBRIC (calibrated to ${researchConfidence}% research confidence):
 
-**90-100 (Excellent - Pass)**: Assessment is highly accurate, comprehensive, and exceptionally strategic. All criteria met excellently.
+**90-100 (Excellent - Pass)**: Assessment is highly accurate, comprehensive given available data, and exceptionally strategic. All criteria met excellently.
 
-**80-89 (Good - Pass)**: Assessment is accurate, well-reasoned, and strategically valuable. May have minor areas for improvement but fundamentally sound and useful.
+**${validationThreshold}-89 (Good - Pass)**: Assessment is accurate, well-reasoned, and strategically valuable given available data. May have minor areas for improvement but fundamentally sound and useful.
 
-**70-79 (Needs Revision - Fail)**: Assessment is generally accurate but has notable gaps or weak areas that require regeneration for better quality.
+**${validationThreshold - 10}-${validationThreshold - 1} (Needs Revision - Fail)**: Assessment is generally accurate but has notable gaps or weak areas that require regeneration for better quality.
 
-**50-69 (Weak - Fail)**: Assessment has significant issues - missing key information, unjustified scores, or moderate goal misalignment.
+**50-${validationThreshold - 11} (Weak - Fail)**: Assessment has significant issues - missing key information, unjustified scores, or moderate goal misalignment.
 
 **0-49 (Poor - Fail)**: Assessment is fundamentally flawed - major factual errors, arbitrary scoring, or severe misalignment.
 
 INSTRUCTIONS:
 - Be FAIR and THOROUGH. An assessment doesn't need to be perfect to pass - it needs to be accurate, useful, and well-reasoned.
+- Calibrate expectations to research confidence: ${qualityExpectation}
 - Identify SPECIFIC, CONCRETE issues (not vague criticisms)
 - Provide ACTIONABLE improvement suggestions
 - Consider Gulfood context (food & beverage trade show in Dubai)
-- A score below 80 means the assessment should be regenerated to improve quality
-- Balance quality standards with realistic expectations - good assessments with minor gaps should pass
+- A score below ${validationThreshold} means the assessment should be regenerated to improve quality
+- ${researchConfidence < 70 ? 'IMPORTANT: Do NOT penalize for missing details that were not available in the research data' : 'Apply standard quality expectations for comprehensive analysis'}
 
 RESPONSE FORMAT (valid JSON only):
 {
-  "passed": <boolean, true if validationScore >= 80, false otherwise>,
+  "passed": <boolean, true if validationScore >= ${validationThreshold}, false otherwise>,
   "validationScore": <number 0-100>,
   "evaluatorFeedback": "<2-3 sentences summarizing overall quality and key issues or strengths>",
   "issuesFound": [
@@ -388,10 +432,10 @@ CRITICAL JSON FORMATTING:
         throw new Error('Invalid AI response structure');
       }
 
-      // Ensure passed field matches the score threshold
-      evaluationResult.passed = evaluationResult.validationScore >= 80;
+      // Ensure passed field matches the dynamic score threshold
+      evaluationResult.passed = evaluationResult.validationScore >= validationThreshold;
 
-      console.log(`✅ Assessment evaluation complete: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} (score: ${evaluationResult.validationScore}/100)`);
+      console.log(`✅ Assessment evaluation complete: ${evaluationResult.passed ? 'PASSED' : 'FAILED'} (score: ${evaluationResult.validationScore}/${validationThreshold})`);
       if (!evaluationResult.passed) {
         console.log(`   Issues found: ${evaluationResult.issuesFound.length}`);
       }
