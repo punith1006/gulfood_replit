@@ -5,8 +5,8 @@ import { and, gte, lte, sql, desc } from "drizzle-orm";
 export interface JourneyOverview {
   totalJourneys: number;
   uniqueVisitors: number;
-  avgJourneysPerVisitor: number;
-  journeysLast24Hours: number;
+  averageJourneysPerVisitor: number;
+  journeysLast24h: number;
 }
 
 export interface CategoryItem {
@@ -63,8 +63,8 @@ export async function getJourneyOverview(
   return {
     totalJourneys,
     uniqueVisitors,
-    avgJourneysPerVisitor: uniqueVisitors > 0 ? Math.round((totalJourneys / uniqueVisitors) * 10) / 10 : 0,
-    journeysLast24Hours
+    averageJourneysPerVisitor: uniqueVisitors > 0 ? Math.round((totalJourneys / uniqueVisitors) * 10) / 10 : 0,
+    journeysLast24h: journeysLast24Hours
   };
 }
 
