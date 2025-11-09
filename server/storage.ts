@@ -639,6 +639,11 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getLeadBySessionId(sessionId: string): Promise<Lead | undefined> {
+    const result = await db.select().from(leads).where(eq(leads.sessionId, sessionId));
+    return result[0];
+  }
+
   async createLead(lead: InsertLead): Promise<Lead> {
     // Convert email to lowercase for consistency
     const normalizedLead = {
