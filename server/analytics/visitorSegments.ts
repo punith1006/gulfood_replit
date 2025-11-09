@@ -63,23 +63,22 @@ export async function getTopJourneyIntents(
   startDate: Date,
   endDate: Date
 ): Promise<SegmentItem[]> {
-  const results = await db
-    .select({
-      intent: sql<string>`UNNEST(${journeyPlans.attendanceIntents})`.as('intent'),
-      count: sql<number>`COUNT(*)::int`.as('count')
-    })
-    .from(journeyPlans)
-    .where(
-      and(
-        gte(journeyPlans.createdAt, startDate),
-        lte(journeyPlans.createdAt, endDate)
-      )
-    )
-    .groupBy(sql`UNNEST(${journeyPlans.attendanceIntents})`)
-    .orderBy(desc(sql`COUNT(*)`))
-    .limit(10);
+  const results = await db.execute(sql`
+    SELECT 
+      intent,
+      COUNT(*)::int as count
+    FROM 
+      ${journeyPlans},
+      UNNEST(${journeyPlans.attendanceIntents}) AS intent
+    WHERE 
+      ${journeyPlans.createdAt} >= ${startDate}
+      AND ${journeyPlans.createdAt} <= ${endDate}
+    GROUP BY intent
+    ORDER BY count DESC
+    LIMIT 10
+  `);
 
-  return results.map(r => ({
+  return results.rows.map((r: any) => ({
     name: r.intent,
     count: r.count
   }));

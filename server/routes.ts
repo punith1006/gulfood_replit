@@ -14,6 +14,20 @@ import { calculateRelevanceScore as calculateIntelligentRelevanceScore, calculat
 import { researchCompany, type CompanyResearchData } from './companyResearch';
 import { evaluateAssessment, type AssessmentToEvaluate } from './assessmentEvaluator';
 import { getChatbotAnalytics } from './analytics';
+import { 
+  getJourneyOverview, 
+  getTopInterestCategories, 
+  getTopExhibitorRanking 
+} from './analytics/journeyMetrics';
+import { 
+  getTopVisitorRoles, 
+  getTopVisitorOrganizations, 
+  getTopJourneyIntents 
+} from './analytics/visitorSegments';
+import { 
+  getExpectedVisitorsBySector, 
+  getVisitDateDistribution 
+} from './analytics/journeyDistributions';
 // Semantic matcher no longer used - replaced with AI evaluation
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -1172,6 +1186,52 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     } catch (error) {
       console.error("Error fetching chatbot analytics:", error);
       res.status(500).json({ error: "Failed to fetch chatbot analytics" });
+    }
+  });
+
+  app.get("/api/analytics/journey/overview", requireOrganizerAuth, async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+      
+      console.log('Computing journey analytics...');
+      
+      const [
+        overview,
+        topCategories,
+        topExhibitors,
+        topRoles,
+        topOrganizations,
+        topIntents,
+        expectedVisitorsBySector,
+        visitDateDistribution
+      ] = await Promise.all([
+        getJourneyOverview(start, end),
+        getTopInterestCategories(start, end),
+        getTopExhibitorRanking(start, end),
+        getTopVisitorRoles(start, end),
+        getTopVisitorOrganizations(start, end),
+        getTopJourneyIntents(start, end),
+        getExpectedVisitorsBySector(start, end),
+        getVisitDateDistribution(start, end)
+      ]);
+
+      res.json({
+        overview,
+        topCategories,
+        topExhibitors,
+        visitorSegments: {
+          topRoles,
+          topOrganizations,
+          topIntents
+        },
+        expectedVisitorsBySector,
+        visitDateDistribution
+      });
+    } catch (error) {
+      console.error("Error fetching journey analytics:", error);
+      res.status(500).json({ error: "Failed to fetch journey analytics" });
     }
   });
 

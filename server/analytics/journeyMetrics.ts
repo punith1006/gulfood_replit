@@ -72,23 +72,22 @@ export async function getTopInterestCategories(
   startDate: Date,
   endDate: Date
 ): Promise<CategoryItem[]> {
-  const results = await db
-    .select({
-      category: sql<string>`UNNEST(${journeyPlans.interestCategories})`.as('category'),
-      count: sql<number>`COUNT(*)::int`.as('count')
-    })
-    .from(journeyPlans)
-    .where(
-      and(
-        gte(journeyPlans.createdAt, startDate),
-        lte(journeyPlans.createdAt, endDate)
-      )
-    )
-    .groupBy(sql`UNNEST(${journeyPlans.interestCategories})`)
-    .orderBy(desc(sql`COUNT(*)`))
-    .limit(10);
+  const results = await db.execute(sql`
+    SELECT 
+      category,
+      COUNT(*)::int as count
+    FROM 
+      ${journeyPlans},
+      UNNEST(${journeyPlans.interestCategories}) AS category
+    WHERE 
+      ${journeyPlans.createdAt} >= ${startDate}
+      AND ${journeyPlans.createdAt} <= ${endDate}
+    GROUP BY category
+    ORDER BY count DESC
+    LIMIT 10
+  `);
 
-  return results.map(r => ({
+  return results.rows.map((r: any) => ({
     category: r.category,
     count: r.count
   }));
@@ -98,82 +97,62 @@ export async function getTopExhibitorRanking(
   startDate: Date,
   endDate: Date
 ): Promise<ExhibitorRankingItem[]> {
-  // Get all exhibitor references with weights:
-  // - matched_exhibitor_ids: weight 2 (AI-confirmed matches)
-  // - preferred_exhibitor_ids: weight 1 (user-selected)
-  const matchedRefs = await db
-    .select({
-      exhibitorId: sql<number>`UNNEST(${journeyPlans.matchedExhibitorIds})`.as('exhibitor_id'),
-      source: sql<string>`'matched'`.as('source')
-    })
-    .from(journeyPlans)
-    .where(
-      and(
-        gte(journeyPlans.createdAt, startDate),
-        lte(journeyPlans.createdAt, endDate)
-      )
-    );
+  // Get all exhibitor references with weights using lateral joins
+  const results = await db.execute(sql`
+    WITH exhibitor_refs AS (
+      SELECT 
+        matched_id AS exhibitor_id,
+        2 AS weight,
+        'matched' AS source
+      FROM 
+        ${journeyPlans},
+        UNNEST(${journeyPlans.matchedExhibitorIds}) AS matched_id
+      WHERE 
+        ${journeyPlans.createdAt} >= ${startDate}
+        AND ${journeyPlans.createdAt} <= ${endDate}
+      
+      UNION ALL
+      
+      SELECT 
+        preferred_id AS exhibitor_id,
+        1 AS weight,
+        'preferred' AS source
+      FROM 
+        ${journeyPlans},
+        UNNEST(${journeyPlans.preferredExhibitorIds}) AS preferred_id
+      WHERE 
+        ${journeyPlans.createdAt} >= ${startDate}
+        AND ${journeyPlans.createdAt} <= ${endDate}
+    ),
+    exhibitor_counts AS (
+      SELECT 
+        exhibitor_id,
+        COUNT(*) FILTER (WHERE source = 'matched')::int AS matched_count,
+        COUNT(*) FILTER (WHERE source = 'preferred')::int AS preferred_count,
+        SUM(weight)::int AS weighted_score
+      FROM exhibitor_refs
+      WHERE exhibitor_id IS NOT NULL
+      GROUP BY exhibitor_id
+    )
+    SELECT 
+      ec.exhibitor_id,
+      COALESCE(e.name, 'Exhibitor #' || ec.exhibitor_id) AS exhibitor_name,
+      ec.matched_count,
+      ec.preferred_count,
+      (ec.matched_count + ec.preferred_count) AS total_references,
+      ec.weighted_score
+    FROM exhibitor_counts ec
+    LEFT JOIN ${exhibitors} e ON e.id = ec.exhibitor_id
+    ORDER BY ec.weighted_score DESC
+    LIMIT 10
+  `);
 
-  const preferredRefs = await db
-    .select({
-      exhibitorId: sql<number>`UNNEST(${journeyPlans.preferredExhibitorIds})`.as('exhibitor_id'),
-      source: sql<string>`'preferred'`.as('source')
-    })
-    .from(journeyPlans)
-    .where(
-      and(
-        gte(journeyPlans.createdAt, startDate),
-        lte(journeyPlans.createdAt, endDate)
-      )
-    );
-
-  // Combine and count
-  const countsMap = new Map<number, { matched: number; preferred: number }>();
-  
-  for (const ref of matchedRefs) {
-    if (ref.exhibitorId) {
-      const current = countsMap.get(ref.exhibitorId) || { matched: 0, preferred: 0 };
-      current.matched++;
-      countsMap.set(ref.exhibitorId, current);
-    }
-  }
-
-  for (const ref of preferredRefs) {
-    if (ref.exhibitorId) {
-      const current = countsMap.get(ref.exhibitorId) || { matched: 0, preferred: 0 };
-      current.preferred++;
-      countsMap.set(ref.exhibitorId, current);
-    }
-  }
-
-  // Get exhibitor names
-  const exhibitorIds = Array.from(countsMap.keys());
-  if (exhibitorIds.length === 0) {
-    return [];
-  }
-
-  const exhibitorNames = await db
-    .select({
-      id: exhibitors.id,
-      name: exhibitors.name
-    })
-    .from(exhibitors)
-    .where(sql`${exhibitors.id} = ANY(${exhibitorIds})`);
-
-  const nameMap = new Map(exhibitorNames.map(e => [e.id, e.name]));
-
-  // Calculate weighted scores and sort
-  const ranking: ExhibitorRankingItem[] = Array.from(countsMap.entries())
-    .map(([exhibitorId, counts]) => ({
-      exhibitorId,
-      exhibitorName: nameMap.get(exhibitorId) || `Exhibitor #${exhibitorId}`,
-      matchedCount: counts.matched,
-      preferredCount: counts.preferred,
-      totalReferences: counts.matched + counts.preferred,
-      weightedScore: (counts.matched * 2) + (counts.preferred * 1)
-    }))
-    .sort((a, b) => b.weightedScore - a.weightedScore)
-    .slice(0, 10);
-
-  return ranking;
+  return results.rows.map((r: any) => ({
+    exhibitorId: r.exhibitor_id,
+    exhibitorName: r.exhibitor_name,
+    matchedCount: r.matched_count,
+    preferredCount: r.preferred_count,
+    totalReferences: r.total_references,
+    weightedScore: r.weighted_score
+  }));
 }
