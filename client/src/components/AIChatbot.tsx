@@ -391,11 +391,12 @@ export default function AIChatbot() {
   const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary } = useChatbot();
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
-  const [sessionId] = useState(() => sessionManager.getOrCreateSessionId());
+  const [sessionId, setSessionId] = useState(() => sessionManager.createNewSessionId());
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [mainTab, setMainTab] = useState("chat"); // Main 4-tab navigation
   const scrollRef = useRef<HTMLDivElement>(null);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showContactSales, setShowContactSales] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [showInlineLeadForm, setShowInlineLeadForm] = useState(false);
@@ -688,6 +689,64 @@ export default function AIChatbot() {
       setHasRegistered(false);
     }
   }, [isOpen, setUserRole, setHasRegistered]);
+
+  // Create new session when chatbot opens
+  useEffect(() => {
+    if (isOpen) {
+      const newSessionId = sessionManager.createNewSessionId();
+      setSessionId(newSessionId);
+      setConversationId(null);
+      setStreamingResponse('');
+      setIsStreaming(false);
+      console.log('New conversation started:', newSessionId);
+    }
+  }, [isOpen]);
+
+  // 5-minute inactivity timer - reset session after idle period
+  useEffect(() => {
+    const resetInactivityTimer = () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+
+      inactivityTimerRef.current = setTimeout(() => {
+        const newSessionId = sessionManager.createNewSessionId();
+        setSessionId(newSessionId);
+        setMessages([]);
+        setConversationId(null);
+        setStreamingResponse('');
+        setIsStreaming(false);
+        console.log('Session expired due to inactivity. New session:', newSessionId);
+      }, 5 * 60 * 1000); // 5 minutes
+    };
+
+    if (isOpen && messages.length > 0) {
+      resetInactivityTimer();
+    }
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [isOpen, messages]);
+
+  // Reset inactivity timer when user types (not just sends messages)
+  useEffect(() => {
+    if (inactivityTimerRef.current && input.length > 0) {
+      clearTimeout(inactivityTimerRef.current);
+      
+      inactivityTimerRef.current = setTimeout(() => {
+        const newSessionId = sessionManager.createNewSessionId();
+        setSessionId(newSessionId);
+        setMessages([]);
+        setConversationId(null);
+        setStreamingResponse('');
+        setIsStreaming(false);
+        console.log('Session expired due to inactivity. New session:', newSessionId);
+      }, 5 * 60 * 1000);
+    }
+  }, [input]);
 
   // Persist viewed items to localStorage
   useEffect(() => {
