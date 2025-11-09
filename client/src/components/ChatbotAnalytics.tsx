@@ -7,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MessageSquare, ThumbsUp, ThumbsDown, TrendingUp, Clock, AlertCircle, Download, Smile, Frown, Meh, CalendarIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 
 function getAuthHeaders(): Record<string, string> {
@@ -87,6 +87,11 @@ interface LanguageItem {
   percentage: number;
 }
 
+interface DailyVolumeItem {
+  date: string;
+  count: number;
+}
+
 interface ChatbotAnalytics {
   metrics: ConversationMetrics;
   sentiment: SentimentDistribution;
@@ -100,6 +105,7 @@ interface ChatbotAnalytics {
   sentimentJourney: SentimentJourneyData;
   quickActions: QuickActionStats;
   languageDistribution: LanguageItem[];
+  dailyVolume: DailyVolumeItem[];
 }
 
 const SENTIMENT_COLORS = {
@@ -512,6 +518,49 @@ export default function ChatbotAnalytics() {
           )}
         </Card>
       </div>
+
+      <Card className="p-6" data-testid="card-daily-volume">
+        <h3 className="text-xl font-bold mb-6">Daily Message Volume <span className="text-sm text-muted-foreground font-normal">Total messages over time</span></h3>
+        {isLoading ? (
+          <div className="h-[300px] bg-muted rounded animate-pulse" />
+        ) : !analytics || !analytics.dailyVolume || analytics.dailyVolume.length === 0 || analytics.dailyVolume.every(d => d.count === 0) ? (
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>No message volume data available</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={analytics.dailyVolume}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={(value) => {
+                  const date = new Date(value);
+                  return format(date, 'MMM dd');
+                }}
+              />
+              <YAxis />
+              <Tooltip 
+                labelFormatter={(value) => {
+                  const date = new Date(value as string);
+                  return format(date, 'MMMM dd, yyyy');
+                }}
+              />
+              <Legend />
+              <Line 
+                type="monotone" 
+                dataKey="count" 
+                stroke="#ef4444" 
+                strokeWidth={2}
+                dot={{ fill: '#ef4444', r: 4 }}
+                name="Messages"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </Card>
 
       <Card className="p-6" data-testid="card-peak-hours">
         <h3 className="text-xl font-bold mb-6">Peak Hours of Engagement <span className="text-sm text-muted-foreground font-normal">(GST - UTC+4)</span></h3>

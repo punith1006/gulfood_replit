@@ -14,7 +14,7 @@ export async function getDailyMessageVolume(
   const results = await db
     .select({
       date: sql<string>`DATE(${chatConversations.createdAt})`.as('date'),
-      count: sql<number>`COUNT(*)::int`.as('count')
+      count: sql<number>`COALESCE(SUM(jsonb_array_length(${chatConversations.messages})), 0)::int`.as('count')
     })
     .from(chatConversations)
     .where(
