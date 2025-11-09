@@ -582,15 +582,28 @@ export default function ChatbotAnalytics() {
                 </div>
               ) : (
                 <div className="mt-4">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={analytics.quickActions.visitor.slice(0, 10)} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="action" type="category" width={150} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="hsl(var(--chart-1))" name="Clicks" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center pb-3 border-b text-sm font-medium text-muted-foreground">
+                    <div></div>
+                    <div>Action name</div>
+                    <div className="text-right">Count</div>
+                    <div className="text-right">Percentage</div>
+                  </div>
+                  <div className="divide-y">
+                    {(() => {
+                      const totalCount = analytics.quickActions.visitor.reduce((sum, item) => sum + item.count, 0);
+                      return analytics.quickActions.visitor.slice(0, 10).map((action, idx) => {
+                        const percentage = totalCount > 0 ? ((action.count / totalCount) * 100).toFixed(2) : '0.00';
+                        return (
+                          <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center py-3" data-testid={`action-row-visitor-${idx}`}>
+                            <div className="text-sm font-medium text-muted-foreground">{idx + 1}.</div>
+                            <div className="text-sm font-medium">{action.action}</div>
+                            <div className="text-sm text-right tabular-nums">{action.count}</div>
+                            <div className="text-sm text-right tabular-nums">{percentage}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
               )}
             </TabsContent>
@@ -601,15 +614,28 @@ export default function ChatbotAnalytics() {
                 </div>
               ) : (
                 <div className="mt-4">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={analytics.quickActions.exhibitor.slice(0, 10)} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="action" type="category" width={150} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="hsl(var(--chart-2))" name="Clicks" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center pb-3 border-b text-sm font-medium text-muted-foreground">
+                    <div></div>
+                    <div>Action name</div>
+                    <div className="text-right">Count</div>
+                    <div className="text-right">Percentage</div>
+                  </div>
+                  <div className="divide-y">
+                    {(() => {
+                      const totalCount = analytics.quickActions.exhibitor.reduce((sum, item) => sum + item.count, 0);
+                      return analytics.quickActions.exhibitor.slice(0, 10).map((action, idx) => {
+                        const percentage = totalCount > 0 ? ((action.count / totalCount) * 100).toFixed(2) : '0.00';
+                        return (
+                          <div key={idx} className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center py-3" data-testid={`action-row-exhibitor-${idx}`}>
+                            <div className="text-sm font-medium text-muted-foreground">{idx + 1}.</div>
+                            <div className="text-sm font-medium">{action.action}</div>
+                            <div className="text-sm text-right tabular-nums">{action.count}</div>
+                            <div className="text-sm text-right tabular-nums">{percentage}%</div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
               )}
             </TabsContent>
