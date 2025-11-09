@@ -2423,6 +2423,23 @@ This assessment will be validated against strict quality criteria. Assessments s
 YOUR GOAL: Produce an assessment that scores 85+ on the FIRST attempt.
 Research confidence level: ${researchData.confidenceScore}% - calibrate your scores accordingly.
 
+⚠️ CRITICAL: HONESTY OVER HIGH SCORES ⚠️
+Your primary responsibility is to provide HONEST assessments that help exhibitors make informed decisions:
+
+• If company is OUTSIDE food & beverage industry → LOW SCORES (20-40%) are APPROPRIATE
+• Tech, finance, consulting, HR companies at F&B show = poor fit - score honestly low
+• Don't inflate scores to be "nice" - honest assessments prevent wasted exhibitor investment
+• A well-justified 25% score with clear "don't exhibit" advice is MORE VALUABLE than an inflated 70%
+• Example: Enterprise software company → 25% overall, with recommendations explaining why NOT to exhibit
+
+SCORING CALIBRATION BY INDUSTRY FIT:
+• Core F&B companies (food/beverage manufacturers, distributors, ingredients): 70-95% range
+• F&B service providers (packaging, logistics, F&B-specific consulting): 45-70% range
+• Tangential companies (generic consulting, tangential tech): 25-45% range
+• Out-of-scope companies (tech, finance, HR, non-F&B industries): 10-30% range
+
+IMPORTANT: Base scores on ACTUAL product/service alignment with Gulfood's F&B scope, NOT on research confidence.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. COMPANY RESEARCH DATA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2449,13 +2466,26 @@ Summary: ${researchData.searchSummary}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 1. DATA ACCURACY: Does extractedData match the verified research above? Any contradictions or fabrications will cause failure.
 
-2. FAIRNESS & OBJECTIVITY: Are scores justified by evidence? No arbitrary score inflation. Similar factors weighted consistently.
+2. HONESTY & SCORE JUSTIFICATION: Are scores HONESTLY justified by SPECIFIC EVIDENCE from research?
+   - LOW SCORES (20-40%) are accepted when properly justified with:
+     * Explicit citation of company's actual industry/products from research
+     * Clear explanation of mismatch with Gulfood's F&B scope
+     * Evidence-backed rationale (not vague statements)
+   - REJECT: Shallow "don't exhibit" OR inflated scores for non-F&B companies
 
-3. GOAL ALIGNMENT (CRITICAL): Does the assessment specifically address "${primaryGoal}"? Each recommendation must explicitly connect to this goal.
+3. GOAL ALIGNMENT (CRITICAL): Does the assessment specifically address "${primaryGoal}"? Each recommendation must explicitly connect to this goal (even if advising against exhibiting).
 
 4. GEOGRAPHIC RELEVANCE: Does the assessment analyze MENA/Dubai market opportunities for this ${country}-based company? Must mention Dubai's strategic position, MENA market potential, or regional advantages.
 
-5. STRATEGIC RELEVANCE: Are recommendations specific, actionable, and Gulfood-focused? Must reference specific halls, sessions, or concrete actions—not vague advice.
+5. RECOMMENDATION QUALITY: Are there AT LEAST 3 specific, actionable recommendations?
+   - For POOR FIT companies (20-40% scores): Recommendations MUST:
+     * Clearly explain WHY they shouldn't exhibit (cite specific mismatches)
+     * Provide at least ONE alternative action (e.g., "Consider food tech events if serving F&B as B2B vendor")
+     * Be specific and actionable, not vague discouragement
+   - For GOOD FIT companies (60%+ scores): Recommendations MUST:
+     * Reference specific Gulfood elements (halls, sessions, concrete actions)
+     * Include tactical advice tailored to their goal
+     * Be Gulfood-specific, not generic networking advice
 
 6. COMPLETENESS: All sections detailed and comprehensive? Minimum 3 recommendations (4 preferred), all required fields present.
 
@@ -2591,15 +2621,21 @@ EXAMPLE OF VALID RECOMMENDATIONS STRUCTURE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Before returning your JSON, verify each of these requirements:
 
+🔴 HONESTY CHECK (CRITICAL):
+□ Is this company TRULY in the food & beverage industry (manufacturer, distributor, ingredients, F&B services)?
+□ If company is OUTSIDE F&B (tech, finance, consulting, HR, etc.), are my scores appropriately LOW (10-40%)?
+□ Do my recommendations reflect actual fit (clear "don't exhibit" advice if poor fit)?
+□ Have I avoided inflating scores to be "nice"? (Remember: honest low score > inflated high score)
+
+✅ QUALITY CHECKS:
 □ Do ALL recommendations explicitly mention how they address "${primaryGoal}"?
 □ Have I included specific MENA/Dubai market analysis for this ${country} company?
-□ Are all 4 scores (productEventAlignment, businessGoalAlignment, marketMatch, roiPotential) justified by research evidence?
-□ Are recommendations specific to Gulfood 2026 (halls, sessions, exhibitors, concrete actions)?
+□ Are all 4 scores (productEventAlignment, businessGoalAlignment, marketMatch, roiPotential) justified by SPECIFIC research evidence?
+□ Are recommendations specific to Gulfood 2026 (halls, sessions, exhibitors, concrete actions) OR explain why NOT to exhibit?
 □ If sustainability was mentioned in research, did I address it in recommendations?
-□ Are scores calibrated appropriately given ${researchData.confidenceScore}% research confidence?
 □ Does extractedData match the verified research (no fabrications)?
 
-If ANY box is unchecked, REVISE your assessment before submitting. An 85+ score requires ALL boxes checked.
+If ANY box is unchecked, REVISE your assessment before submitting. An 85+ validation score requires ALL boxes checked.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 9. OUTPUT FORMAT
@@ -2787,6 +2823,14 @@ Products: ${researchData.products.join(', ')}
 Company Size: ${researchData.companySize}
 Target Markets: ${researchData.targetMarkets.join(', ')}
 Primary Goal: ${primaryGoal}
+
+⚠️ CRITICAL: HONESTY OVER SCORE INFLATION ⚠️
+When regenerating, prioritize FIXING ISSUES over RAISING SCORES:
+• DO NOT raise scores unless new evidence from research data justifies it
+• If company is OUTSIDE F&B industry, keep scores LOW (20-40%) - don't inflate to pass validation
+• Focus on improving JUSTIFICATIONS, EVIDENCE, and RECOMMENDATION QUALITY
+• If original assessment scored low (20-40%) because company is poor fit, KEEP IT LOW but improve clarity
+• Remember: An honest 25% with clear evidence > an inflated 65% with weak justification
 
 CRITICAL REQUIREMENTS - ADDRESS ALL ISSUES ABOVE AND ENSURE:
 1. recommendations: MUST be an array with MINIMUM 3 detailed recommendations (preferably 4)
