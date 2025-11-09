@@ -13,6 +13,7 @@ import { enrichOrganization } from './organizationEnrichment';
 import { calculateRelevanceScore as calculateIntelligentRelevanceScore, calculateExhibitorMatchScores } from './intelligentScoring';
 import { researchCompany, type CompanyResearchData } from './companyResearch';
 import { evaluateAssessment, type AssessmentToEvaluate } from './assessmentEvaluator';
+import { getChatbotAnalytics } from './analytics';
 // Semantic matcher no longer used - replaced with AI evaluation
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
@@ -1104,6 +1105,20 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     } catch (error) {
       console.error("Error fetching analytics:", error);
       res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get("/api/analytics/chatbot/overview", requireOrganizerAuth, async (req: AuthRequest, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const start = startDate ? new Date(startDate as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const end = endDate ? new Date(endDate as string) : new Date();
+      
+      const analytics = await getChatbotAnalytics(start, end);
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching chatbot analytics:", error);
+      res.status(500).json({ error: "Failed to fetch chatbot analytics" });
     }
   });
 

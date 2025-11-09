@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Building2, MessageSquare, ArrowUp, ArrowDown, Download, CheckCircle2, UserCheck, Mail, Share2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import analyticsImage from "@assets/generated_images/Analytics_dashboard_visualization_c400d7e3.png";
 import { useToast } from "@/hooks/use-toast";
 import EmbeddableWidgetGenerator from "@/components/EmbeddableWidgetGenerator";
+import ChatbotAnalytics from "@/components/ChatbotAnalytics";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface Analytics {
@@ -133,26 +135,34 @@ export default function AnalyticsDashboard() {
         <p className="text-muted-foreground mb-6">
           Comprehensive analytics and insights to make data-driven decisions for Gulfood 2026
         </p>
-        <div className="flex gap-4 mb-6">
-          <Button 
-            variant="default" 
-            className="gap-2"
-            onClick={() => generateReportMutation.mutate()}
-            disabled={generateReportMutation.isPending}
-            data-testid="button-download-report"
-          >
-            <Download className="w-4 h-4" />
-            {generateReportMutation.isPending ? "Generating..." : "Download Analytics Report"}
-          </Button>
-        </div>
-        <div className="rounded-xl overflow-hidden shadow-lg mb-8">
-          <img 
-            src={analyticsImage} 
-            alt="Advanced analytics dashboard visualization" 
-            className="w-full h-64 object-cover"
-          />
-        </div>
       </div>
+
+      <Tabs defaultValue="overview" data-testid="tabs-analytics">
+        <TabsList className="mb-6">
+          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+          <TabsTrigger value="chatbot" data-testid="tab-chatbot">Chat Bot</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="flex gap-4 mb-6">
+            <Button 
+              variant="default" 
+              className="gap-2"
+              onClick={() => generateReportMutation.mutate()}
+              disabled={generateReportMutation.isPending}
+              data-testid="button-download-report"
+            >
+              <Download className="w-4 h-4" />
+              {generateReportMutation.isPending ? "Generating..." : "Download Analytics Report"}
+            </Button>
+          </div>
+          <div className="rounded-xl overflow-hidden shadow-lg mb-8">
+            <img 
+              src={analyticsImage} 
+              alt="Advanced analytics dashboard visualization" 
+              className="w-full h-64 object-cover"
+            />
+          </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, idx) => {
@@ -389,8 +399,14 @@ export default function AnalyticsDashboard() {
             )}
           </Card>
 
-        <EmbeddableWidgetGenerator />
+          <EmbeddableWidgetGenerator />
       </div>
+        </TabsContent>
+
+        <TabsContent value="chatbot">
+          <ChatbotAnalytics />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
