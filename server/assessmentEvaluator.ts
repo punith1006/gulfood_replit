@@ -319,6 +319,10 @@ The research confidence is ${researchConfidence}%, indicating good publicly avai
 Apply normal quality standards: expect detailed MENA analysis, specific recommendations, comprehensive coverage.
 `}
 
+⚠️ CRITICAL: HONESTY OVER HIGH SCORES ⚠️
+The assessment's purpose is to help exhibitors make informed decisions about whether to exhibit at Gulfood.
+An honest assessment saying "DON'T EXHIBIT" (with low scores 20-40%) is MORE VALUABLE than an inflated assessment.
+
 VALIDATION CRITERIA:
 
 1. **Data Accuracy (Critical - Always Required)**
@@ -326,27 +330,40 @@ VALIDATION CRITERIA:
    - Are there any factual inconsistencies or contradictions?
    - Is the assessment working with accurate information?
 
-2. **Fairness & Objectivity (Critical - Always Required)**
-   - Are the scores justified by the AVAILABLE evidence?
-   - Is there any arbitrary score inflation or deflation?
-   - Are similar factors weighted consistently?
-   - Is the assessment free from bias?
+2. **Honesty & Score Justification (Critical - Always Required)**
+   - Are the scores HONESTLY justified by SPECIFIC EVIDENCE from the research data?
+   - LOW SCORES (20-40%) ARE ACCEPTABLE but MUST include:
+     * Explicit citation of company's actual industry/products from research data
+     * Clear explanation of mismatch with Gulfood's F&B scope
+     * Evidence-backed rationale (not vague statements)
+   - Is the assessment avoiding score inflation to make the company feel better?
+   - Is it honest about poor fit when company doesn't align with Gulfood's scope?
+   - **IMPORTANT**: A well-justified 25% score is BETTER than an inflated 70% score
+   - **REJECT**: Shallow "don't exhibit" conclusions without detailed evidence
 
 3. **Goal Alignment (High Priority - Always Required)**
    - Does the assessment specifically address the user's primary goal: "${assessment.primaryGoal}"?
-   - Are recommendations tailored to this goal?
-   - Is the relevance score appropriate given the goal?
+   - Are recommendations tailored to this goal (even if advising against exhibiting)?
+   - Is the relevance score appropriate given the goal AND the company's actual fit?
 
-4. **Geographic Relevance (${researchConfidence >= 70 ? 'High Priority' : 'LENIENT - Work with available data'})**
-   - Does the assessment consider the user's country (${country}) appropriately?
-   ${researchConfidence >= 70 
-     ? '- REQUIRED: Are MENA/Dubai market opportunities thoroughly analyzed?\n   - REQUIRED: Is Gulfood\'s location advantage (Dubai) well-explained?' 
-     : '- ACCEPTABLE: Basic geographic context even if MENA details are limited due to research gaps\n   - ACCEPTABLE: General Dubai/Gulfood benefits mentioned without deep MENA analysis'}
+4. **Gulfood Scope Assessment (Critical)**
+   - Does the assessment honestly evaluate if the company fits Gulfood's F&B trade show scope?
+   - If company is OUTSIDE F&B industry (tech, finance, consulting, etc.), does assessment reflect this with LOW scores?
+   - Are Product-Event Alignment scores appropriate for the company's actual industry?
+   - **ACCEPT**: Assessments that conclude "Don't exhibit - poor fit" with 20-40% scores
 
-5. **Strategic Relevance (High Priority - Always Required)**
-   - Are recommendations specific, actionable, and strategic?
-   - Do they relate to Gulfood 2026 exhibiting opportunities?
-   - Are they relevant to the food & beverage industry?
+5. **Recommendation Quality (High Priority)**
+   - Are there AT LEAST 3 specific, actionable recommendations?
+   - Are recommendations honest and realistic given the company's actual alignment?
+   - For POOR FIT companies (20-40% scores): Recommendations MUST:
+     * Clearly explain WHY they shouldn't exhibit (cite specific mismatches)
+     * Provide at least ONE alternative action (e.g., "Consider food tech events if serving F&B as B2B vendor")
+     * Be specific and actionable, not vague discouragement
+   - For GOOD FIT companies (60%+ scores): Recommendations MUST:
+     * Relate specifically to Gulfood 2026 opportunities
+     * Include concrete actions (hall selection, networking strategies, etc.)
+     * Address the primary goal with specific tactics
+   - **REJECT**: Generic or vague recommendations for any score level
 
 6. **Completeness (${researchConfidence >= 70 ? 'Strict' : 'LENIENT - Accept gaps where data unavailable'})**
    - Are all score components present and justified?
@@ -357,29 +374,61 @@ VALIDATION CRITERIA:
 
 7. **Consistency (High Priority - Always Required)**
    - Do the scores match the explanations?
-   - Are recommendations consistent with scores?
+   - Are recommendations consistent with scores (low scores = "don't exhibit" recommendations)?
    - Is the overall relevance score aligned with component scores?
 
 SCORING RUBRIC (calibrated to ${researchConfidence}% research confidence):
 
-**90-100 (Excellent - Pass)**: Assessment is highly accurate, comprehensive given available data, and exceptionally strategic. All criteria met excellently.
+**IMPORTANT**: Validation score measures QUALITY OF ASSESSMENT, not company fit score.
+- A high-quality assessment can have low company fit scores (20-40%)
+- Judge the HONESTY and ACCURACY, not whether the company should exhibit
 
-**${validationThreshold}-89 (Good - Pass)**: Assessment is accurate, well-reasoned, and strategically valuable given available data. May have minor areas for improvement but fundamentally sound and useful.
+**90-100 (Excellent - Pass)**: 
+- Assessment is honest, accurate, and comprehensive with EVIDENCE-BACKED justifications
+- Scores cite specific research data (industry, products, markets)
+- For poor-fit companies: Clearly explains WHY with specific mismatches + alternatives
+- For good-fit companies: Provides exceptional strategic value with concrete actions
+- At least 3 specific, actionable recommendations
+- ${researchConfidence >= 70 ? 'Comprehensive MENA analysis with specific market opportunities' : 'Works honestly with available data'}
 
-**${validationThreshold - 10}-${validationThreshold - 1} (Needs Revision - Fail)**: Assessment is generally accurate but has notable gaps or weak areas that require regeneration for better quality.
+**${validationThreshold}-89 (Good - Pass)**: 
+- Assessment is honest and well-reasoned with SPECIFIC justifications
+- Scores appropriately reflect company's actual fit based on research evidence
+- LOW company scores (20-40%) accepted IF:
+  * Explicitly cites company's industry/products from research
+  * Explains specific mismatch with F&B scope
+  * Provides at least 3 recommendations including alternatives
+- Recommendations are realistic, specific, and actionable (minimum 3)
 
-**50-${validationThreshold - 11} (Weak - Fail)**: Assessment has significant issues - missing key information, unjustified scores, or moderate goal misalignment.
+**${validationThreshold - 10}-${validationThreshold - 1} (Needs Revision - Fail)**: 
+- Assessment has score inflation or deflation issues
+- Not honest about poor fit OR not recognizing good fit
+- Recommendations don't match the company's actual situation
 
-**0-49 (Poor - Fail)**: Assessment is fundamentally flawed - major factual errors, arbitrary scoring, or severe misalignment.
+**50-${validationThreshold - 11} (Weak - Fail)**: 
+- Assessment has significant honesty issues
+- Scores don't match evidence (e.g., giving tech company 70% F&B fit)
+- Missing key justifications
+
+**0-49 (Poor - Fail)**: 
+- Assessment is fundamentally dishonest or inaccurate
+- Major factual errors
+- Severe score inflation/deflation
+
+CRITICAL EXAMPLES:
+✅ PASS (85%): Tech company gets 25% overall score, clear "don't exhibit" advice → HONEST
+✅ PASS (90%): Beverage company gets 85% overall score, detailed exhibit strategy → HONEST  
+❌ FAIL (50%): Tech company gets 65% score, vague positive recommendations → DISHONEST INFLATION
+❌ FAIL (60%): F&B company gets 45% score without clear justification → DISHONEST DEFLATION
 
 INSTRUCTIONS:
-- Be FAIR and THOROUGH. An assessment doesn't need to be perfect to pass - it needs to be accurate, useful, and well-reasoned.
+- REWARD HONESTY: Low company scores are acceptable when justified
+- PENALIZE INFLATION: Don't accept inflated scores for poor-fit companies
+- Be FAIR and THOROUGH: Assessment quality ≠ company fit score
 - Calibrate expectations to research confidence: ${qualityExpectation}
-- Identify SPECIFIC, CONCRETE issues (not vague criticisms)
-- Provide ACTIONABLE improvement suggestions
-- Consider Gulfood context (food & beverage trade show in Dubai)
-- A score below ${validationThreshold} means the assessment should be regenerated to improve quality
-- ${researchConfidence < 70 ? 'IMPORTANT: Do NOT penalize for missing details that were not available in the research data' : 'Apply standard quality expectations for comprehensive analysis'}
+- Identify SPECIFIC issues (not vague criticisms)
+- ${researchConfidence < 70 ? 'IMPORTANT: Accept honest assessments with limited data' : 'Apply standard quality expectations'}
+- A validation score below ${validationThreshold} means the assessment lacks honesty/accuracy
 
 RESPONSE FORMAT (valid JSON only):
 {
