@@ -894,21 +894,20 @@ export default function AIChatbot() {
   // Save conversation to database for analytics tracking
   const saveConversationToDatabase = async (allMessages: Message[]) => {
     try {
-      if (!conversationId) return;
-      
       // Transform messages to match backend format (remove suggestions field)
       const formattedMessages = allMessages.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
       
+      // Use sessionId for persistence to match feedback system
       await fetch('/api/chat/save', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sessionId: conversationId,
+          sessionId: sessionId,
           messages: formattedMessages,
           userRole: userRole || 'Visitor'
         }),
