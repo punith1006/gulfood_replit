@@ -1098,6 +1098,37 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  // Save conversation to database for analytics tracking
+  app.post("/api/chat/save", async (req, res) => {
+    try {
+      const { sessionId, messages, userRole } = req.body;
+      
+      if (!sessionId || !messages) {
+        return res.status(400).json({ error: "Session ID and messages are required" });
+      }
+
+      // Check if conversation exists
+      let conversation = await storage.getChatConversation(sessionId);
+      
+      if (conversation) {
+        // Update existing conversation
+        await storage.updateChatConversation(sessionId, messages, userRole);
+      } else {
+        // Create new conversation
+        await storage.createChatConversation({
+          sessionId,
+          messages,
+          userRole: userRole || 'Visitor'
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving conversation:", error);
+      res.status(500).json({ error: "Failed to save conversation" });
+    }
+  });
+
   app.get("/api/analytics", async (req, res) => {
     try {
       const analytics = await storage.getAnalytics();

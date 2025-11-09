@@ -866,7 +866,14 @@ export default function AIChatbot() {
           content: accumulatedResponse,
           suggestions: suggestions
         };
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => {
+          const updatedMessages = [...prev, newMessage];
+          
+          // Save conversation to database for analytics
+          saveConversationToDatabase(updatedMessages);
+          
+          return updatedMessages;
+        });
         setStreamingResponse('');
         setIsStreaming(false);
       },
@@ -882,6 +889,34 @@ export default function AIChatbot() {
     );
     
     return cleanup;
+  };
+
+  // Save conversation to database for analytics tracking
+  const saveConversationToDatabase = async (allMessages: Message[]) => {
+    try {
+      if (!conversationId) return;
+      
+      // Transform messages to match backend format (remove suggestions field)
+      const formattedMessages = allMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      await fetch('/api/chat/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: conversationId,
+          messages: formattedMessages,
+          userRole: userRole || 'Visitor'
+        }),
+      });
+    } catch (error) {
+      // Silent fail - don't disrupt user experience if save fails
+      console.error('Failed to save conversation to database:', error);
+    }
   };
 
   const handleSend = () => {

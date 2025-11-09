@@ -10,6 +10,17 @@ import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem("authToken");
+  const headers: Record<string, string> = {};
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  
+  return headers;
+}
+
 interface ConversationMetrics {
   totalConversations: number;
   totalMessages: number;
@@ -122,7 +133,11 @@ export default function ChatbotAnalytics() {
         startDate: dateRange.start.toISOString(),
         endDate: dateRange.end.toISOString()
       });
-      const response = await fetch(`/api/analytics/chatbot/overview?${params}`);
+      const authHeaders = getAuthHeaders();
+      const response = await fetch(`/api/analytics/chatbot/overview?${params}`, {
+        headers: authHeaders,
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch analytics');
       }
