@@ -390,6 +390,29 @@ Format as valid JSON only, no markdown.`;
     }
   });
 
+  app.get("/api/leads/session/:sessionId", async (req, res) => {
+    try {
+      const sessionId = req.params.sessionId;
+      const lead = await storage.getLeadBySessionId(sessionId);
+      
+      if (lead) {
+        res.json({ 
+          exists: true, 
+          lead: {
+            id: lead.id,
+            name: lead.name,
+            email: lead.email
+          } 
+        });
+      } else {
+        res.json({ exists: false, lead: null });
+      }
+    } catch (error) {
+      console.error("Error checking lead by session:", error);
+      res.status(500).json({ error: "Failed to check session" });
+    }
+  });
+
   app.get("/api/leads", async (req, res) => {
     try {
       const { status, category } = req.query;
