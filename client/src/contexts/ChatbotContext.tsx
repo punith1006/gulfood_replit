@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
+export type Language = 'English' | 'Hindi' | 'Arabic';
+
 interface ChatbotContextType {
   isOpen: boolean;
   openChatbot: () => void;
@@ -9,6 +11,8 @@ interface ChatbotContextType {
   setJourneyPlan: (plan: any | null) => void;
   itinerary: any | null;
   setItinerary: (itinerary: any | null) => void;
+  language: Language;
+  setLanguage: (language: Language) => void;
 }
 
 const ChatbotContext = createContext<ChatbotContextType | undefined>(undefined);
@@ -30,6 +34,18 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
+    }
+  });
+
+  const [languageState, setLanguageState] = useState<Language>(() => {
+    try {
+      const stored = localStorage.getItem('gulfood_language');
+      if (stored && ['English', 'Hindi', 'Arabic'].includes(stored)) {
+        return stored as Language;
+      }
+      return 'English';
+    } catch {
+      return 'English';
     }
   });
 
@@ -55,8 +71,13 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setLanguage = (language: Language) => {
+    setLanguageState(language);
+    localStorage.setItem('gulfood_language', language);
+  };
+
   return (
-    <ChatbotContext.Provider value={{ isOpen, openChatbot, closeChatbot, toggleChatbot, journeyPlan: journeyPlanState, setJourneyPlan, itinerary: itineraryState, setItinerary }}>
+    <ChatbotContext.Provider value={{ isOpen, openChatbot, closeChatbot, toggleChatbot, journeyPlan: journeyPlanState, setJourneyPlan, itinerary: itineraryState, setItinerary, language: languageState, setLanguage }}>
       {children}
     </ChatbotContext.Provider>
   );

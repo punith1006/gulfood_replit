@@ -1122,7 +1122,7 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
   // Save conversation to database for analytics tracking
   app.post("/api/chat/save", async (req, res) => {
     try {
-      const { sessionId, messages, userRole } = req.body;
+      const { sessionId, messages, userRole, language } = req.body;
       
       if (!sessionId || !messages) {
         return res.status(400).json({ error: "Session ID and messages are required" });
@@ -1133,13 +1133,14 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
       
       if (conversation) {
         // Update existing conversation
-        await storage.updateChatConversation(sessionId, messages, userRole);
+        await storage.updateChatConversation(sessionId, messages, userRole, language);
       } else {
         // Create new conversation
         await storage.createChatConversation({
           sessionId,
           messages,
-          userRole: userRole || 'Visitor'
+          userRole: userRole || 'Visitor',
+          language: language || 'English'
         });
       }
       

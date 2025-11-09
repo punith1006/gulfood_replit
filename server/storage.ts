@@ -85,7 +85,7 @@ export interface IStorage {
   
   getChatConversation(sessionId: string): Promise<ChatConversation | undefined>;
   createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
-  updateChatConversation(sessionId: string, messages: any, userRole?: string): Promise<ChatConversation | undefined>;
+  updateChatConversation(sessionId: string, messages: any, userRole?: string, language?: string): Promise<ChatConversation | undefined>;
   
   getChatFeedback(sessionId: string): Promise<ChatFeedback[]>;
   createChatFeedback(feedback: InsertChatFeedback): Promise<ChatFeedback>;
@@ -542,10 +542,13 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateChatConversation(sessionId: string, messages: any, userRole?: string): Promise<ChatConversation | undefined> {
+  async updateChatConversation(sessionId: string, messages: any, userRole?: string, language?: string): Promise<ChatConversation | undefined> {
     const updateData: any = { messages, updatedAt: new Date() };
     if (userRole) {
       updateData.userRole = userRole;
+    }
+    if (language) {
+      updateData.language = language;
     }
     const result = await db
       .update(chatConversations)

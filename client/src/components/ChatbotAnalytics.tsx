@@ -81,6 +81,12 @@ interface DailySentimentData {
   negative: number;
 }
 
+interface LanguageItem {
+  language: string;
+  count: number;
+  percentage: number;
+}
+
 interface ChatbotAnalytics {
   metrics: ConversationMetrics;
   sentiment: SentimentDistribution;
@@ -93,6 +99,7 @@ interface ChatbotAnalytics {
   peakHours: HourlyActivity[];
   sentimentJourney: SentimentJourneyData;
   quickActions: QuickActionStats;
+  languageDistribution: LanguageItem[];
 }
 
 const SENTIMENT_COLORS = {
@@ -468,6 +475,40 @@ export default function ChatbotAnalytics() {
                 </div>
               </div>
             </div>
+          )}
+        </Card>
+
+        <Card className="p-6" data-testid="card-language-distribution">
+          <h3 className="text-xl font-bold mb-6">Language Distribution</h3>
+          {isLoading ? (
+            <div className="h-[300px] bg-muted rounded animate-pulse" />
+          ) : !analytics || !analytics.languageDistribution || analytics.languageDistribution.length === 0 ? (
+            <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No language data available</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={analytics.languageDistribution}
+                  dataKey="count"
+                  nameKey="language"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label={(entry) => `${entry.language}: ${entry.percentage}%`}
+                >
+                  {analytics.languageDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'][index % 3]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           )}
         </Card>
       </div>

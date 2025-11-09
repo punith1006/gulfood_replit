@@ -11,7 +11,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import { useRole, type UserRole } from "@/contexts/RoleContext";
-import { useChatbot } from "@/contexts/ChatbotContext";
+import { useChatbot, type Language } from "@/contexts/ChatbotContext";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -42,6 +42,7 @@ import { Progress } from "@/components/ui/progress";
 import AppointmentSlotPicker from "@/components/AppointmentSlotPicker";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -388,7 +389,7 @@ function RightNowContent() {
 
 export default function AIChatbot() {
   const [, setLocation] = useLocation();
-  const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary } = useChatbot();
+  const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary, language, setLanguage } = useChatbot();
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
   const [sessionId, setSessionId] = useState(() => sessionManager.createNewSessionId());
@@ -968,7 +969,8 @@ export default function AIChatbot() {
         body: JSON.stringify({
           sessionId: sessionId,
           messages: formattedMessages,
-          userRole: userRole || 'Visitor'
+          userRole: userRole || 'Visitor',
+          language: language
         }),
       });
     } catch (error) {
@@ -1451,16 +1453,51 @@ export default function AIChatbot() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-black/10 active:bg-black/20 h-7 w-7 no-default-hover-elevate no-default-active-elevate"
-              title="English | العربية | 中文 | हिन्दी"
-              data-testid="button-language-selector"
-              aria-label="Language selector"
-            >
-              <Globe className="w-4 h-4 text-black" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hover:bg-black/10 active:bg-black/20 h-7 w-7 no-default-hover-elevate no-default-active-elevate"
+                  data-testid="button-language-selector"
+                  aria-label="Language selector"
+                >
+                  <Globe className="w-4 h-4 text-black" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('English')}
+                  className={language === 'English' ? 'bg-accent' : ''}
+                  data-testid="menu-item-english"
+                >
+                  <span className="flex items-center gap-2">
+                    {language === 'English' && <span className="w-2 h-2 rounded-full bg-primary" />}
+                    English
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('Hindi')}
+                  className={language === 'Hindi' ? 'bg-accent' : ''}
+                  data-testid="menu-item-hindi"
+                >
+                  <span className="flex items-center gap-2">
+                    {language === 'Hindi' && <span className="w-2 h-2 rounded-full bg-primary" />}
+                    हिन्दी (Hindi)
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setLanguage('Arabic')}
+                  className={language === 'Arabic' ? 'bg-accent' : ''}
+                  data-testid="menu-item-arabic"
+                >
+                  <span className="flex items-center gap-2">
+                    {language === 'Arabic' && <span className="w-2 h-2 rounded-full bg-primary" />}
+                    العربية (Arabic)
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"

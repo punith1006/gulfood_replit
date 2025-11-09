@@ -195,6 +195,7 @@ export const chatConversations = pgTable("chat_conversations", {
   sessionId: text("session_id").notNull(),
   messages: jsonb("messages").notNull(),
   userRole: text("user_role"),
+  language: text("language"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
