@@ -277,7 +277,7 @@ export default function JourneyAnalytics() {
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Top Organizations
+            Top Visitor's Organization
           </h3>
           <div className="space-y-2">
             {analytics.visitorSegments.topOrganizations.slice(0, 5).map((org, index) => (
