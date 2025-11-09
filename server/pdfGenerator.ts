@@ -1008,7 +1008,7 @@ export async function generateExhibitorAssessmentPDF(reportData: {
     }
 
     // Score Breakdown
-    if (assessment.recommendations?.scoreBreakdown) {
+    if (assessment.scoreBreakdown) {
       content.push({
         text: 'Score Breakdown',
         fontSize: 14,
@@ -1016,75 +1016,33 @@ export async function generateExhibitorAssessmentPDF(reportData: {
         margin: [0, 15, 0, 10]
       });
       
-      const breakdown = assessment.recommendations.scoreBreakdown;
+      const breakdown = assessment.scoreBreakdown;
       const breakdownItems = [];
       
-      if (breakdown.audienceMatch !== undefined) {
-        breakdownItems.push(`Audience Match: ${breakdown.audienceMatch}%`);
-      }
       if (breakdown.productFit !== undefined) {
-        breakdownItems.push(`Product Category Fit: ${breakdown.productFit}%`);
+        breakdownItems.push(`Product Fit: ${breakdown.productFit}%`);
       }
-      if (breakdown.marketReach !== undefined) {
-        breakdownItems.push(`Market Reach: ${breakdown.marketReach}%`);
+      if (breakdown.strategicGoalAlignment !== undefined) {
+        breakdownItems.push(`Goal Alignment: ${breakdown.strategicGoalAlignment}%`);
       }
-      if (breakdown.growthPotential !== undefined) {
-        breakdownItems.push(`Growth Potential: ${breakdown.growthPotential}%`);
+      if (breakdown.geographicOpportunities !== undefined) {
+        breakdownItems.push(`Geographic Opportunities: ${breakdown.geographicOpportunities}%`);
+      }
+      if (breakdown.opportunisticAdvantages !== undefined) {
+        breakdownItems.push(`Strategic Advantages: ${breakdown.opportunisticAdvantages}%`);
       }
       
-      content.push({
-        ul: breakdownItems,
-        fontSize: 10,
-        margin: [0, 0, 0, 15]
-      });
+      if (breakdownItems.length > 0) {
+        content.push({
+          ul: breakdownItems,
+          fontSize: 10,
+          margin: [0, 0, 0, 15]
+        });
+      }
     }
 
-    // Booth Recommendations
-    if (assessment.recommendations?.boothSize || assessment.recommendations?.boothLocation) {
-      content.push({
-        text: 'Booth Recommendations',
-        fontSize: 14,
-        bold: true,
-        margin: [0, 15, 0, 10]
-      });
-      
-      const boothRecs = [];
-      if (assessment.recommendations.boothSize) {
-        boothRecs.push(`Recommended Size: ${assessment.recommendations.boothSize}`);
-      }
-      if (assessment.recommendations.boothLocation) {
-        boothRecs.push(`Suggested Location: ${assessment.recommendations.boothLocation}`);
-      }
-      if (assessment.recommendations.budgetRange) {
-        boothRecs.push(`Estimated Budget: ${assessment.recommendations.budgetRange}`);
-      }
-      
-      content.push({
-        ul: boothRecs,
-        fontSize: 10,
-        margin: [0, 0, 0, 15]
-      });
-    }
-
-    // ROI Projection
-    if (assessment.recommendations?.roiProjection) {
-      content.push({
-        text: 'ROI Projection',
-        fontSize: 14,
-        bold: true,
-        margin: [0, 15, 0, 10]
-      });
-      
-      content.push({
-        text: assessment.recommendations.roiProjection,
-        fontSize: 10,
-        lineHeight: 1.5,
-        margin: [0, 0, 0, 15]
-      });
-    }
-
-    // Key Recommendations
-    if (assessment.recommendations?.keyPoints && assessment.recommendations.keyPoints.length > 0) {
+    // Strategic Recommendations
+    if (assessment.recommendations && Array.isArray(assessment.recommendations) && assessment.recommendations.length > 0) {
       content.push({
         text: 'Strategic Recommendations',
         fontSize: 14,
@@ -1092,10 +1050,43 @@ export async function generateExhibitorAssessmentPDF(reportData: {
         margin: [0, 15, 0, 10]
       });
       
+      assessment.recommendations.forEach((rec: any, index: number) => {
+        // Recommendation title with priority badge
+        const titleText = rec.priority 
+          ? `${index + 1}. ${rec.title} [${rec.priority.toUpperCase()}]`
+          : `${index + 1}. ${rec.title}`;
+        
+        content.push({
+          text: titleText,
+          fontSize: 11,
+          bold: true,
+          margin: [0, index === 0 ? 0 : 10, 0, 5]
+        });
+        
+        // Description
+        if (rec.description) {
+          content.push({
+            text: rec.description,
+            fontSize: 10,
+            margin: [15, 0, 0, 5]
+          });
+        }
+        
+        // Rationale
+        if (rec.rationale) {
+          content.push({
+            text: `Why: ${rec.rationale}`,
+            fontSize: 9,
+            italics: true,
+            color: '#6b7280',
+            margin: [15, 0, 0, 5]
+          });
+        }
+      });
+      
       content.push({
-        ol: assessment.recommendations.keyPoints,
-        fontSize: 10,
-        margin: [0, 0, 0, 15]
+        text: '',
+        margin: [0, 0, 0, 10]
       });
     }
 
