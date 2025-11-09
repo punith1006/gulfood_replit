@@ -10,6 +10,7 @@ import analyticsImage from "@assets/generated_images/Analytics_dashboard_visuali
 import { useToast } from "@/hooks/use-toast";
 import EmbeddableWidgetGenerator from "@/components/EmbeddableWidgetGenerator";
 import ChatbotAnalytics from "@/components/ChatbotAnalytics";
+import JourneyAnalytics from "@/components/JourneyAnalytics";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface Analytics {
@@ -141,6 +142,7 @@ export default function AnalyticsDashboard() {
         <TabsList className="mb-6">
           <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
           <TabsTrigger value="chatbot" data-testid="tab-chatbot">Chat Bot</TabsTrigger>
+          <TabsTrigger value="journey" data-testid="tab-journey">Journey Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -405,6 +407,10 @@ export default function AnalyticsDashboard() {
 
         <TabsContent value="chatbot">
           <ChatbotAnalytics />
+        </TabsContent>
+
+        <TabsContent value="journey">
+          <JourneyAnalytics />
         </TabsContent>
       </Tabs>
     </div>
