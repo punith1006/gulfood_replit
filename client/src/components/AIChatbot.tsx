@@ -2657,31 +2657,31 @@ export default function AIChatbot() {
                             <Progress value={exhibitorAssessment.scoreBreakdown.productFit} />
                           </div>
                         )}
-                        {exhibitorAssessment.scoreBreakdown?.geographicAlignment !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.strategicGoalAlignment !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Geographic Alignment</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.geographicAlignment}%</span>
+                              <span className="text-muted-foreground">Strategic Goal Alignment</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.strategicGoalAlignment}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.geographicAlignment} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.strategicGoalAlignment} />
                           </div>
                         )}
-                        {exhibitorAssessment.scoreBreakdown?.goalAlignment !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.geographicOpportunities !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Goal Alignment</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.goalAlignment}%</span>
+                              <span className="text-muted-foreground">Geographic Opportunities</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.geographicOpportunities}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.goalAlignment} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.geographicOpportunities} />
                           </div>
                         )}
-                        {exhibitorAssessment.scoreBreakdown?.strategicValue !== undefined && (
+                        {exhibitorAssessment.scoreBreakdown?.opportunisticAdvantages !== undefined && (
                           <div className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Strategic Value</span>
-                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.strategicValue}%</span>
+                              <span className="text-muted-foreground">Opportunistic Advantages</span>
+                              <span className="font-medium">{exhibitorAssessment.scoreBreakdown.opportunisticAdvantages}%</span>
                             </div>
-                            <Progress value={exhibitorAssessment.scoreBreakdown.strategicValue} />
+                            <Progress value={exhibitorAssessment.scoreBreakdown.opportunisticAdvantages} />
                           </div>
                         )}
                       </div>

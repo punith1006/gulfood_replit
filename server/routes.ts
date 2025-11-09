@@ -2166,15 +2166,28 @@ COUNTRY: ${country}
 
 Gulfood 2026 is the world's largest food & beverage exhibition in Dubai (Jan 26-30, 2026).
 
+CRITICAL: Your assessment must be STRATEGICALLY and OPPORTUNISTICALLY tailored to their PRIMARY GOAL: "${primaryGoal}"
+- Different goals require completely different analyses and recommendations
+- A company pursuing "Launch new products" needs different strategic advice than one seeking "Generate leads and sales"
+- Country context (${country}) should inform market positioning and geographic opportunities
+
 ANALYSIS TASKS:
 1. Extract company data: Industry, primary products, target markets, company size
 2. Categorize products into Gulfood categories: ${GULFOOD_CATEGORIES.slice(0, 10).join(', ')}... (and ${GULFOOD_CATEGORIES.length - 10} more)
-3. Calculate relevance score (0-100%) based on:
-   - Product-category fit with F&B industry (40%)
-   - Geographic market alignment (20%)
-   - Goal alignment with exhibition value (20%)
-   - Strategic value/innovation (20%)
-4. Generate specific recommendations
+3. Calculate STRATEGIC RELEVANCE score (0-100%) based on PRIMARY GOAL alignment:
+   - Product-category fit with F&B industry (30%)
+   - Strategic goal alignment - how well Gulfood enables their "${primaryGoal}" (30%)
+   - Geographic/market opportunities from ${country} perspective (20%)
+   - Opportunistic advantages (timing, innovation, market gaps) (20%)
+4. Generate goal-specific, actionable recommendations
+
+SCORING GUIDANCE:
+- "Launch new products" → High scores for companies with innovative/new F&B products ready for market
+- "Generate leads and sales" → High scores for established companies with proven track record
+- "Brand awareness" → High scores for companies with strong brand positioning or marketing budgets
+- "Network with distributors" → High scores for companies seeking market expansion via partnerships
+- "Market research" → Moderate scores for companies exploring new markets or categories
+- "Find partners" → High scores for companies with complementary offerings or expansion plans
 
 Return JSON:
 {
@@ -2188,21 +2201,21 @@ Return JSON:
   "relevanceScore": number,
   "scoreBreakdown": {
     "productFit": number,
-    "geographicAlignment": number,
-    "goalAlignment": number,
-    "strategicValue": number,
-    "explanation": "string"
+    "strategicGoalAlignment": number,
+    "geographicOpportunities": number,
+    "opportunisticAdvantages": number,
+    "explanation": "Detailed explanation focusing on strategic fit for '${primaryGoal}' goal and ${country} market context"
   },
   "recommendations": {
-    "boothSize": "string (e.g., '18 sqm', '36 sqm')",
-    "location": "string (recommended hall/area)",
-    "budget": "string (range in USD)",
-    "roiProjection": "string (expected outcomes)",
-    "actionItems": ["array of specific next steps"]
+    "boothSize": "string (e.g., '18 sqm', '36 sqm') - size appropriate for their ${primaryGoal}",
+    "location": "string (recommended hall/area based on their goal and product category)",
+    "budget": "string (range in USD aligned with expected ROI for ${primaryGoal})",
+    "roiProjection": "string (specific outcomes achievable for '${primaryGoal}' goal)",
+    "actionItems": ["array of 3-5 goal-specific next steps tailored to ${primaryGoal}"]
   }
 }
 
-Be realistic. If the company is not F&B related, score below 40%.`;
+Be realistic and goal-specific. If the company is not F&B related, score below 40%. ENSURE recommendations and scoring directly address "${primaryGoal}" - different goals must produce materially different assessments.`;
 
       console.log('Calling OpenAI for exhibitor assessment...');
       
