@@ -2277,6 +2277,76 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  // Validation function to ensure assessment structure is complete
+  function validateAssessmentStructure(assessment: any): { valid: boolean; issues: string[] } {
+    const issues: string[] = [];
+    
+    // Check recommendations
+    if (!assessment.recommendations || !Array.isArray(assessment.recommendations)) {
+      issues.push('recommendations field missing or not an array');
+    } else if (assessment.recommendations.length < 3) {
+      issues.push(`recommendations has only ${assessment.recommendations.length} items, need at least 3`);
+    } else {
+      // Check each recommendation has required fields
+      assessment.recommendations.forEach((rec: any, idx: number) => {
+        if (!rec.title || typeof rec.title !== 'string' || rec.title.trim().length === 0) {
+          issues.push(`recommendation[${idx}].title is missing or empty`);
+        }
+        if (!rec.description || typeof rec.description !== 'string' || rec.description.trim().length === 0) {
+          issues.push(`recommendation[${idx}].description is missing or empty`);
+        }
+        if (!rec.priority || !['high', 'medium', 'low'].includes(rec.priority)) {
+          issues.push(`recommendation[${idx}].priority is missing or invalid`);
+        }
+        if (!rec.rationale || typeof rec.rationale !== 'string' || rec.rationale.trim().length === 0) {
+          issues.push(`recommendation[${idx}].rationale is missing or empty`);
+        }
+      });
+    }
+    
+    // Check extractedData
+    if (!assessment.extractedData || typeof assessment.extractedData !== 'object') {
+      issues.push('extractedData missing or invalid');
+    } else {
+      const required = ['industry', 'products', 'targetMarkets', 'companySize', 'businessModel', 'sustainability'];
+      for (const field of required) {
+        if (!assessment.extractedData[field]) {
+          issues.push(`extractedData.${field} is missing`);
+        }
+      }
+      // Validate arrays are actually arrays
+      if (assessment.extractedData.products && !Array.isArray(assessment.extractedData.products)) {
+        issues.push('extractedData.products must be an array');
+      }
+      if (assessment.extractedData.targetMarkets && !Array.isArray(assessment.extractedData.targetMarkets)) {
+        issues.push('extractedData.targetMarkets must be an array');
+      }
+    }
+    
+    // Check scoreBreakdown
+    if (!assessment.scoreBreakdown || typeof assessment.scoreBreakdown !== 'object') {
+      issues.push('scoreBreakdown missing or invalid');
+    } else {
+      const scores = ['productFit', 'strategicGoalAlignment', 'geographicOpportunities', 'opportunisticAdvantages'];
+      for (const score of scores) {
+        if (typeof assessment.scoreBreakdown[score] !== 'number') {
+          issues.push(`scoreBreakdown.${score} is missing or not a number`);
+        } else if (assessment.scoreBreakdown[score] < 0 || assessment.scoreBreakdown[score] > 100) {
+          issues.push(`scoreBreakdown.${score} must be between 0-100, got ${assessment.scoreBreakdown[score]}`);
+        }
+      }
+    }
+    
+    // Check relevanceScore
+    if (typeof assessment.relevanceScore !== 'number') {
+      issues.push('relevanceScore is missing or not a number');
+    } else if (assessment.relevanceScore < 0 || assessment.relevanceScore > 100) {
+      issues.push(`relevanceScore must be between 0-100, got ${assessment.relevanceScore}`);
+    }
+    
+    return { valid: issues.length === 0, issues };
+  }
+
   app.post("/api/exhibitor-assessment", async (req, res) => {
     try {
       // Extract request data
@@ -2363,51 +2433,114 @@ Recent News: ${researchData.recentNews.length > 0 ? researchData.recentNews.join
 Research Confidence: ${researchData.confidenceScore}%
 Data Summary: ${researchData.searchSummary}
 
+CRITICAL REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+1. recommendations: MUST be an array with MINIMUM 3 actionable recommendations (preferably 4)
+2. Each recommendation MUST have ALL four fields: title, description, priority, and rationale
+3. Each field must be specific to THIS company and their goal of exhibiting at Gulfood 2026
+4. Recommendations must be actionable, detailed, and directly relevant to their business
+5. ALL numeric scores must be between 0-100
+6. extractedData must include ALL required fields with appropriate data types
+
 ASSESSMENT TASK:
 Generate a comprehensive exhibitor assessment including:
 
-1. **Extracted Data** (JSON object):
-   - industry: string (primary industry)
-   - products: array of strings (main products/services)
-   - targetMarkets: array of strings (key markets)
-   - companySize: string (small/medium/large/enterprise)
-   - businessModel: string (e.g., manufacturer, distributor)
-   - sustainability: string (sustainability practices)
+1. **Extracted Data** (JSON object) - ALL FIELDS REQUIRED:
+   - industry: string (primary industry - MUST be food/beverage related)
+   - products: array of strings (main products/services - MUST be non-empty array)
+   - targetMarkets: array of strings (key markets - MUST be non-empty array)
+   - companySize: string (small/medium/large/enterprise - MUST be one of these)
+   - businessModel: string (e.g., manufacturer, distributor, retailer)
+   - sustainability: string (sustainability practices description)
 
-2. **Relevance Score** (0-100):
+2. **Relevance Score** (0-100) - REQUIRED:
    - How well does this company fit Gulfood 2026?
    - Consider: industry alignment, products, goals, geographic relevance
    - Be realistic and evidence-based
 
-3. **Score Breakdown** (JSON object with 4 scores, each 0-100):
+3. **Score Breakdown** (JSON object) - ALL 4 SCORES REQUIRED (each 0-100):
    - productFit: How well their products align with Gulfood categories
    - strategicGoalAlignment: How well Gulfood supports their primary goal
    - geographicOpportunities: Relevance of Dubai/MENA market for them
    - opportunisticAdvantages: Unique advantages they'd gain from exhibiting
 
-4. **Recommendations** (array of 3-4 objects):
-   Each recommendation should have:
-   - title: string (concise recommendation)
-   - description: string (detailed explanation)
-   - priority: "high" | "medium" | "low"
-   - rationale: string (why this recommendation matters)
+4. **Recommendations** (array) - MINIMUM 3 REQUIRED (4 is better):
+   Each recommendation MUST have ALL four fields:
+   - title: string (concise, actionable recommendation title)
+   - description: string (detailed 2-3 sentence explanation of what to do)
+   - priority: "high" | "medium" | "low" (MUST be exactly one of these)
+   - rationale: string (2-3 sentences explaining WHY this matters for their business)
 
-Return ONLY a valid JSON object with this exact structure:
+EXAMPLE OF VALID RECOMMENDATIONS STRUCTURE:
 {
-  "extractedData": { ... },
-  "relevanceScore": number,
+  "recommendations": [
+    {
+      "title": "Focus on Middle Eastern Dairy Sector Pavilions",
+      "description": "Dedicate significant time to visiting Hall 5 and Za'abeel Hall 2-3 where major dairy producers showcase their products. Schedule pre-event meetings with at least 5 key exhibitors in this sector to maximize your time efficiency.",
+      "priority": "high",
+      "rationale": "Given your company's focus on dairy distribution in the MENA region, these pavilions will have the highest concentration of relevant suppliers and potential partners. This aligns directly with your goal of finding new suppliers and will maximize ROI on your attendance."
+    },
+    {
+      "title": "Attend Innovation and Sustainability Seminars",
+      "description": "Register for the Food Innovation Summit sessions on January 27-28, particularly those focused on sustainable packaging and supply chain innovations. Take detailed notes and collect speaker contact information.",
+      "priority": "medium",
+      "rationale": "As sustainability becomes increasingly important in the food industry, understanding the latest trends will help you advise your clients on future-proof purchasing decisions. This knowledge will differentiate your services from competitors."
+    },
+    {
+      "title": "Prepare Market Entry Questions for UAE Exhibitors",
+      "description": "Create a list of specific questions about regulatory requirements, distribution channels, and market entry barriers in the UAE market. Focus discussions with Emirati exhibitors on practical logistics of bringing products to market.",
+      "priority": "high",
+      "rationale": "Since you're exploring market expansion into the Gulf region, getting firsthand insights from local players will be invaluable. This direct knowledge can save months of research and prevent costly market entry mistakes."
+    },
+    {
+      "title": "Network at Evening Business Mixers",
+      "description": "Attend the Gulfood Connect networking events scheduled for evenings of January 26-29. Prepare a concise 30-second pitch about your company and bring plenty of business cards. Set a goal to make at least 10 quality connections per event.",
+      "priority": "medium",
+      "rationale": "These informal settings often lead to more candid conversations and relationship-building than the exhibition floor. Many successful partnerships start with these casual networking opportunities, especially in relationship-focused Middle Eastern business culture."
+    }
+  ]
+}
+
+Return ONLY a valid JSON object with this EXACT structure:
+{
+  "extractedData": {
+    "industry": "Food Distribution",
+    "products": ["Dairy Products", "Fresh Produce", "Packaged Foods"],
+    "targetMarkets": ["United Arab Emirates", "Saudi Arabia", "Kuwait"],
+    "companySize": "medium",
+    "businessModel": "distributor",
+    "sustainability": "Implementing cold chain sustainability initiatives"
+  },
+  "relevanceScore": 85,
   "scoreBreakdown": {
-    "productFit": number,
-    "strategicGoalAlignment": number,
-    "geographicOpportunities": number,
-    "opportunisticAdvantages": number
+    "productFit": 90,
+    "strategicGoalAlignment": 85,
+    "geographicOpportunities": 88,
+    "opportunisticAdvantages": 78
   },
   "recommendations": [
     {
-      "title": string,
-      "description": string,
-      "priority": string,
-      "rationale": string
+      "title": "First specific recommendation title",
+      "description": "Detailed description of what to do, 2-3 sentences explaining the action.",
+      "priority": "high",
+      "rationale": "Why this recommendation matters for this specific company and their goals, 2-3 sentences."
+    },
+    {
+      "title": "Second specific recommendation title",
+      "description": "Detailed description of what to do, 2-3 sentences explaining the action.",
+      "priority": "medium",
+      "rationale": "Why this recommendation matters for this specific company and their goals, 2-3 sentences."
+    },
+    {
+      "title": "Third specific recommendation title",
+      "description": "Detailed description of what to do, 2-3 sentences explaining the action.",
+      "priority": "high",
+      "rationale": "Why this recommendation matters for this specific company and their goals, 2-3 sentences."
+    },
+    {
+      "title": "Fourth specific recommendation title (optional but recommended)",
+      "description": "Detailed description of what to do, 2-3 sentences explaining the action.",
+      "priority": "medium",
+      "rationale": "Why this recommendation matters for this specific company and their goals, 2-3 sentences."
     }
   ]
 }`;
@@ -2415,7 +2548,10 @@ Return ONLY a valid JSON object with this exact structure:
       const assessmentCompletion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are an expert trade show consultant. Return only valid JSON." },
+          { 
+            role: "system", 
+            content: "You are an expert trade show consultant. You MUST return complete, valid JSON with ALL required fields. NEVER omit recommendations array. NEVER return empty arrays for recommendations. Each assessment MUST have at least 3 detailed recommendations." 
+          },
           { role: "user", content: assessmentPrompt }
         ],
         temperature: 0.7,
@@ -2426,6 +2562,22 @@ Return ONLY a valid JSON object with this exact structure:
       let initialAssessment = JSON.parse(assessmentContent);
       
       console.log(`✅ Initial assessment generated (score: ${initialAssessment.relevanceScore}/100)`);
+      
+      // Validate the initial assessment structure
+      const initialValidation = validateAssessmentStructure(initialAssessment);
+      if (!initialValidation.valid) {
+        console.error('⚠️  AI generated invalid initial assessment structure:', initialValidation.issues);
+        console.error('Invalid assessment data:', JSON.stringify(initialAssessment, null, 2));
+        
+        return res.status(500).json({
+          error: 'ASSESSMENT_GENERATION_FAILED',
+          message: 'The AI failed to generate a complete assessment. Please try again.',
+          issues: initialValidation.issues,
+          suggestion: 'Our system is temporarily having difficulty. Please try again in a moment.'
+        });
+      }
+      
+      console.log(`✅ Initial assessment structure validated successfully`);
 
       // ========================================
       // SAVE PRELIMINARY ASSESSMENT (to get assessmentId)
@@ -2528,17 +2680,60 @@ Industry: ${researchData.industry.join(', ')}
 Products: ${researchData.products.join(', ')}
 Company Size: ${researchData.companySize}
 Target Markets: ${researchData.targetMarkets.join(', ')}
+Primary Goal: ${primaryGoal}
+
+CRITICAL REQUIREMENTS - ADDRESS ALL ISSUES ABOVE AND ENSURE:
+1. recommendations: MUST be an array with MINIMUM 3 detailed recommendations (preferably 4)
+2. Each recommendation MUST have ALL four fields: title, description, priority, and rationale
+3. Each field must be specific to ${companyName} and their goal: ${primaryGoal}
+4. Recommendations must be actionable, detailed, and directly relevant to exhibiting at Gulfood 2026
+5. ALL numeric scores must be between 0-100 and reflect realistic assessment
+6. extractedData must include ALL required fields with correct data types
+
+REQUIRED JSON STRUCTURE (you MUST include ALL these fields):
+{
+  "extractedData": {
+    "industry": "string - food/beverage industry",
+    "products": ["array", "of", "products"],
+    "targetMarkets": ["array", "of", "markets"],
+    "companySize": "small|medium|large|enterprise",
+    "businessModel": "string - manufacturer/distributor/etc",
+    "sustainability": "string - sustainability description"
+  },
+  "relevanceScore": 0-100,
+  "scoreBreakdown": {
+    "productFit": 0-100,
+    "strategicGoalAlignment": 0-100,
+    "geographicOpportunities": 0-100,
+    "opportunisticAdvantages": 0-100
+  },
+  "recommendations": [
+    {
+      "title": "Specific actionable title",
+      "description": "Detailed 2-3 sentence explanation of what to do",
+      "priority": "high|medium|low",
+      "rationale": "2-3 sentences explaining WHY this matters for their business"
+    },
+    (at least 2 more recommendations with same structure)
+  ]
+}
 
 TASK:
-Generate an improved assessment that addresses all the issues and suggestions above.
-Maintain the same JSON structure as the original assessment.
+Generate an improved assessment that:
+1. Addresses ALL the issues and suggestions above
+2. Maintains complete JSON structure with ALL required fields
+3. Has at least 3 high-quality, specific recommendations
+4. Is tailored to ${companyName} and their specific business context
 
-Return ONLY a valid JSON object with the improved assessment.`;
+Return ONLY a valid, complete JSON object with the improved assessment.`;
 
           const regenerationCompletion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
-              { role: "system", content: "You are an expert trade show consultant improving an assessment based on feedback. Return only valid JSON." },
+              { 
+                role: "system", 
+                content: "You are an expert trade show consultant improving an assessment based on feedback. You MUST return complete, valid JSON with ALL required fields. NEVER omit recommendations. Each assessment MUST have at least 3 detailed recommendations with all 4 fields (title, description, priority, rationale)." 
+              },
               { role: "user", content: regenerationPrompt }
             ],
             temperature: 0.7,
@@ -2549,6 +2744,22 @@ Return ONLY a valid JSON object with the improved assessment.`;
           currentAssessment = JSON.parse(regeneratedContent);
           
           console.log(`✅ Assessment regenerated (new score: ${currentAssessment.relevanceScore}/100)`);
+          
+          // Validate the regenerated assessment structure
+          const regeneratedValidation = validateAssessmentStructure(currentAssessment);
+          if (!regeneratedValidation.valid) {
+            console.error('⚠️  AI generated invalid regenerated assessment structure:', regeneratedValidation.issues);
+            console.error('Invalid regenerated assessment data:', JSON.stringify(currentAssessment, null, 2));
+            
+            // Continue to next iteration or fail if this was the last iteration
+            if (iterationCount >= MAX_ITERATIONS) {
+              console.error('❌ Maximum iterations reached with invalid assessment structure');
+            } else {
+              console.log('🔄 Will attempt another regeneration in next iteration');
+            }
+          } else {
+            console.log(`✅ Regenerated assessment structure validated successfully`);
+          }
         }
       }
 
@@ -2557,6 +2768,43 @@ Return ONLY a valid JSON object with the improved assessment.`;
         return res.status(500).json({
           error: 'Failed to complete validation',
           message: 'Assessment validation did not complete successfully'
+        });
+      }
+
+      // Check if validation passed - if not, reject the assessment
+      if (!finalEvaluation.passed) {
+        console.log(`❌ Assessment failed validation after ${iterationCount} iterations (score: ${finalEvaluation.validationScore}%)`);
+        
+        // Update preliminary assessment with failure metadata for audit trail
+        try {
+          await storage.updateAssessmentWithValidation(assessmentId, {
+            validationIterations: iterationCount,
+            validationScore: finalEvaluation.validationScore,
+            evaluatorFeedback: finalEvaluation.evaluatorFeedback,
+            isValidated: false,
+            extractedData: currentAssessment.extractedData,
+            relevanceScore: currentAssessment.relevanceScore,
+            scoreBreakdown: currentAssessment.scoreBreakdown,
+            recommendations: currentAssessment.recommendations
+          });
+          console.log(`📝 Updated assessment ${assessmentId} with failure metadata for audit trail`);
+        } catch (updateError) {
+          console.error('Failed to update assessment with failure metadata:', updateError);
+        }
+        
+        return res.status(400).json({
+          error: 'ASSESSMENT_VALIDATION_FAILED',
+          message: 'Unable to generate a high-quality assessment that meets our standards. Please try again with more specific information or a different company.',
+          validationScore: finalEvaluation.validationScore,
+          iterationsTried: iterationCount,
+          issues: finalEvaluation.issuesFound,
+          feedback: finalEvaluation.evaluatorFeedback,
+          suggestions: [
+            'Ensure the company website URL is accurate and accessible',
+            'Try selecting different primary goals that align better with the company\'s business',
+            'Verify the company name and country are correct',
+            'If the company is very small or local, they may not have enough online presence for our research system'
+          ]
         });
       }
 

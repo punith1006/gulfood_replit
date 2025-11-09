@@ -183,6 +183,64 @@ export async function evaluateAssessment(
 
   console.log(`🔍 Evaluating assessment for: ${assessment.companyName}`);
 
+  // ========================================
+  // PRE-FLIGHT COMPLETENESS CHECKS
+  // Fail-fast if assessment is structurally incomplete
+  // ========================================
+  const completenessIssues: string[] = [];
+  
+  // Check recommendations array
+  if (!assessment.recommendations || !Array.isArray(assessment.recommendations)) {
+    completenessIssues.push('Recommendations field is missing or not an array');
+  } else if (assessment.recommendations.length === 0) {
+    completenessIssues.push('Recommendations array is empty - must contain at least 3 actionable recommendations');
+  } else if (assessment.recommendations.length < 3) {
+    completenessIssues.push(`Recommendations array has only ${assessment.recommendations.length} items - must contain at least 3 actionable recommendations`);
+  }
+  
+  // Check extractedData
+  if (!assessment.extractedData || typeof assessment.extractedData !== 'object') {
+    completenessIssues.push('ExtractedData field is missing or not an object');
+  } else {
+    // Check for required extractedData fields
+    const requiredFields = ['industry', 'products', 'targetMarkets', 'companySize', 'businessModel', 'sustainability'];
+    for (const field of requiredFields) {
+      if (!assessment.extractedData[field]) {
+        completenessIssues.push(`ExtractedData is missing required field: ${field}`);
+      }
+    }
+  }
+  
+  // Check scoreBreakdown
+  if (!assessment.scoreBreakdown || typeof assessment.scoreBreakdown !== 'object') {
+    completenessIssues.push('ScoreBreakdown field is missing or not an object');
+  } else {
+    const requiredScores = ['productFit', 'strategicGoalAlignment', 'geographicOpportunities', 'opportunisticAdvantages'];
+    const missingScores = requiredScores.filter(score => assessment.scoreBreakdown[score as keyof typeof assessment.scoreBreakdown] === undefined);
+    if (missingScores.length > 0) {
+      completenessIssues.push(`ScoreBreakdown is missing scores: ${missingScores.join(', ')}`);
+    }
+  }
+  
+  // If critical completeness issues found, fail immediately without AI evaluation
+  if (completenessIssues.length > 0) {
+    console.log(`❌ Pre-flight completeness check FAILED: ${completenessIssues.length} critical issues found`);
+    return {
+      passed: false,
+      validationScore: 30, // Low score for structurally incomplete assessments
+      evaluatorFeedback: `Assessment is structurally incomplete and cannot be validated. ${completenessIssues.length} critical issues found: ${completenessIssues[0]}${completenessIssues.length > 1 ? ` and ${completenessIssues.length - 1} more` : ''}.`,
+      issuesFound: completenessIssues,
+      improvementSuggestions: [
+        'Ensure the assessment includes all required sections: extractedData, scoreBreakdown, and recommendations',
+        'Recommendations array must contain at least 3 specific, actionable recommendations',
+        'ExtractedData must include: industry, products, targetMarkets, companySize, businessModel, sustainability',
+        'ScoreBreakdown must include all 4 score components with numeric values'
+      ]
+    };
+  }
+  
+  console.log('✅ Pre-flight completeness check passed');
+
   try {
     const prompt = `You are an expert evaluator validating exhibitor assessments for Gulfood 2026 trade show in Dubai. Your role is to ensure assessments are accurate, fair, and strategically valuable.
 
