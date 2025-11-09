@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema, normalizeInterestCategories, exhibitorMatchesCategory, GULFOOD_CATEGORIES } from "@shared/schema";
+import { insertCompanyAnalysisSchema, insertMeetingSchema, insertSalesContactSchema, insertChatFeedbackSchema, insertQuickActionClickSchema, insertGeneratedReportSchema, insertLeadSchema, insertReferralSchema, insertAnnouncementSchema, insertScheduledSessionSchema, insertExhibitorAccessCodeSchema, insertAppointmentSchema, normalizeInterestCategories, exhibitorMatchesCategory, GULFOOD_CATEGORIES } from "@shared/schema";
 import { googleCalendar } from "./googleCalendar";
 import { sendAppointmentConfirmation } from "./emailService";
 import OpenAI from "openai";
@@ -777,6 +777,27 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     } catch (error) {
       console.error("Error fetching chat feedback:", error);
       res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  app.post("/api/chat/quick-action-click", async (req, res) => {
+    try {
+      const { sessionId, action, userRole } = req.body;
+      
+      if (!sessionId || !action || !userRole) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      await storage.createQuickActionClick({
+        sessionId,
+        action,
+        userRole
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error logging quick action click:", error);
+      res.status(500).json({ error: "Failed to log quick action click" });
     }
   });
 

@@ -6,6 +6,7 @@ import {
   meetings,
   chatConversations,
   chatFeedback,
+  quickActionClicks,
   generatedReports,
   venueTraffic,
   salesContacts,
@@ -32,6 +33,8 @@ import {
   type InsertChatConversation,
   type ChatFeedback,
   type InsertChatFeedback,
+  type QuickActionClick,
+  type InsertQuickActionClick,
   type GeneratedReport,
   type InsertGeneratedReport,
   type VenueTraffic,
@@ -86,6 +89,8 @@ export interface IStorage {
   
   getChatFeedback(sessionId: string): Promise<ChatFeedback[]>;
   createChatFeedback(feedback: InsertChatFeedback): Promise<ChatFeedback>;
+  
+  createQuickActionClick(click: InsertQuickActionClick): Promise<QuickActionClick>;
   
   getGeneratedReports(userRole?: string): Promise<GeneratedReport[]>;
   createGeneratedReport(report: InsertGeneratedReport): Promise<GeneratedReport>;
@@ -560,6 +565,11 @@ export class DatabaseStorage implements IStorage {
 
   async createChatFeedback(feedback: InsertChatFeedback): Promise<ChatFeedback> {
     const result = await db.insert(chatFeedback).values(feedback).returning();
+    return result[0];
+  }
+
+  async createQuickActionClick(click: InsertQuickActionClick): Promise<QuickActionClick> {
+    const result = await db.insert(quickActionClicks).values(click).returning();
     return result[0];
   }
 
