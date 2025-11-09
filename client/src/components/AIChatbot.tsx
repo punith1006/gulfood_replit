@@ -1529,9 +1529,7 @@ export default function AIChatbot() {
                       {protectNumericPatterns(message.content)}
                     </ReactMarkdown>
                   </div>
-                  {/* Feedback buttons disabled pending external backend feedback support */}
-                  {/* TODO: Re-enable feedback buttons once the external backend API supports feedback collection */}
-                  {/* {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
+                  {message.role === "assistant" && idx > 0 && !feedbackGiven[idx] && (
                     <div className="flex gap-2 mt-1 ml-2">
                       <Button
                         size="sm"
@@ -1557,7 +1555,7 @@ export default function AIChatbot() {
                     <div className="text-xs text-muted-foreground mt-1 ml-2">
                       Thanks for your feedback!
                     </div>
-                  )} */}
+                  )}
                   
                   {/* Suggested Questions - Display only for the latest AI message */}
                   {message.role === "assistant" && message.suggestions && message.suggestions.length > 0 && idx === messages.length - 1 && (
