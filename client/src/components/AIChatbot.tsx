@@ -1537,7 +1537,7 @@ export default function AIChatbot() {
             onClick={() => setMainTab("chat")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               mainTab === "chat"
-                ? "text-yellow-700 dark:text-yellow-500 bg-background"
+                ? "text-yellow-700 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
             data-testid="tab-main-chat"
@@ -1545,14 +1545,14 @@ export default function AIChatbot() {
             <MessageSquare className="w-4 h-4" />
             <span>Chat</span>
             {mainTab === "chat" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-700 dark:bg-yellow-500" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-700" />
             )}
           </button>
           <button
             onClick={() => setMainTab("journey")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               mainTab === "journey"
-                ? "text-green-600 dark:text-green-500 bg-background"
+                ? "text-green-600 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             } ${highlightJourneyTab ? "journey-pulse" : ""}`}
             data-testid="tab-main-journey"
@@ -1560,14 +1560,14 @@ export default function AIChatbot() {
             <Globe className="w-4 h-4" />
             <span>Journey</span>
             {mainTab === "journey" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600 dark:bg-green-500" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" />
             )}
           </button>
           <button
             onClick={() => setMainTab("referral")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               mainTab === "referral"
-                ? "text-red-600 dark:text-red-500 bg-background"
+                ? "text-blue-600 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
             data-testid="tab-main-referral"
@@ -1575,14 +1575,14 @@ export default function AIChatbot() {
             <UserPlus className="w-4 h-4" />
             <span>Referral</span>
             {mainTab === "referral" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600 dark:bg-red-500" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
             )}
           </button>
           <button
             onClick={() => setMainTab("radar")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               mainTab === "radar"
-                ? "text-blue-600 dark:text-blue-500 bg-background"
+                ? "text-red-600 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
             data-testid="tab-main-radar"
@@ -1595,7 +1595,7 @@ export default function AIChatbot() {
               </span>
             )}
             {mainTab === "radar" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-500" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600" />
             )}
           </button>
         </div>
