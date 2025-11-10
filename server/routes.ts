@@ -3181,12 +3181,25 @@ Return ONLY a valid, complete JSON object with the improved assessment.`;
   // Email webhook endpoint - receives incoming emails from AgentMail
   app.post("/api/email/webhook", async (req, res) => {
     try {
+      // Log the raw payload to understand AgentMail's structure
+      console.log('📧 Raw webhook payload:', JSON.stringify(req.body, null, 2));
+      console.log('📧 Payload keys:', Object.keys(req.body));
+
       const { messageId, threadId, from, to, subject, body, htmlBody, inboxId } = req.body;
 
       // Validate required fields
       if (!messageId || !from || !to || !subject || !body || !inboxId) {
+        console.log('❌ Missing fields. Received:', { 
+          hasMessageId: !!messageId, 
+          hasFrom: !!from, 
+          hasTo: !!to, 
+          hasSubject: !!subject, 
+          hasBody: !!body, 
+          hasInboxId: !!inboxId 
+        });
         return res.status(400).json({ 
-          error: "Missing required fields: messageId, from, to, subject, body, inboxId" 
+          error: "Missing required fields: messageId, from, to, subject, body, inboxId",
+          received: Object.keys(req.body)
         });
       }
 
