@@ -1854,6 +1854,232 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  app.post("/api/journey/preview", async (req, res) => {
+    try {
+      const { websiteUrl, visitorRole } = req.body;
+      
+      if (!websiteUrl || !visitorRole) {
+        return res.status(400).json({ error: "Missing required fields: websiteUrl and visitorRole" });
+      }
+
+      console.log('=== JOURNEY PREVIEW GENERATION ===');
+      console.log('Inputs:', { websiteUrl, visitorRole });
+
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "Journey preview requires AI analysis. Please configure OPENAI_API_KEY." 
+        });
+      }
+
+      // 1. Enrich organization (reuse cached if available)
+      console.log('🔍 Enriching organization...');
+      const organizationEnrichment = await enrichOrganization(websiteUrl, true);
+      console.log(`✅ Organization enriched: ${organizationEnrichment.organizationName} (confidence: ${organizationEnrichment.confidenceScore}%)`);
+      
+      // 2. Infer interest categories from organization enrichment
+      // Map enriched industry data to GULFOOD_CATEGORIES for better scoring context
+      const interestCategories: string[] = [];
+      if (organizationEnrichment.industry && organizationEnrichment.industry.length > 0) {
+        // Use the enriched industry sectors as interest categories
+        interestCategories.push(...organizationEnrichment.industry.slice(0, 3)); // Limit to top 3
+        console.log(`📋 Inferred interest categories from enrichment: ${interestCategories.join(', ')}`);
+      }
+      
+      // 3. Infer attendance intents based on role
+      const attendanceIntents: string[] = [];
+      if (visitorRole.toLowerCase().includes('procurement') || visitorRole.toLowerCase().includes('buyer')) {
+        attendanceIntents.push('Source New Suppliers');
+      } else if (visitorRole.toLowerCase().includes('chef') || visitorRole.toLowerCase().includes('culinary')) {
+        attendanceIntents.push('Discover New Products');
+      } else if (visitorRole.toLowerCase().includes('owner') || visitorRole.toLowerCase().includes('manager')) {
+        attendanceIntents.push('Expand Business Network');
+      } else {
+        attendanceIntents.push('Learn Industry Trends');
+      }
+      console.log(`🎯 Inferred attendance intent: ${attendanceIntents.join(', ')}`);
+      
+      // 3. Calculate relevance score
+      console.log('📊 Calculating event attendance relevance score...');
+      const relevanceScoring = await calculateIntelligentRelevanceScore({
+        organization: websiteUrl,
+        role: visitorRole,
+        interestCategories,
+        attendanceIntents,
+        preferredExhibitorIds: [],
+        organizationEnrichment
+      });
+      console.log(`✅ Relevance Score: ${relevanceScoring.relevanceScore}% - ${relevanceScoring.scoreJustification}`);
+      
+      // 4. Get and filter exhibitors (exclude user's company)
+      const exhibitors = await storage.getExhibitors();
+      const userOrgLower = websiteUrl.toLowerCase();
+      const filteredExhibitors = exhibitors.filter(e => {
+        const exhibitorName = e.name.toLowerCase();
+        return !exhibitorName.includes(userOrgLower) && !userOrgLower.includes(exhibitorName);
+      });
+      console.log(`Analyzing ${filteredExhibitors.length} exhibitors (excluded user's company)...`);
+      
+      // 5. Prioritize exhibitors by inferred interest categories (same logic as Journey tab)
+      let exhibitorsToScore = filteredExhibitors;
+      if (interestCategories.length > 0) {
+        console.log(`🎯 Prioritizing exhibitors by inferred categories: ${interestCategories.join(', ')}`);
+        
+        const normalizedSectors = normalizeInterestCategories(interestCategories);
+        console.log(`📋 Normalized to database sectors: ${normalizedSectors.join(', ')}`);
+        
+        const matchingExhibitors = filteredExhibitors.filter(e => {
+          const exhibitorSectors = [e.sector, ...(e.sectors || [])].filter(Boolean);
+          const sectorMatches = exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+          if (sectorMatches) {
+            return interestCategories.some((category: string) => 
+              exhibitorMatchesCategory(e, category)
+            );
+          }
+          return false;
+        });
+        
+        const nonMatchingExhibitors = filteredExhibitors.filter(e => {
+          const exhibitorSectors = [e.sector, ...(e.sectors || [])].filter(Boolean);
+          const sectorMatches = exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+          if (sectorMatches) {
+            return !interestCategories.some((category: string) => 
+              exhibitorMatchesCategory(e, category)
+            );
+          }
+          return true;
+        });
+        
+        // Prioritize matching exhibitors (40) + include some variety (10)
+        exhibitorsToScore = [
+          ...matchingExhibitors.slice(0, 40),
+          ...nonMatchingExhibitors.slice(0, 10)
+        ];
+        
+        console.log(`✅ Prioritized ${matchingExhibitors.length} matching exhibitors, ${nonMatchingExhibitors.length} other exhibitors`);
+        console.log(`Analyzing top ${exhibitorsToScore.length} exhibitors (${Math.min(40, matchingExhibitors.length)} matching + ${Math.min(10, nonMatchingExhibitors.length)} variety)`);
+      } else {
+        // No specific interests - take first 50
+        exhibitorsToScore = filteredExhibitors.slice(0, 50);
+      }
+      console.log('🎯 Calculating match scores for top 50 exhibitors...');
+      const exhibitorMatches = await calculateExhibitorMatchScores({
+        exhibitors: exhibitorsToScore,
+        organization: websiteUrl,
+        role: visitorRole,
+        interestCategories,
+        attendanceIntents,
+        preferredExhibitorIds: [],
+        organizationEnrichment
+      });
+      
+      // 6. Filter and format top 5 exhibitors
+      const MIN_RELEVANCE_THRESHOLD = 60;
+      let filteredMatches = exhibitorMatches.filter(m => m.matchScore >= MIN_RELEVANCE_THRESHOLD);
+      
+      // Fallback if no matches above threshold (use same logic as Journey tab)
+      if (filteredMatches.length === 0) {
+        console.warn('⚠️  No high-scoring matches, using fallback...');
+        
+        const normalizedSectors = interestCategories.length > 0 
+          ? normalizeInterestCategories(interestCategories) 
+          : [];
+        
+        const fallbackMatches = filteredExhibitors.slice(0, 30).map(exhibitor => {
+          let score = 50;
+          const exhibitorSectors = [exhibitor.sector, ...(exhibitor.sectors || [])].filter(Boolean);
+          const hasSectorMatch = normalizedSectors.length > 0 && exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+          
+          if (hasSectorMatch) score += 20;
+          
+          return {
+            exhibitorId: exhibitor.id,
+            matchScore: Math.min(100, score),
+            matchReasoning: `Relevant to ${visitorRole} in ${exhibitor.sector} sector`,
+            relevanceFactors: [exhibitor.sector, exhibitor.country]
+          };
+        }).sort((a, b) => b.matchScore - a.matchScore);
+        
+        filteredMatches = fallbackMatches.slice(0, 5);
+      }
+      
+      const matchedExhibitors = [];
+      for (const match of filteredMatches.slice(0, 5)) {
+        const exhibitor = filteredExhibitors.find(e => e.id === match.exhibitorId);
+        if (exhibitor) {
+          matchedExhibitors.push({
+            id: exhibitor.id,
+            name: exhibitor.name,
+            sector: exhibitor.sector,
+            country: exhibitor.country,
+            venue: exhibitor.venue,
+            hall: exhibitor.hall,
+            boothNumber: exhibitor.booth,
+            description: exhibitor.description,
+            relevancePercentage: match.matchScore,
+            personalizedReason: match.matchReasoning,
+            relevanceFactors: match.relevanceFactors
+          });
+        }
+      }
+      console.log(`✅ Matched ${matchedExhibitors.length} exhibitors`);
+      
+      // 7. Generate journey content (overview, justification, benefits, recommendations)
+      console.log('✍️  Generating AI journey content...');
+      const aiContent = await generateJourneyContent({
+        organization: websiteUrl,
+        role: visitorRole,
+        interestCategories,
+        attendanceIntents,
+        relevanceScore: relevanceScoring.relevanceScore,
+        matchedExhibitors,
+        matchedSessions: []
+      });
+      console.log('✅ AI content generated');
+      
+      // 8. Generate highlights from keyTakeaways
+      const highlights = relevanceScoring.keyTakeaways.map((takeaway, idx) => ({
+        icon: ["Target", "Users", "TrendingUp", "Globe", "Award"][idx] || "Target",
+        title: takeaway.split(':')[0] || `Benefit ${idx + 1}`,
+        description: takeaway
+      })).slice(0, 5);
+      
+      console.log('=== JOURNEY PREVIEW COMPLETE ===\n');
+      
+      // 9. Return response (NO database persistence)
+      res.json({
+        relevanceScore: relevanceScoring.relevanceScore,
+        generalOverview: aiContent.overview,
+        scoreJustification: aiContent.justification,
+        benefits: aiContent.benefits,
+        recommendations: aiContent.recommendations,
+        highlights,
+        matchedExhibitors,
+        organizationEnrichment
+      });
+    } catch (error) {
+      console.error("Error generating journey preview:", error);
+      res.status(500).json({ error: "Failed to generate journey preview" });
+    }
+  });
+
   app.post("/api/journey/generate", async (req, res) => {
     try {
       const {
