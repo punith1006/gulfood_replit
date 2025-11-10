@@ -2266,7 +2266,7 @@ export default function AIChatbot() {
       {/* Journey Tab Content */}
       {mainTab === "journey" && (
         <ScrollArea className="flex-1">
-          <div className="p-6 max-w-2xl mx-auto space-y-6">
+          <div className="p-6 max-w-2xl mx-auto space-y-3">
             {!journeyPlan && !exhibitorAssessment ? (
               <>
                 {journeyType === null ? (
