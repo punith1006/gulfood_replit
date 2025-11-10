@@ -3323,74 +3323,119 @@ Return ONLY a valid, complete JSON object with the improved assessment.`;
     }
   });
 
+  // Setup email inbox endpoint (protected - organizer only)
+  app.post("/api/admin/setup-email", requireOrganizerAuth, async (req: AuthRequest, res) => {
+    try {
+      console.log('📧 Setting up AgentMail inbox for gulfood2026@agentmail.to...');
+      
+      // Check if inbox already exists in database
+      const existingInbox = await storage.getAgentMailInbox();
+      if (existingInbox) {
+        console.log('✅ Inbox already configured in database:', existingInbox.emailAddress);
+        return res.json({
+          emailAddress: existingInbox.emailAddress,
+          inboxId: existingInbox.inboxId,
+          username: existingInbox.username,
+          domain: existingInbox.domain,
+          message: 'Inbox already configured',
+          isExisting: true
+        });
+      }
+
+      const { getUncachableAgentMailClient } = await import('./agentmail');
+      const agentMailClient = await getUncachableAgentMailClient();
+
+      let inbox: any = null;
+      let createdNew = false;
+
+      try {
+        // Try to create inbox via AgentMail API
+        console.log('🔨 Attempting to create inbox gulfood2026@agentmail.to...');
+        const createResponse = await agentMailClient.inboxes.create({
+          username: 'gulfood2026',
+          domain: 'agentmail.to'
+        });
+        
+        inbox = createResponse;
+        createdNew = true;
+        console.log('✅ Successfully created inbox:', inbox);
+      } catch (createError: any) {
+        console.log('⚠️ Create failed, checking if inbox already exists in AgentMail...');
+        
+        // If creation fails with 409/conflict, list existing inboxes and find "gulfood2026"
+        if (createError.status === 409 || createError.message?.includes('already exists') || createError.message?.includes('conflict')) {
+          console.log('🔍 Listing existing inboxes...');
+          const listResponse = await agentMailClient.inboxes.list();
+          const inboxes = (listResponse as any)?.inboxes || [];
+          
+          // Find the gulfood2026 inbox
+          inbox = inboxes.find((i: any) => 
+            i.email?.includes('gulfood2026') || 
+            i.username === 'gulfood2026'
+          );
+          
+          if (!inbox) {
+            throw new Error('Failed to create inbox and could not find existing gulfood2026 inbox');
+          }
+          
+          console.log('✅ Found existing inbox:', inbox);
+        } else {
+          throw createError;
+        }
+      }
+
+      // Save inbox details to database
+      const savedInbox = await storage.saveAgentMailInbox({
+        inboxId: inbox.id,
+        username: inbox.username || 'gulfood2026',
+        domain: inbox.domain || 'agentmail.to',
+        emailAddress: inbox.email || `${inbox.username}@${inbox.domain}`
+      });
+
+      console.log('💾 Inbox saved to database:', savedInbox);
+
+      res.json({
+        emailAddress: savedInbox.emailAddress,
+        inboxId: savedInbox.inboxId,
+        username: savedInbox.username,
+        domain: savedInbox.domain,
+        message: createdNew ? 'Inbox created and configured successfully' : 'Inbox already existed in AgentMail and has been configured',
+        isExisting: !createdNew
+      });
+    } catch (error) {
+      console.error('❌ Error setting up email inbox:', error);
+      res.status(500).json({
+        error: 'Failed to setup email inbox',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get inbox information endpoint
   app.get("/api/email/inbox-info", async (req, res) => {
     try {
-      const { getUncachableAgentMailClient } = await import('./agentmail');
+      // Fetch inbox from database first
+      const dbInbox = await storage.getAgentMailInbox();
       
-      try {
-        const agentMailClient = await getUncachableAgentMailClient();
-        
-        // Get inbox details from AgentMail
-        const inboxesResponse = await agentMailClient.inboxes.list();
-        
-        // AgentMail returns a response object with inboxes array
-        const inboxes = (inboxesResponse as any)?.inboxes || [];
-        
-        if (!inboxes || inboxes.length === 0) {
-          // Fall back to stored stats if no inboxes configured
-          const conversations = await storage.getEmailConversations();
-          
-          return res.json({
-            inboxes: [],
-            message: 'No inboxes configured in AgentMail. Showing stored email stats.',
-            storedEmailStats: {
-              total: conversations.length,
-              pending: conversations.filter(c => c.responseStatus === 'pending').length,
-              responded: conversations.filter(c => c.responseStatus === 'responded').length,
-              escalated: conversations.filter(c => c.responseStatus === 'escalated').length
-            }
-          });
-        }
-
-        // Get stats for each inbox from our database
-        const conversations = await storage.getEmailConversations();
-        
-        const inboxDetails = inboxes.map((inbox: any) => {
-          const inboxConversations = conversations.filter(c => c.inboxId === inbox.id);
-          
-          return {
-            id: inbox.id,
-            email: inbox.email,
-            name: inbox.name || inbox.email,
-            totalEmails: inboxConversations.length,
-            pendingCount: inboxConversations.filter(c => c.responseStatus === 'pending').length,
-            respondedCount: inboxConversations.filter(c => c.responseStatus === 'responded').length,
-            escalatedCount: inboxConversations.filter(c => c.responseStatus === 'escalated').length
-          };
-        });
-
-        res.json({
-          inboxes: inboxDetails,
-          totalInboxes: inboxDetails.length
-        });
-      } catch (agentMailError) {
-        console.error("AgentMail client error:", agentMailError);
-        
-        // Return stored email conversation stats as fallback
-        const conversations = await storage.getEmailConversations();
-        
-        res.json({
-          inboxes: [],
-          message: 'AgentMail not connected. Showing stored email stats.',
-          storedEmailStats: {
-            total: conversations.length,
-            pending: conversations.filter(c => c.responseStatus === 'pending').length,
-            responded: conversations.filter(c => c.responseStatus === 'responded').length,
-            escalated: conversations.filter(c => c.responseStatus === 'escalated').length
-          }
-        });
+      if (!dbInbox) {
+        // No inbox configured in database
+        return res.json([]);
       }
+
+      // Get email conversation stats for this inbox
+      const conversations = await storage.getEmailConversations();
+      const inboxConversations = conversations.filter(c => c.inboxId === dbInbox.inboxId);
+
+      res.json([{
+        inboxId: dbInbox.inboxId,
+        emailAddress: dbInbox.emailAddress,
+        username: dbInbox.username,
+        domain: dbInbox.domain,
+        totalEmails: inboxConversations.length,
+        pendingCount: inboxConversations.filter(c => c.responseStatus === 'pending').length,
+        respondedCount: inboxConversations.filter(c => c.responseStatus === 'responded').length,
+        escalatedCount: inboxConversations.filter(c => c.responseStatus === 'escalated').length
+      }]);
     } catch (error) {
       console.error("❌ Error fetching inbox info:", error);
       res.status(500).json({ 

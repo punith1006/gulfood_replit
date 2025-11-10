@@ -24,6 +24,7 @@ import {
   companyResearchCache,
   assessmentEvaluationLogs,
   emailConversations,
+  agentmailInboxes,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -68,6 +69,8 @@ import {
   type InsertAssessmentEvaluationLog,
   type EmailConversation,
   type InsertEmailConversation,
+  type AgentMailInbox,
+  type InsertAgentMailInbox,
   type ExhibitorAnalytics
 } from "@shared/schema";
 
@@ -188,6 +191,9 @@ export interface IStorage {
   createEmailConversation(conversation: InsertEmailConversation): Promise<EmailConversation>;
   updateEmailConversationAnalysis(id: number, intent: string, responseTier: string, aiResponse?: string): Promise<EmailConversation | undefined>;
   updateEmailConversationStatus(id: number, status: string, respondedAt?: Date, escalatedTo?: string): Promise<EmailConversation | undefined>;
+  
+  getAgentMailInbox(): Promise<AgentMailInbox | undefined>;
+  saveAgentMailInbox(inbox: InsertAgentMailInbox): Promise<AgentMailInbox>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1317,6 +1323,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailConversations.id, id))
       .returning();
     return updated;
+  }
+
+  async getAgentMailInbox(): Promise<AgentMailInbox | undefined> {
+    const [inbox] = await db
+      .select()
+      .from(agentmailInboxes)
+      .limit(1);
+    return inbox;
+  }
+
+  async saveAgentMailInbox(inbox: InsertAgentMailInbox): Promise<AgentMailInbox> {
+    const [created] = await db
+      .insert(agentmailInboxes)
+      .values(inbox)
+      .returning();
+    return created;
   }
 }
 

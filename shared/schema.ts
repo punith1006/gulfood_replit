@@ -843,6 +843,24 @@ export const insertEmailConversationSchema = createInsertSchema(emailConversatio
 export type EmailConversation = typeof emailConversations.$inferSelect;
 export type InsertEmailConversation = z.infer<typeof insertEmailConversationSchema>;
 
+// AgentMail inboxes table for storing configured inboxes
+export const agentmailInboxes = pgTable("agentmail_inboxes", {
+  id: serial("id").primaryKey(),
+  inboxId: text("inbox_id").notNull().unique(),
+  username: text("username").notNull(),
+  domain: text("domain").notNull(),
+  emailAddress: text("email_address").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertAgentMailInboxSchema = createInsertSchema(agentmailInboxes).omit({
+  id: true,
+  createdAt: true
+});
+
+export type AgentMailInbox = typeof agentmailInboxes.$inferSelect;
+export type InsertAgentMailInbox = z.infer<typeof insertAgentMailInboxSchema>;
+
 // TypeScript interfaces for itinerary structure
 export interface ItineraryActivity {
   id: string;
