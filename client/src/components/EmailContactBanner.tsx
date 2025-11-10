@@ -19,7 +19,11 @@ export default function EmailContactBanner() {
     queryKey: ['/api/email/inbox-info'],
   });
 
-  if (isLoading || !inboxInfo || inboxInfo.length === 0) {
+  if (isLoading) {
+    return null;
+  }
+
+  if (!inboxInfo || inboxInfo.length === 0 || !inboxInfo[0]) {
     return null;
   }
 
