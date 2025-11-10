@@ -1,6 +1,4 @@
-import { Resend } from 'resend';
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+import { getUncachableAgentMailClient } from './agentmail';
 
 interface EmailReplyParams {
   to: string;
@@ -12,41 +10,31 @@ interface EmailReplyParams {
 
 export async function sendEmailReply(params: EmailReplyParams): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!resend) {
-      console.warn('⚠️  Resend API key not configured. Cannot send email reply.');
+    const client = await getUncachableAgentMailClient();
+
+    // Use AgentMail's reply API - signature is reply(inboxId, messageId, request, requestOptions)
+    if (params.inReplyTo) {
+      await client.inboxes.messages.reply(
+        'gulfood2026@agentmail.to',  // inboxId
+        params.inReplyTo,              // messageId
+        { text: params.body }          // request object with email body
+      );
+      console.log('✅ Email reply sent via AgentMail to:', params.to);
+    } else {
+      // For new messages without inReplyTo, use send method
+      console.warn('⚠️  Cannot send new email without message_id via AgentMail. Skipping.');
       return {
         success: false,
-        error: 'Email service not configured'
+        error: 'AgentMail requires message_id for replies'
       };
     }
 
-    // Send email via Resend (AgentMail receives emails, Resend sends them)
-    const result = await resend.emails.send({
-      from: 'Gulfood 2026 <onboarding@resend.dev>',
-      to: params.to,
-      subject: params.subject,
-      text: params.body,
-      headers: params.inReplyTo ? {
-        'In-Reply-To': params.inReplyTo,
-        ...(params.threadId && { 'References': params.threadId })
-      } : undefined
-    });
-
-    if (result.error) {
-      console.error('❌ Resend API error:', result.error);
-      return {
-        success: false,
-        error: result.error.message || 'Failed to send email'
-      };
-    }
-
-    console.log('✅ Email reply sent via Resend. Email ID:', result.data?.id);
     return { success: true };
-  } catch (error) {
-    console.error('❌ Failed to send email reply:', error);
+  } catch (error: any) {
+    console.error('❌ AgentMail API error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to send email'
+      error: error?.message || 'Failed to send email via AgentMail'
     };
   }
 }
@@ -60,13 +48,7 @@ export async function escalateEmail(params: {
   threadId?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    if (!resend) {
-      console.warn('⚠️  Resend API key not configured. Cannot escalate email.');
-      return {
-        success: false,
-        error: 'Email escalation service not configured'
-      };
-    }
+    const client = await getUncachableAgentMailClient();
 
     const escalationEmail = `
 ESCALATED EMAIL ALERT
@@ -83,31 +65,26 @@ ${params.escalationReason}
 Original Email Body:
 --------------------
 ${params.originalBody}
+
+--------------------
+Please handle this inquiry manually and reply directly to: ${params.originalFrom}
     `.trim();
 
-    const result = await resend.emails.send({
-      from: 'Gulfood 2026 Email System <onboarding@resend.dev>',
-      to: 'punith.vs74064@gmail.com',
-      subject: `[ESCALATED] ${params.originalSubject}`,
-      text: escalationEmail,
-      replyTo: params.originalFrom
-    });
+    // Send escalation as a reply to the original message
+    // This maintains threading - signature is reply(inboxId, messageId, request)
+    await client.inboxes.messages.reply(
+      'gulfood2026@agentmail.to',  // inboxId
+      params.messageId,              // messageId
+      { text: escalationEmail }      // request object
+    );
 
-    if (result.error) {
-      console.error('❌ Resend API error:', result.error);
-      return {
-        success: false,
-        error: result.error.message || 'Failed to escalate email'
-      };
-    }
-
-    console.log('✅ Email escalated successfully. Email ID:', result.data?.id);
+    console.log('✅ Email escalated successfully via AgentMail (sent as reply to original thread)');
     return { success: true };
-  } catch (error) {
-    console.error('❌ Failed to escalate email:', error);
+  } catch (error: any) {
+    console.error('❌ Failed to escalate email via AgentMail:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to escalate email'
+      error: error?.message || 'Failed to escalate email'
     };
   }
 }
