@@ -48,7 +48,7 @@ const chatTranscriptDownloadSchema = z.object({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  await seedDatabase();
+  // await seedDatabase(); // Disabled - exhibitors removed by user request
 
   app.get("/api/exhibitors", async (req, res) => {
     try {
