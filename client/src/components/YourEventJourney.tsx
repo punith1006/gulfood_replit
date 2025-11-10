@@ -1,0 +1,289 @@
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { sessionManager } from "@/lib/sessionManager";
+import { useChatbot } from "@/contexts/ChatbotContext";
+import { useToast } from "@/hooks/use-toast";
+import { Sparkles, Building2, TrendingUp, ArrowRight, Loader2, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface JourneyPreview {
+  relevanceScore: number;
+  overview: string;
+  matchedExhibitors: Array<{
+    id: number;
+    name: string;
+    sector: string;
+    country: string;
+    venue: string;
+  }>;
+}
+
+export default function YourEventJourney() {
+  const [organization, setOrganization] = useState("");
+  const [role, setRole] = useState("");
+  const [preview, setPreview] = useState<JourneyPreview | null>(null);
+  const { openChatbotWithTab } = useChatbot();
+  const { toast } = useToast();
+
+  const generatePreview = useMutation({
+    mutationFn: async (data: { organization: string; role: string }) => {
+      const sessionId = sessionManager.getOrCreateSessionId();
+      const response = await apiRequest("POST", "/api/journey/generate", {
+        email: `preview-${Date.now()}@gulfood2026.com`,
+        organization: data.organization,
+        role: data.role,
+        interestCategories: [],
+        attendanceIntents: [],
+        sessionId,
+        numberOfDays: 5,
+      });
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      const score = typeof data.relevanceScore === 'number' ? Math.round(Math.max(0, Math.min(100, data.relevanceScore))) : 0;
+      const overview = data.generalOverview || "We're analyzing your organization to provide personalized exhibitor recommendations.";
+      const exhibitors = data.matchedExhibitors?.slice(0, 5) || [];
+      
+      setPreview({
+        relevanceScore: score,
+        overview,
+        matchedExhibitors: exhibitors,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Unable to Generate Preview",
+        description: error.message || "Please try again or contact support if the issue persists.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (organization && role) {
+      generatePreview.mutate({ organization, role });
+    }
+  };
+
+  const handleOpenFullJourney = () => {
+    openChatbotWithTab('journey');
+  };
+
+  return (
+    <section className="py-16 px-4 bg-gradient-to-b from-background to-muted/20">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
+            <Sparkles className="w-4 h-4" />
+            <span className="text-sm font-medium">AI-Powered Personalization</span>
+          </div>
+          <h2 className="text-4xl font-bold mb-4">Your Event Journey</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover which exhibitors at Gulfood 2026 are most relevant to your business.
+            Enter your organization and role for instant AI-powered recommendations.
+          </p>
+        </div>
+
+        {!preview ? (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                Get Your Personalized Preview
+              </CardTitle>
+              <CardDescription>
+                See your relevance score and top 5 matched exhibitors instantly
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="organization">Organization Name or Website</Label>
+                  <Input
+                    id="organization"
+                    type="text"
+                    placeholder="e.g., Al Rawabi or alrawabi.ae"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                    required
+                    data-testid="input-organization"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Enter your company name or website URL
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role">Your Role</Label>
+                  <Select value={role} onValueChange={setRole} required>
+                    <SelectTrigger id="role" data-testid="select-role">
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
+                      <SelectItem value="Product Manager">Product Manager</SelectItem>
+                      <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
+                      <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                      <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                      <SelectItem value="Distributor">Distributor</SelectItem>
+                      <SelectItem value="Buyer">Buyer</SelectItem>
+                      <SelectItem value="Business Development">Business Development</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  size="lg"
+                  disabled={generatePreview.isPending || !organization || !role}
+                  data-testid="button-generate-preview"
+                >
+                  {generatePreview.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Analyzing Your Profile...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Get My Preview
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Relevance Score Card */}
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">Your Relevance Score</h3>
+                    <p className="text-sm text-muted-foreground">
+                      How well Gulfood 2026 matches your business needs
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-5xl font-bold text-primary mb-1">
+                      {preview.relevanceScore}
+                      <span className="text-2xl text-muted-foreground">/100</span>
+                    </div>
+                    <Badge variant={preview.relevanceScore >= 80 ? "default" : "secondary"}>
+                      {preview.relevanceScore >= 80 ? "Excellent Match" : "Good Match"}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Overview Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Personalized Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground leading-relaxed">{preview.overview}</p>
+              </CardContent>
+            </Card>
+
+            {/* Top Matched Exhibitors */}
+            {preview.matchedExhibitors.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top {preview.matchedExhibitors.length} Matched Exhibitors</CardTitle>
+                  <CardDescription>
+                    Exhibitors most relevant to your business profile
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {preview.matchedExhibitors.map((exhibitor, index) => (
+                      <div
+                        key={exhibitor.id}
+                        className={cn(
+                          "flex items-center gap-4 p-4 rounded-lg border bg-card",
+                          "hover-elevate active-elevate-2 transition-all"
+                        )}
+                        data-testid={`exhibitor-${exhibitor.id}`}
+                      >
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold mb-1">{exhibitor.name}</h4>
+                          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                            <span>{exhibitor.sector}</span>
+                            <span>•</span>
+                            <span>{exhibitor.country}</span>
+                            <span>•</span>
+                            <span>{exhibitor.venue}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* CTA to Full Journey */}
+            <Card className="border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
+              <CardContent className="pt-6 pb-6">
+                <div className="text-center space-y-4">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Want the Complete Experience?</h3>
+                    <p className="text-muted-foreground">
+                      Create your full personalized itinerary with day-by-day schedules, 
+                      venue navigation, and all matched exhibitors & sessions.
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <Button 
+                      size="lg" 
+                      onClick={handleOpenFullJourney}
+                      className="gap-2"
+                      data-testid="button-open-full-journey"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      Plan My Full Journey
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      onClick={() => setPreview(null)}
+                      data-testid="button-try-again"
+                    >
+                      Try Another Organization
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
