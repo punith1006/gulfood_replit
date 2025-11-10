@@ -1654,6 +1654,206 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
     }
   });
 
+  // Lightweight journey scoring endpoint for Journey Preview (no lead capture required)
+  app.post("/api/journey/score", async (req, res) => {
+    try {
+      const {
+        websiteUrl,
+        visitorRole,
+        interestCategories = []
+      } = req.body;
+
+      if (!websiteUrl || !visitorRole) {
+        return res.status(400).json({ error: "Missing required fields: websiteUrl and visitorRole" });
+      }
+
+      const organization = websiteUrl;
+      const role = visitorRole;
+      const attendanceIntents = ["explore products", "meet suppliers"]; // Default intents for preview
+
+      console.log('=== JOURNEY PREVIEW SCORING ===');
+      console.log('Inputs:', { organization, role, interestCategories });
+
+      // Two-tier caching: Check database cache first, then enrich if needed
+      let organizationEnrichment;
+      const cachedProfile = await storage.getOrganizationProfile(organization);
+      const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+      
+      if (cachedProfile && cachedProfile.updatedAt) {
+        const cacheAge = Date.now() - new Date(cachedProfile.updatedAt).getTime();
+        const isFresh = cacheAge < CACHE_TTL_MS;
+        
+        if (isFresh) {
+          console.log(`✅ Using cached profile (${Math.floor(cacheAge / (24 * 60 * 60 * 1000))} days old)`);
+          organizationEnrichment = cachedProfile.enrichmentData as any;
+        } else {
+          console.log(`⏰ Cached profile stale, refreshing...`);
+          organizationEnrichment = await enrichOrganization(organization, false);
+          await storage.updateOrganizationProfile(cachedProfile.id, {
+            industry: organizationEnrichment.industry,
+            companySize: organizationEnrichment.companySize,
+            products: organizationEnrichment.products,
+            recentNews: organizationEnrichment.recentNews,
+            targetMarkets: organizationEnrichment.targetMarkets,
+            confidenceScore: organizationEnrichment.confidenceScore,
+            dataSource: 'openai',
+            enrichmentData: organizationEnrichment as any
+          });
+        }
+      } else {
+        console.log('📝 No cached profile, enriching...');
+        organizationEnrichment = await enrichOrganization(organization, false);
+        await storage.createOrganizationProfile({
+          organizationName: organization,
+          normalizedName: organization.toLowerCase().trim(),
+          industry: organizationEnrichment.industry || [],
+          companySize: organizationEnrichment.companySize,
+          products: organizationEnrichment.products || [],
+          recentNews: organizationEnrichment.recentNews || [],
+          targetMarkets: organizationEnrichment.targetMarkets || [],
+          confidenceScore: organizationEnrichment.confidenceScore,
+          dataSource: 'openai',
+          enrichmentData: organizationEnrichment as any
+        });
+      }
+
+      if (!openai) {
+        return res.status(503).json({ 
+          error: "Scoring requires AI analysis. Please configure OPENAI_API_KEY." 
+        });
+      }
+
+      const exhibitors = await storage.getExhibitors();
+      const userOrgLower = organization.toLowerCase();
+      const filteredExhibitors = exhibitors.filter(e => {
+        const exhibitorName = e.name.toLowerCase();
+        return !exhibitorName.includes(userOrgLower) && !userOrgLower.includes(exhibitorName);
+      });
+
+      console.log(`Analyzing ${filteredExhibitors.length} exhibitors...`);
+
+      // Prioritize exhibitors by interest categories if provided
+      let exhibitorsToScore = filteredExhibitors;
+      if (interestCategories.length > 0) {
+        const normalizedSectors = normalizeInterestCategories(interestCategories);
+        const matchingExhibitors = filteredExhibitors.filter(e => {
+          const exhibitorSectors = [e.sector, ...(e.sectors || [])].filter(Boolean);
+          const sectorMatches = exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+          if (sectorMatches) {
+            return interestCategories.some((category: string) => 
+              exhibitorMatchesCategory(e, category)
+            );
+          }
+          return false;
+        });
+        
+        const nonMatchingExhibitors = filteredExhibitors.filter(e => {
+          const exhibitorSectors = [e.sector, ...(e.sectors || [])].filter(Boolean);
+          const sectorMatches = exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+          if (sectorMatches) {
+            return !interestCategories.some((category: string) => 
+              exhibitorMatchesCategory(e, category)
+            );
+          }
+          return true;
+        });
+
+        exhibitorsToScore = [
+          ...matchingExhibitors.slice(0, 40),
+          ...nonMatchingExhibitors.slice(0, 10)
+        ];
+      } else {
+        exhibitorsToScore = filteredExhibitors.slice(0, 50);
+      }
+
+      // Calculate exhibitor match scores
+      console.log('🎯 Calculating match scores...');
+      const exhibitorMatches = await calculateExhibitorMatchScores({
+        exhibitors: exhibitorsToScore,
+        organization,
+        role,
+        interestCategories,
+        attendanceIntents,
+        preferredExhibitorIds: [],
+        organizationEnrichment
+      });
+
+      // Apply minimum threshold
+      const MIN_RELEVANCE_THRESHOLD = 60;
+      let filteredMatches = exhibitorMatches.filter(match => match.matchScore >= MIN_RELEVANCE_THRESHOLD);
+
+      // Fallback if no matches above threshold
+      if (filteredMatches.length === 0) {
+        console.warn('⚠️  No high-scoring matches, using fallback...');
+        const normalizedSectors = interestCategories.length > 0 
+          ? normalizeInterestCategories(interestCategories) 
+          : [];
+        
+        const fallbackMatches = filteredExhibitors.slice(0, 30).map(exhibitor => {
+          let score = 50;
+          const exhibitorSectors = [exhibitor.sector, ...(exhibitor.sectors || [])].filter(Boolean);
+          const hasSectorMatch = normalizedSectors.length > 0 && exhibitorSectors.some(exhSector => 
+            normalizedSectors.some(normSector => 
+              exhSector.toLowerCase() === normSector.toLowerCase() ||
+              exhSector.toLowerCase().includes(normSector.toLowerCase()) ||
+              normSector.toLowerCase().includes(exhSector.toLowerCase())
+            )
+          );
+          
+          if (hasSectorMatch) score += 20;
+          
+          return {
+            exhibitorId: exhibitor.id,
+            matchScore: Math.min(100, score),
+            matchReasoning: `Relevant to ${role} in ${exhibitor.sector} sector`,
+            relevanceFactors: [exhibitor.sector, exhibitor.country]
+          };
+        }).sort((a, b) => b.matchScore - a.matchScore);
+        
+        filteredMatches = fallbackMatches.slice(0, 15);
+      }
+
+      // Format scored exhibitors for response
+      const scoredExhibitors = [];
+      for (const match of filteredMatches.slice(0, 20)) {
+        const exhibitor = filteredExhibitors.find(e => e.id === match.exhibitorId);
+        if (exhibitor) {
+          scoredExhibitors.push({
+            exhibitor: {
+              id: exhibitor.id,
+              name: exhibitor.name,
+              sector: exhibitor.sector,
+              country: exhibitor.country,
+              venue: exhibitor.venue,
+              hall: exhibitor.hall,
+              booth: exhibitor.booth,
+              description: exhibitor.description
+            },
+            score: match.matchScore
+          });
+        }
+      }
+
+      console.log(`✅ Returning ${scoredExhibitors.length} scored exhibitors`);
+      res.json({ scoredExhibitors });
+    } catch (error) {
+      console.error("Error scoring exhibitors:", error);
+      res.status(500).json({ error: "Failed to score exhibitors" });
+    }
+  });
+
   app.post("/api/journey/generate", async (req, res) => {
     try {
       const {
