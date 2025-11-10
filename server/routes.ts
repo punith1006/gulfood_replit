@@ -3181,15 +3181,30 @@ Return ONLY a valid, complete JSON object with the improved assessment.`;
   // Email webhook endpoint - receives incoming emails from AgentMail
   app.post("/api/email/webhook", async (req, res) => {
     try {
-      // Log the raw payload to understand AgentMail's structure
-      console.log('📧 Raw webhook payload:', JSON.stringify(req.body, null, 2));
-      console.log('📧 Payload keys:', Object.keys(req.body));
+      // AgentMail sends data nested in a 'message' object
+      const message = req.body.message;
+      
+      if (!message) {
+        console.log('❌ No message object in payload');
+        return res.status(400).json({ 
+          error: "Missing message object in webhook payload",
+          received: Object.keys(req.body)
+        });
+      }
 
-      const { messageId, threadId, from, to, subject, body, htmlBody, inboxId } = req.body;
+      // Map AgentMail's field names to our expected format
+      const messageId = message.message_id;
+      const threadId = message.thread_id;
+      const from = message.from || message.from_;  // AgentMail has both 'from' and 'from_'
+      const to = Array.isArray(message.to) ? message.to[0] : message.to;
+      const subject = message.subject;
+      const body = message.text;  // Use plain text instead of HTML
+      const htmlBody = message.html;
+      const inboxId = message.inbox_id;
 
       // Validate required fields
       if (!messageId || !from || !to || !subject || !body || !inboxId) {
-        console.log('❌ Missing fields. Received:', { 
+        console.log('❌ Missing required fields:', { 
           hasMessageId: !!messageId, 
           hasFrom: !!from, 
           hasTo: !!to, 
@@ -3198,8 +3213,8 @@ Return ONLY a valid, complete JSON object with the improved assessment.`;
           hasInboxId: !!inboxId 
         });
         return res.status(400).json({ 
-          error: "Missing required fields: messageId, from, to, subject, body, inboxId",
-          received: Object.keys(req.body)
+          error: "Missing required fields in message object",
+          received: Object.keys(message)
         });
       }
 
