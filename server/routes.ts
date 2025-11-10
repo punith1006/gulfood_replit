@@ -1771,11 +1771,11 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         });
 
         exhibitorsToScore = [
-          ...matchingExhibitors.slice(0, 10),
-          ...nonMatchingExhibitors.slice(0, 3)
+          ...matchingExhibitors.slice(0, 40),
+          ...nonMatchingExhibitors.slice(0, 10)
         ];
       } else {
-        exhibitorsToScore = filteredExhibitors.slice(0, 10);
+        exhibitorsToScore = filteredExhibitors.slice(0, 50);
       }
 
       // Calculate exhibitor match scores
