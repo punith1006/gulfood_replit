@@ -3453,16 +3453,19 @@ Return ONLY a valid, complete JSON object with the improved assessment.`;
       // Get email conversation stats for this inbox
       const conversations = await storage.getEmailConversations();
       const inboxConversations = conversations.filter(c => c.inboxId === dbInbox.inboxId);
+      
+      const totalEmails = inboxConversations.length;
+      const resolvedCount = inboxConversations.filter(c => c.responseStatus === 'responded').length;
+      const successRate = totalEmails > 0 ? Math.round((resolvedCount / totalEmails) * 100) : 0;
 
       res.json([{
         inboxId: dbInbox.inboxId,
         emailAddress: dbInbox.emailAddress,
         username: dbInbox.username,
         domain: dbInbox.domain,
-        totalEmails: inboxConversations.length,
-        pendingCount: inboxConversations.filter(c => c.responseStatus === 'pending').length,
-        respondedCount: inboxConversations.filter(c => c.responseStatus === 'responded').length,
-        escalatedCount: inboxConversations.filter(c => c.responseStatus === 'escalated').length
+        totalEmails,
+        resolvedCount,
+        successRate
       }]);
     } catch (error) {
       console.error("❌ Error fetching inbox info:", error);
