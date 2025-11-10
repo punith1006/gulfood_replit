@@ -3267,7 +3267,7 @@ export default function AIChatbot() {
                   </CardContent>
                 </Card>
 
-                <div className="flex justify-center -mt-4 pb-0">
+                <div className="flex justify-center -mt-4 -mb-4">
                   <Button
                     onClick={async () => {
                       try {
