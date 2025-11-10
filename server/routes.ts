@@ -1771,11 +1771,11 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
         });
 
         exhibitorsToScore = [
-          ...matchingExhibitors.slice(0, 40),
-          ...nonMatchingExhibitors.slice(0, 10)
+          ...matchingExhibitors.slice(0, 10),
+          ...nonMatchingExhibitors.slice(0, 3)
         ];
       } else {
-        exhibitorsToScore = filteredExhibitors.slice(0, 50);
+        exhibitorsToScore = filteredExhibitors.slice(0, 10);
       }
 
       // Calculate exhibitor match scores
@@ -1822,12 +1822,12 @@ REMINDER: Your ENTIRE response must be bullet points or numbered lists. NO parag
           };
         }).sort((a, b) => b.matchScore - a.matchScore);
         
-        filteredMatches = fallbackMatches.slice(0, 15);
+        filteredMatches = fallbackMatches.slice(0, 5);
       }
 
       // Format scored exhibitors for response
       const scoredExhibitors = [];
-      for (const match of filteredMatches.slice(0, 20)) {
+      for (const match of filteredMatches.slice(0, 5)) {
         const exhibitor = filteredExhibitors.find(e => e.id === match.exhibitorId);
         if (exhibitor) {
           scoredExhibitors.push({
