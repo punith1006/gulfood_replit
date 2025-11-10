@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { db } from './db';
 import { exhibitors } from '../shared/schema';
-import { sql } from 'drizzle-orm';
+import { sql, ilike, or } from 'drizzle-orm';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -101,14 +101,27 @@ ${body}`;
 
 async function getRelevantExhibitors(emailBody: string): Promise<string> {
   try {
-    // Extract potential exhibitor names or keywords from email
-    const keywords = emailBody.toLowerCase().split(/\s+/).filter(word => word.length > 3);
+    // Extract potential exhibitor names or keywords from email (sanitized)
+    const keywords = emailBody
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(word => word.length > 3 && /^[a-z0-9]+$/.test(word)) // Only alphanumeric keywords
+      .slice(0, 10); // Limit to 10 keywords max
     
     if (keywords.length === 0) {
       return 'No specific exhibitor context available';
     }
 
-    // Search for exhibitors matching keywords
+    // Build safe OR conditions using ilike (case-insensitive LIKE)
+    const conditions = keywords.flatMap(keyword => {
+      const pattern = `%${keyword}%`;
+      return [
+        ilike(exhibitors.name, pattern),
+        ilike(exhibitors.description, pattern),
+        ilike(exhibitors.sector, pattern)
+      ];
+    });
+
     const results = await db
       .select({
         name: exhibitors.name,
@@ -120,13 +133,7 @@ async function getRelevantExhibitors(emailBody: string): Promise<string> {
         description: exhibitors.description
       })
       .from(exhibitors)
-      .where(
-        sql`(
-          LOWER(${exhibitors.name}) LIKE ANY(ARRAY[${keywords.map(k => `%${k}%`).join(', ')}]) OR
-          LOWER(${exhibitors.description}) LIKE ANY(ARRAY[${keywords.map(k => `%${k}%`).join(', ')}]) OR
-          LOWER(${exhibitors.sector}) LIKE ANY(ARRAY[${keywords.map(k => `%${k}%`).join(', ')}])
-        )`
-      )
+      .where(or(...conditions))
       .limit(10);
 
     if (results.length === 0) {
