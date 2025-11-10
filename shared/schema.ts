@@ -814,6 +814,35 @@ export type InsertAssessmentEvaluationLog = z.infer<typeof insertAssessmentEvalu
 export type ExhibitorAssessment = typeof exhibitorAssessments.$inferSelect;
 export type InsertExhibitorAssessment = z.infer<typeof insertExhibitorAssessmentSchema>;
 
+// Email conversations table for tracking incoming emails and responses
+export const emailConversations = pgTable("email_conversations", {
+  id: serial("id").primaryKey(),
+  messageId: text("message_id").notNull().unique(),
+  threadId: text("thread_id"),
+  inboxId: text("inbox_id").notNull(),
+  from: text("from").notNull(),
+  to: text("to").notNull(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  htmlBody: text("html_body"),
+  intent: text("intent"), // exhibitor_info, event_details, booking, complaint, general
+  responseTier: text("response_tier"), // auto_answer, clarify, escalate
+  aiResponse: text("ai_response"),
+  responseStatus: text("response_status").notNull().default("pending"), // pending, responded, escalated
+  escalatedTo: text("escalated_to"),
+  receivedAt: timestamp("received_at").notNull().defaultNow(),
+  respondedAt: timestamp("responded_at"),
+  metadata: jsonb("metadata")
+});
+
+export const insertEmailConversationSchema = createInsertSchema(emailConversations).omit({
+  id: true,
+  receivedAt: true
+});
+
+export type EmailConversation = typeof emailConversations.$inferSelect;
+export type InsertEmailConversation = z.infer<typeof insertEmailConversationSchema>;
+
 // TypeScript interfaces for itinerary structure
 export interface ItineraryActivity {
   id: string;

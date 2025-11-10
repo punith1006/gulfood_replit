@@ -23,6 +23,7 @@ import {
   exhibitorAssessments,
   companyResearchCache,
   assessmentEvaluationLogs,
+  emailConversations,
   type Exhibitor,
   type InsertExhibitor,
   type CompanyAnalysis,
@@ -65,6 +66,8 @@ import {
   type InsertCompanyResearchCache,
   type AssessmentEvaluationLog,
   type InsertAssessmentEvaluationLog,
+  type EmailConversation,
+  type InsertEmailConversation,
   type ExhibitorAnalytics
 } from "@shared/schema";
 
@@ -178,6 +181,13 @@ export interface IStorage {
   getEvaluationLogsByAssessment(assessmentId: number): Promise<AssessmentEvaluationLog[]>;
   
   updateAssessmentWithValidation(id: number, updates: Partial<InsertExhibitorAssessment>): Promise<ExhibitorAssessment | undefined>;
+  
+  getEmailConversations(status?: string): Promise<EmailConversation[]>;
+  getEmailConversation(id: number): Promise<EmailConversation | undefined>;
+  getEmailConversationByMessageId(messageId: string): Promise<EmailConversation | undefined>;
+  createEmailConversation(conversation: InsertEmailConversation): Promise<EmailConversation>;
+  updateEmailConversationAnalysis(id: number, intent: string, responseTier: string, aiResponse?: string): Promise<EmailConversation | undefined>;
+  updateEmailConversationStatus(id: number, status: string, respondedAt?: Date, escalatedTo?: string): Promise<EmailConversation | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1227,6 +1237,84 @@ export class DatabaseStorage implements IStorage {
       .update(exhibitorAssessments)
       .set(updates)
       .where(eq(exhibitorAssessments.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getEmailConversations(status?: string): Promise<EmailConversation[]> {
+    if (status) {
+      return await db
+        .select()
+        .from(emailConversations)
+        .where(eq(emailConversations.responseStatus, status))
+        .orderBy(desc(emailConversations.receivedAt));
+    }
+    return await db
+      .select()
+      .from(emailConversations)
+      .orderBy(desc(emailConversations.receivedAt));
+  }
+
+  async getEmailConversation(id: number): Promise<EmailConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(emailConversations)
+      .where(eq(emailConversations.id, id));
+    return conversation;
+  }
+
+  async getEmailConversationByMessageId(messageId: string): Promise<EmailConversation | undefined> {
+    const [conversation] = await db
+      .select()
+      .from(emailConversations)
+      .where(eq(emailConversations.messageId, messageId));
+    return conversation;
+  }
+
+  async createEmailConversation(conversation: InsertEmailConversation): Promise<EmailConversation> {
+    const [created] = await db
+      .insert(emailConversations)
+      .values(conversation)
+      .returning();
+    return created;
+  }
+
+  async updateEmailConversationAnalysis(
+    id: number,
+    intent: string,
+    responseTier: string,
+    aiResponse?: string
+  ): Promise<EmailConversation | undefined> {
+    const [updated] = await db
+      .update(emailConversations)
+      .set({
+        intent,
+        responseTier,
+        aiResponse
+      })
+      .where(eq(emailConversations.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateEmailConversationStatus(
+    id: number,
+    status: string,
+    respondedAt?: Date,
+    escalatedTo?: string
+  ): Promise<EmailConversation | undefined> {
+    const updateData: any = { responseStatus: status };
+    if (respondedAt) {
+      updateData.respondedAt = respondedAt;
+    }
+    if (escalatedTo) {
+      updateData.escalatedTo = escalatedTo;
+    }
+    
+    const [updated] = await db
+      .update(emailConversations)
+      .set(updateData)
+      .where(eq(emailConversations.id, id))
       .returning();
     return updated;
   }

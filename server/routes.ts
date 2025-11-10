@@ -3178,6 +3178,228 @@ Return ONLY a valid, complete JSON object with the improved assessment.`;
     }
   });
 
+  // Email webhook endpoint - receives incoming emails from AgentMail
+  app.post("/api/email/webhook", async (req, res) => {
+    try {
+      const { messageId, threadId, from, to, subject, body, htmlBody, inboxId } = req.body;
+
+      // Validate required fields
+      if (!messageId || !from || !to || !subject || !body || !inboxId) {
+        return res.status(400).json({ 
+          error: "Missing required fields: messageId, from, to, subject, body, inboxId" 
+        });
+      }
+
+      console.log(`📧 Received email webhook: ${messageId} from ${from}`);
+
+      // Check if we've already processed this email
+      const existing = await storage.getEmailConversationByMessageId(messageId);
+      if (existing) {
+        console.log(`⚠️  Email ${messageId} already processed`);
+        return res.json({ 
+          success: true, 
+          message: "Email already processed",
+          conversationId: existing.id
+        });
+      }
+
+      // Save email to database
+      const emailConversation = await storage.createEmailConversation({
+        messageId,
+        threadId: threadId || null,
+        inboxId,
+        from,
+        to,
+        subject,
+        body,
+        htmlBody: htmlBody || null,
+        responseStatus: 'pending'
+      });
+
+      console.log(`✅ Email saved to database: ID ${emailConversation.id}`);
+
+      // Analyze email intent and response tier
+      const { analyzeEmail } = await import('./emailAnalyzer');
+      const analysis = await analyzeEmail(from, subject, body);
+
+      console.log(`🔍 Email analysis complete:`, {
+        intent: analysis.intent,
+        responseTier: analysis.responseTier,
+        confidence: analysis.confidence
+      });
+
+      // Update email conversation with analysis results
+      await storage.updateEmailConversationAnalysis(
+        emailConversation.id,
+        analysis.intent,
+        analysis.responseTier,
+        analysis.aiResponse
+      );
+
+      // Handle response based on tier
+      const { sendEmailReply, escalateEmail } = await import('./emailReply');
+
+      if (analysis.responseTier === 'auto_answer' && analysis.aiResponse) {
+        // Auto-respond with AI-generated answer
+        const replyResult = await sendEmailReply({
+          to: from,
+          subject: `Re: ${subject}`,
+          body: analysis.aiResponse,
+          inReplyTo: messageId,
+          threadId: threadId || undefined
+        });
+
+        if (replyResult.success) {
+          await storage.updateEmailConversationStatus(
+            emailConversation.id,
+            'responded',
+            new Date()
+          );
+          console.log(`✅ Auto-response sent successfully`);
+        } else {
+          console.error(`❌ Failed to send auto-response:`, replyResult.error);
+        }
+      } else if (analysis.responseTier === 'clarify' && analysis.clarifyingQuestions) {
+        // Send clarifying questions
+        const clarificationBody = `Thank you for your email. To better assist you, we need a bit more information:\n\n${analysis.clarifyingQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nPlease reply with these details, and we'll get back to you promptly.\n\nBest regards,\nGulfood 2026 Team`;
+
+        const replyResult = await sendEmailReply({
+          to: from,
+          subject: `Re: ${subject}`,
+          body: clarificationBody,
+          inReplyTo: messageId,
+          threadId: threadId || undefined
+        });
+
+        if (replyResult.success) {
+          await storage.updateEmailConversationStatus(
+            emailConversation.id,
+            'responded',
+            new Date()
+          );
+          console.log(`✅ Clarification email sent successfully`);
+        } else {
+          console.error(`❌ Failed to send clarification email:`, replyResult.error);
+        }
+      } else if (analysis.responseTier === 'escalate') {
+        // Escalate to human
+        const escalationResult = await escalateEmail({
+          originalFrom: from,
+          originalSubject: subject,
+          originalBody: body,
+          escalationReason: analysis.escalationReason || 'Requires human attention',
+          messageId,
+          threadId: threadId || undefined
+        });
+
+        if (escalationResult.success) {
+          await storage.updateEmailConversationStatus(
+            emailConversation.id,
+            'escalated',
+            undefined,
+            'punith.vs74064@gmail.com'
+          );
+          console.log(`✅ Email escalated successfully`);
+        } else {
+          console.error(`❌ Failed to escalate email:`, escalationResult.error);
+        }
+      }
+
+      res.json({
+        success: true,
+        conversationId: emailConversation.id,
+        analysis: {
+          intent: analysis.intent,
+          responseTier: analysis.responseTier,
+          confidence: analysis.confidence
+        }
+      });
+    } catch (error) {
+      console.error("❌ Error processing email webhook:", error);
+      res.status(500).json({ 
+        error: "Failed to process email webhook",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get inbox information endpoint
+  app.get("/api/email/inbox-info", async (req, res) => {
+    try {
+      const { getUncachableAgentMailClient } = await import('./agentmail');
+      
+      try {
+        const agentMailClient = await getUncachableAgentMailClient();
+        
+        // Get inbox details from AgentMail
+        const inboxesResponse = await agentMailClient.inboxes.list();
+        
+        // AgentMail returns a response object with inboxes array
+        const inboxes = (inboxesResponse as any)?.inboxes || [];
+        
+        if (!inboxes || inboxes.length === 0) {
+          // Fall back to stored stats if no inboxes configured
+          const conversations = await storage.getEmailConversations();
+          
+          return res.json({
+            inboxes: [],
+            message: 'No inboxes configured in AgentMail. Showing stored email stats.',
+            storedEmailStats: {
+              total: conversations.length,
+              pending: conversations.filter(c => c.responseStatus === 'pending').length,
+              responded: conversations.filter(c => c.responseStatus === 'responded').length,
+              escalated: conversations.filter(c => c.responseStatus === 'escalated').length
+            }
+          });
+        }
+
+        // Get stats for each inbox from our database
+        const conversations = await storage.getEmailConversations();
+        
+        const inboxDetails = inboxes.map((inbox: any) => {
+          const inboxConversations = conversations.filter(c => c.inboxId === inbox.id);
+          
+          return {
+            id: inbox.id,
+            email: inbox.email,
+            name: inbox.name || inbox.email,
+            totalEmails: inboxConversations.length,
+            pendingCount: inboxConversations.filter(c => c.responseStatus === 'pending').length,
+            respondedCount: inboxConversations.filter(c => c.responseStatus === 'responded').length,
+            escalatedCount: inboxConversations.filter(c => c.responseStatus === 'escalated').length
+          };
+        });
+
+        res.json({
+          inboxes: inboxDetails,
+          totalInboxes: inboxDetails.length
+        });
+      } catch (agentMailError) {
+        console.error("AgentMail client error:", agentMailError);
+        
+        // Return stored email conversation stats as fallback
+        const conversations = await storage.getEmailConversations();
+        
+        res.json({
+          inboxes: [],
+          message: 'AgentMail not connected. Showing stored email stats.',
+          storedEmailStats: {
+            total: conversations.length,
+            pending: conversations.filter(c => c.responseStatus === 'pending').length,
+            responded: conversations.filter(c => c.responseStatus === 'responded').length,
+            escalated: conversations.filter(c => c.responseStatus === 'escalated').length
+          }
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error fetching inbox info:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch inbox information",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
