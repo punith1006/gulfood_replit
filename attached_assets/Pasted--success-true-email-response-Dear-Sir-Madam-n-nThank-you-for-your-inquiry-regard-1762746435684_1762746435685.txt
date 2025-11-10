@@ -1,0 +1,34 @@
+{
+    "success": true,
+    "email_response": "Dear Sir/Madam,\n\nThank you for your inquiry regarding the visa process for the Gulfood 2026 exhibition.\n\nWhile our team at Gulfood does not directly manage visa applications, it is important to note that visa processing times can vary based on the specific type of visa you are applying for, your nationality, and the current processing times of the relevant authorities. Typically, it is advisable to apply for your visa as early as possible to ensure you receive it in time for the event.\n\nFor participants, we recommend checking with the nearest UAE embassy or consulate for the most accurate information regarding visa requirements and processing times. Additionally, you may find useful information regarding travel and logistics on our website.\n\nIf you have already submitted your visa application and are awaiting a response, please consider reaching out to the relevant visa processing authority for updates.\n\nShould you have any further questions or require assistance with your registration for the exhibition, please do not hesitate to contact us at \"punith.vs74064@gmail.com\" or visit our website at www.gulfood.com.\n\nBest regards,  \nGulfood Exhibition Team",
+    "has_sufficient_context": true,
+    "retrieved_docs_count": 5,
+    "context_sources": [
+        {
+            "doc_name": "exhibit_enquiry.md",
+            "relevance_score": 0.57867396,
+            "url": ""
+        },
+        {
+            "doc_name": "register_to_visit.md",
+            "relevance_score": 0.56578755,
+            "url": ""
+        },
+        {
+            "doc_name": "sponsorship-enquiry.md",
+            "relevance_score": 0.5584045,
+            "url": ""
+        },
+        {
+            "doc_name": "admission_policy.md",
+            "relevance_score": 0.5396641,
+            "url": ""
+        },
+        {
+            "doc_name": "media-registration.md",
+            "relevance_score": 0.53878206,
+            "url": ""
+        }
+    ],
+    "needs_clarification": false
+}
