@@ -2308,20 +2308,24 @@ export default function AIChatbot() {
                 ) : journeyType === 'visitor' ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <div className="text-center flex-1 space-y-2">
-                        <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                          <Globe className="w-8 h-8 text-primary" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <Globe className="w-5 h-5 text-primary" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-foreground">Plan Your Journey</h3>
                         </div>
-                        <h3 className="text-xl font-semibold text-foreground">Plan Your Journey</h3>
-                        {sessionManager.hasLeadInfo() ? (
-                          <p className="text-sm text-muted-foreground">
-                            Great! Let's personalize your event experience, <span className="font-semibold text-foreground">{sessionManager.getLeadInfo().name}</span>
-                          </p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            To create your personalized journey, please share some details
-                          </p>
-                        )}
+                        <div className="text-center">
+                          {sessionManager.hasLeadInfo() ? (
+                            <p className="text-sm text-muted-foreground">
+                              Great! Let's personalize your event experience, <span className="font-semibold text-foreground">{sessionManager.getLeadInfo().name}</span>
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              To create your personalized journey, please share some details
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
@@ -2336,14 +2340,18 @@ export default function AIChatbot() {
                 ) : (
                   <>
                     <div className="flex items-center justify-between">
-                      <div className="text-center flex-1 space-y-2">
-                        <div className="w-16 h-16 mx-auto rounded-full bg-green-500/10 flex items-center justify-center">
-                          <Building2 className="w-8 h-8 text-green-500" />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-center gap-3 mb-2">
+                          <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                            <Building2 className="w-5 h-5 text-green-500" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-foreground">Exhibitor Fit Assessment</h3>
                         </div>
-                        <h3 className="text-xl font-semibold text-foreground">Exhibitor Fit Assessment</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Let's evaluate how well your company fits with Gulfood 2026
-                        </p>
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">
+                            Let's evaluate how well your company fits with Gulfood 2026
+                          </p>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
