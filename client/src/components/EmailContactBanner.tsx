@@ -45,13 +45,13 @@ export default function EmailContactBanner() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center gap-4 p-5 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-            <Mail className="w-6 h-6 text-primary" />
+          <div className="flex items-start gap-4 p-6 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-700">
+            <Mail className="w-7 h-7 text-amber-600 dark:text-amber-400 mt-1" />
             <div className="flex-1">
-              <p className="font-semibold text-foreground mb-1">Email Address</p>
+              <p className="font-semibold text-foreground mb-2 text-base">Email Address</p>
               <a 
                 href={`mailto:${primaryInbox.emailAddress}`}
-                className="text-primary hover:underline font-mono text-xl"
+                className="text-amber-600 dark:text-amber-400 hover:underline font-mono text-2xl font-bold block"
                 data-testid="link-email-contact"
               >
                 {primaryInbox.emailAddress}
