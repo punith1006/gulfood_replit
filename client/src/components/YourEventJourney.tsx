@@ -34,6 +34,7 @@ interface JourneyPreview {
     sector: string;
     country: string;
     venue: string;
+    relevancePercentage?: number;
   }>;
   organization: string;
   role: string;
@@ -366,7 +367,7 @@ export default function YourEventJourney() {
                 </h3>
                 <div className="grid grid-cols-1 gap-4">
                   {preview.matchedExhibitors.map((exhibitor, index) => {
-                    const matchScore = Math.max(90, 100 - index * 2);
+                    const matchScore = exhibitor.relevancePercentage || 85;
                     return (
                       <Card
                         key={exhibitor.id}
@@ -383,7 +384,7 @@ export default function YourEventJourney() {
                                 <h4 className="font-semibold text-lg">{exhibitor.name}</h4>
                                 <Badge variant="secondary" className="flex-shrink-0" data-testid={`badge-match-${exhibitor.id}`}>
                                   <Star className="w-3 h-3 mr-1" />
-                                  {matchScore}% match
+                                  {Math.round(matchScore)}% match
                                 </Badge>
                               </div>
                               <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
