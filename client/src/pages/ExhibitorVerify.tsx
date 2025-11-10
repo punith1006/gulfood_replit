@@ -60,12 +60,12 @@ export default function ExhibitorVerify() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-500/5 via-background to-orange-500/5 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-primary/5 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <Building2 className="w-10 h-10 text-orange-600" />
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Building2 className="w-10 h-10 text-primary" />
             </div>
           </div>
           <CardTitle className="text-center text-2xl">Exhibitor Access</CardTitle>
@@ -92,7 +92,7 @@ export default function ExhibitorVerify() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700"
+              className="w-full"
               disabled={isLoading}
               data-testid="button-verify-submit"
             >
