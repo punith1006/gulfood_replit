@@ -11,11 +11,11 @@ export default function Home() {
       <Hero />
       <EmailContactBanner />
       <CompanyAnalyzer />
-      <FeatureGrid />
       <div id="exhibitors-directory">
         <ExhibitorDirectory />
       </div>
       <VenueNavigation />
+      <FeatureGrid />
     </div>
   );
 }
