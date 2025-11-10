@@ -1537,7 +1537,7 @@ export default function AIChatbot() {
             onClick={() => setMainTab("chat")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               mainTab === "chat"
-                ? "text-yellow-700 bg-background"
+                ? "text-[#FDB515] bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
             data-testid="tab-main-chat"
@@ -1545,7 +1545,7 @@ export default function AIChatbot() {
             <MessageSquare className="w-4 h-4" />
             <span>Chat</span>
             {mainTab === "chat" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-yellow-700" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#FDB515]" />
             )}
           </button>
           <button
