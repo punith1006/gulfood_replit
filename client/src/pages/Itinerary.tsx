@@ -29,7 +29,10 @@ interface Activity {
   endTime: string;
   duration: number;
   location?: string;
-  stand?: string;
+  venue?: string;
+  hall?: string;
+  booth?: string;
+  stand?: string; // Deprecated: Use booth instead
   exhibitorName?: string;
   description?: string;
   relevanceScore?: number;
@@ -134,8 +137,14 @@ function ActivityCard({ activity }: { activity: Activity }) {
               <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="activity-location">
                 <MapPin className="w-3.5 h-3.5 text-primary" />
                 <span>{activity.location}</span>
-                {activity.stand && <span className="text-primary font-medium">• Stand {activity.stand}</span>}
               </div>
+            )}
+            {(activity.venue || activity.hall || activity.booth) && (
+              <span className="text-primary font-medium" data-testid="activity-venue-info">
+                {activity.venue && `• ${activity.venue}`}
+                {activity.hall && ` • ${activity.hall}`}
+                {activity.booth && ` • Booth ${activity.booth}`}
+              </span>
             )}
             {activity.travelFrom && activity.travelTo && (
               <div className="text-muted-foreground text-xs">

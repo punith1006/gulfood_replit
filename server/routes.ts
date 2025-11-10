@@ -3839,7 +3839,10 @@ async function generateItineraryWithAI(data: {
       endTime: string;
       duration: number;
       location?: string;
-      stand?: string;
+      venue?: string;
+      hall?: string;
+      booth?: string;
+      stand?: string; // Deprecated: Use booth instead
       exhibitorId?: number;
       exhibitorName?: string;
       sessionId?: number;
@@ -3854,10 +3857,13 @@ async function generateItineraryWithAI(data: {
   generatedAt: string;
 }> {
   try {
-    // Prepare exhibitor list with hall and stand information including relevance scores
+    // Prepare exhibitor list with venue, hall and booth information including relevance scores
     const exhibitorsList = data.matchedExhibitors.map((ex, idx) => {
       const relevance = typeof ex.relevancePercentage === 'number' ? ex.relevancePercentage : 70;
-      return `${idx + 1}. ${ex.name} (ID: ${ex.id}) - Hall: ${ex.hall || 'TBA'}, Stand: ${ex.stand || 'TBA'} (Relevance: ${relevance}%)
+      const venue = ex.venue || 'Venue TBA';
+      const hall = ex.hall || 'Hall TBA';
+      const booth = ex.booth || ex.stand || 'Booth TBA';
+      return `${idx + 1}. ${ex.name} (ID: ${ex.id}) - Venue: ${venue}, Hall: ${hall}, Booth: ${booth} (Relevance: ${relevance}%)
    Sector: ${ex.sector}
    Description: ${ex.description?.substring(0, 150) || 'Premium food & beverage exhibitor'}`;
     }).join('\n');
@@ -3920,9 +3926,12 @@ async function generateItineraryWithAI(data: {
 EVENT DETAILS:
 - Event Dates: January 26-30, 2026
 - Event Hours: 10:00 AM - 6:00 PM daily
-- Location: Dubai World Trade Centre & Expo City Dubai
-- Halls: North Hall 1-13, Za'abeel Hall 1-6, Trade Centre Arena
-- Travel time between halls: 5-15 minutes depending on distance
+- Venues:
+  * Dubai World Trade Centre (DWTC): Main venue with North Hall 1-13, Za'abeel Hall 1-6, Trade Centre Arena
+  * Dubai Exhibition Centre (DEC): Secondary venue at Expo City Dubai with Sheikh Rashid Hall, Sheikh Saeed Hall, Sheikh Maktoum Hall
+- CRITICAL DISTANCE: DEC and DWTC are 40km apart (50 min drive or 1 hour metro)
+- Travel time within same venue: 5-15 minutes between halls
+- Travel time between venues (DEC ↔ DWTC): 50-60 minutes
 
 USER PROFILE:
 - Name: ${data.name}
@@ -3950,8 +3959,10 @@ Create a detailed day-by-day itinerary following these rules:
    - Schedule sessions at their EXACT specified times (if provided)
 
 2. ROUTING OPTIMIZATION:
-   - Group exhibitor visits by hall to minimize travel time
-   - Add travel activities (5-15 min) when moving between different halls
+   - VENUE GROUPING (CRITICAL): Group exhibitors by venue to minimize inter-venue travel. DEC and DWTC are 40km apart (50 min drive or 1 hour metro). Schedule all DEC exhibitors together and all DWTC exhibitors together within each day. If both venues must be visited in one day, schedule one venue in morning (10 AM-12 PM) and other venue in afternoon (1 PM-6 PM) with 1-hour travel buffer.
+   - Group exhibitor visits by hall to minimize travel time within the same venue
+   - Add travel activities (5-15 min) when moving between different halls within same venue
+   - Add travel activities (50-60 min) when switching between DEC and DWTC venues
    - Prioritize higher relevance score exhibitors earlier in each day
    - Start each day in a hall with multiple high-priority exhibitors
    - CRITICAL: If PRIORITY EXHIBITORS are specified, schedule ALL of them on Day 1 in the morning session (10:00 AM - 12:00 PM). These are exhibitors the user explicitly wants to visit first!
@@ -3985,8 +3996,9 @@ Return a JSON object with this exact structure:
           "startTime": "10:00 AM",
           "endTime": "10:30 AM",
           "duration": 30,
-          "location": "North Hall 7",
-          "stand": "B4-25",
+          "venue": "Dubai World Trade Centre",
+          "hall": "North Hall 7",
+          "booth": "B4-25",
           "exhibitorId": 123,
           "exhibitorName": "[Company Name]",
           "description": "Explore their dairy product innovations",
