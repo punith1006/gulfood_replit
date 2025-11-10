@@ -67,15 +67,25 @@ export default function Exhibitors() {
 
   const hasActiveFilters = searchTerm || selectedSector !== "all" || selectedCountry !== "all" || selectedVenue !== "all";
 
-  // Color palette for cards
-  const cardColors = [
-    "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20",
-    "from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20",
-    "from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20",
-    "from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20",
-    "from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20",
-    "from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20",
-  ];
+  // Color palette for categories
+  const categoryColors: Record<string, string> = {
+    "Meat & Poultry": "from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20",
+    "Dairy": "from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20",
+    "Beverages": "from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20",
+    "Fruits & Vegetables": "from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20",
+    "Confectionery": "from-pink-50 to-pink-100 dark:from-pink-900/20 dark:to-pink-800/20",
+    "Bakery": "from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20",
+    "Seafood": "from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20",
+    "Oils & Fats": "from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20",
+    "Grains": "from-lime-50 to-lime-100 dark:from-lime-900/20 dark:to-lime-800/20",
+    "Spices & Seasonings": "from-rose-50 to-rose-100 dark:from-rose-900/20 dark:to-rose-800/20",
+    "default": "from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20"
+  };
+
+  const getCardColor = (sector: string | null) => {
+    if (!sector) return categoryColors["default"];
+    return categoryColors[sector] || categoryColors["default"];
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-green-500/5">
@@ -209,8 +219,8 @@ export default function Exhibitors() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredExhibitors.map((exhibitor, index) => {
-              const colorClass = cardColors[index % cardColors.length];
+            {filteredExhibitors.map((exhibitor) => {
+              const colorClass = getCardColor(exhibitor.sector);
               const isExpanded = expandedDescriptions.has(exhibitor.id);
               const hasLongDescription = exhibitor.description && exhibitor.description.length > 100;
               
@@ -248,7 +258,7 @@ export default function Exhibitors() {
                               e.stopPropagation();
                               toggleDescription(exhibitor.id);
                             }}
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                            className="text-xs text-gray-700 dark:text-gray-400 hover:underline flex items-center gap-1"
                           >
                             {isExpanded ? (
                               <>
@@ -287,7 +297,7 @@ export default function Exhibitors() {
                         href={exhibitor.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center gap-1 mt-2"
+                        className="text-sm text-gray-700 dark:text-gray-400 hover:underline flex items-center gap-1 mt-2"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Globe className="w-3 h-3" />
