@@ -39,7 +39,7 @@ export default function EmailContactBanner() {
             <div className="flex-1">
               <CardTitle className="text-3xl">Need Help? Email Us</CardTitle>
               <p className="text-muted-foreground mt-1.5 text-base">
-                Our AI assistant is available 24/7 to answer your Gulfood 2026 questions
+                Email us at gulfood2026@agentmail.to anytime:
               </p>
             </div>
           </div>
