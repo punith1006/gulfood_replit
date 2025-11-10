@@ -2552,7 +2552,7 @@ export default function AIChatbot() {
                         data-testid="input-intent-search"
                       />
                       {showIntentSearch && (
-                        <Card className="absolute z-50 w-full mt-1 max-h-64 overflow-auto p-3 space-y-2">
+                        <Card className="absolute bottom-full z-50 w-full mb-1 max-h-64 overflow-auto p-3 space-y-2">
                           {ATTENDANCE_INTENTS
                             .filter(intent => intent.toLowerCase().includes(intentSearchTerm.toLowerCase()))
                             .map(intent => (
@@ -3134,14 +3134,14 @@ export default function AIChatbot() {
             
             {journeyPlan ? (
               <div className="space-y-6">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="text-xl font-semibold text-foreground">Your Personalized Journey</h3>
                     <p className="text-sm text-muted-foreground">
                       Customized plan for Gulfood 2026
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
