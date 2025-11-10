@@ -3921,6 +3921,14 @@ async function generateItineraryWithAI(data: {
           .join(', ')
       : '';
 
+    // Calculate target exhibitors per day for equal distribution
+    const totalExhibitors = data.matchedExhibitors.length;
+    const priorityCount = data.preferredExhibitorIds?.length || 0;
+    const regularExhibitors = totalExhibitors - priorityCount;
+    const targetPerDay = Math.ceil(totalExhibitors / data.numberOfDays);
+    const minPerDay = Math.floor(totalExhibitors / data.numberOfDays);
+    const maxPerDay = Math.ceil(totalExhibitors / data.numberOfDays) + 1; // Allow +1 variance
+
     const prompt = `You are creating a detailed ${data.numberOfDays}-day itinerary for Gulfood 2026.
 
 EVENT DETAILS:
@@ -3948,11 +3956,20 @@ ${exhibitorsList}
 SCHEDULED SESSIONS (${data.matchedSessions.length} total):
 ${sessionsList}
 
+DISTRIBUTION REQUIREMENTS:
+- Total exhibitors to schedule: ${totalExhibitors}
+- Days available: ${data.numberOfDays}
+- TARGET: Schedule approximately ${targetPerDay} exhibitors per day
+- MINIMUM: Each day must have at least ${minPerDay} exhibitor visits
+- MAXIMUM: No day should exceed ${maxPerDay} exhibitor visits
+- CRITICAL: All ${totalExhibitors} exhibitors MUST be scheduled across the ${data.numberOfDays} days
+${priorityCount > 0 ? `- Note: Day 1 will have ${priorityCount} priority exhibitor(s), so remaining ${regularExhibitors} exhibitors should be distributed across remaining days` : ''}
+
 INSTRUCTIONS:
 Create a detailed day-by-day itinerary following these rules:
 
 1. SCHEDULING CONSTRAINTS:
-   - Spread exhibitor visits across all ${data.numberOfDays} day${data.numberOfDays > 1 ? 's' : ''} (${dateRange})
+   - EQUAL DISTRIBUTION (CRITICAL): Distribute ALL exhibitors as evenly as possible across all ${data.numberOfDays} days. Aim for ${targetPerDay} exhibitors per day (±1 variance allowed). Every exhibitor must be scheduled exactly once.
    - Each exhibitor visit: 20-30 minutes
    - Mandatory lunch break: 12:00 PM - 1:00 PM daily
    - Include 10-15 minute networking/coffee breaks mid-morning and mid-afternoon
@@ -4190,6 +4207,126 @@ Return ONLY valid JSON matching the structure above.`;
       } else {
         console.log(`✅ All ${preferredIds.size} preferred exhibitors are already on Day 1`);
       }
+    }
+    
+    // VALIDATE: Check equal distribution of exhibitors across days
+    console.log('📊 Validating distribution...');
+    
+    // Count exhibitors per day
+    const exhibitorsPerDay = days.map((day: any, index: number) => {
+      const exhibitorCount = day.activities?.filter((act: any) => act.type === 'exhibitor_visit').length || 0;
+      return {
+        dayIndex: index + 1,
+        date: day.date,
+        count: exhibitorCount
+      };
+    });
+    
+    const totalScheduled = exhibitorsPerDay.reduce((sum, day) => sum + day.count, 0);
+    const avgPerDay = totalScheduled / days.length;
+    const variance = exhibitorsPerDay.map(day => Math.abs(day.count - avgPerDay));
+    const maxVariance = Math.max(...variance);
+    
+    // Log distribution statistics
+    exhibitorsPerDay.forEach(day => {
+      console.log(`  Day ${day.dayIndex} (${day.date}): ${day.count} exhibitors`);
+    });
+    console.log(`  Total scheduled: ${totalScheduled}/${totalExhibitors} exhibitors`);
+    console.log(`  Average per day: ${avgPerDay.toFixed(1)} (target: ${targetPerDay})`);
+    console.log(`  Max variance from average: ${maxVariance.toFixed(1)} exhibitors`);
+    
+    // Check if all exhibitors were scheduled
+    const allExhibitorIds = new Set(data.matchedExhibitors.map((ex: any) => ex.id));
+    const scheduledIds = new Set();
+    days.forEach((day: any) => {
+      day.activities?.forEach((act: any) => {
+        if (act.type === 'exhibitor_visit' && act.exhibitorId) {
+          scheduledIds.add(act.exhibitorId);
+        }
+      });
+    });
+    
+    const missingExhibitors = Array.from(allExhibitorIds).filter(id => !scheduledIds.has(id));
+    
+    // FIX: Add missing exhibitors to days with fewest exhibitors
+    if (missingExhibitors.length > 0) {
+      console.warn(`⚠️ ${missingExhibitors.length} exhibitors not scheduled by AI. Adding them now...`);
+      
+      // Exclude preferred exhibitors from missing list (they should already be on Day 1)
+      const preferredIds = new Set(data.preferredExhibitorIds || []);
+      const nonPreferredMissing = missingExhibitors.filter(id => !preferredIds.has(id));
+      
+      // Sort days by current exhibitor count (ascending)
+      const daysSorted = exhibitorsPerDay
+        .map((d, idx) => ({ ...d, originalIndex: idx }))
+        .sort((a, b) => a.count - b.count);
+      
+      // Distribute missing exhibitors to days with fewest exhibitors
+      nonPreferredMissing.forEach((exhibitorId: any, idx: number) => {
+        const exhibitor = data.matchedExhibitors.find((e: any) => e.id === exhibitorId);
+        if (!exhibitor) return;
+        
+        // Round-robin across days, starting with those that have fewest exhibitors
+        const targetDayData = daysSorted[idx % daysSorted.length];
+        const targetDay = days[targetDayData.originalIndex];
+        
+        // Create basic activity
+        const newActivity = {
+          id: `act_${targetDayData.originalIndex + 1}_missing_${idx}`,
+          type: 'exhibitor_visit',
+          title: `Visit ${exhibitor.name}`,
+          startTime: '10:00 AM',
+          endTime: '10:30 AM',
+          duration: 30,
+          venue: exhibitor.venue || 'Venue TBA',
+          hall: exhibitor.hall || 'Hall TBA',
+          booth: exhibitor.booth || exhibitor.stand || 'Booth TBA',
+          exhibitorId: exhibitor.id,
+          exhibitorName: exhibitor.name,
+          description: `Meeting with ${exhibitor.name}`,
+          matchScore: typeof exhibitor.relevancePercentage === 'number' ? exhibitor.relevancePercentage : 70
+        };
+        
+        targetDay.activities = targetDay.activities || [];
+        targetDay.activities.push(newActivity);
+        
+        // Update count for next iteration
+        targetDayData.count++;
+      });
+      
+      console.log(`✅ Added ${nonPreferredMissing.length} missing exhibitors to itinerary`);
+      
+      // Recalculate exhibitorsPerDay after adding missing exhibitors
+      exhibitorsPerDay.forEach((dayData, index) => {
+        dayData.count = days[index].activities?.filter((act: any) => act.type === 'exhibitor_visit').length || 0;
+      });
+    }
+    
+    // Assess final distribution quality
+    const minAllowed = Math.floor(totalExhibitors / days.length);
+    const maxAllowed = Math.ceil(totalExhibitors / days.length);
+    const daysOutsideRange = exhibitorsPerDay.filter(day => 
+      day.count < minAllowed || day.count > maxAllowed
+    );
+    
+    // Recalculate stats after potential fixes
+    const finalTotalScheduled = exhibitorsPerDay.reduce((sum, day) => sum + day.count, 0);
+    const finalAvgPerDay = finalTotalScheduled / days.length;
+    const finalVariance = exhibitorsPerDay.map(day => Math.abs(day.count - finalAvgPerDay));
+    const finalMaxVariance = Math.max(...finalVariance);
+    
+    console.log(`\n📊 Final distribution:`);
+    exhibitorsPerDay.forEach(day => {
+      const status = day.count < minAllowed ? '⚠️ UNDER' : day.count > maxAllowed ? '⚠️ OVER' : '✅';
+      console.log(`  ${status} Day ${day.dayIndex}: ${day.count} exhibitors`);
+    });
+    console.log(`  Total: ${finalTotalScheduled}/${totalExhibitors} | Avg: ${finalAvgPerDay.toFixed(1)} | Max variance: ${finalMaxVariance.toFixed(1)}`);
+    
+    if (daysOutsideRange.length > 0) {
+      console.warn(`⚠️ ${daysOutsideRange.length} day(s) still outside acceptable range [${minAllowed}, ${maxAllowed}]`);
+      console.warn(`  This may indicate AI scheduling needs improvement. Consider regenerating itinerary.`);
+    } else {
+      console.log(`✅ Distribution quality: EXCELLENT (all days within acceptable range)`);
     }
     
     return {
