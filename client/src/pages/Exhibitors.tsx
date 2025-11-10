@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import bannerImage from "@assets/stock_images/food_exhibition_trad_c90d7cbe.jpg";
 
 export default function Exhibitors() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -64,13 +65,19 @@ export default function Exhibitors() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-green-500/5">
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-primary via-orange-500 to-green-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="relative py-24 overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${bannerImage})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/60 to-black/70" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Building2 className="w-10 h-10" />
+            <div className="w-16 h-16 rounded-full bg-primary/20 backdrop-blur-sm flex items-center justify-center">
+              <Building2 className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-5xl font-bold">Exhibitors</h1>
+            <h1 className="text-5xl font-bold text-white">Exhibitors</h1>
           </div>
           <p className="text-center text-xl text-white/90 max-w-2xl mx-auto">
             Discover {exhibitors.length}+ companies showcasing innovations at Gulfood 2026
@@ -211,6 +218,12 @@ export default function Exhibitors() {
                       <Badge variant="secondary" className="font-medium">
                         {exhibitor.sector}
                       </Badge>
+                    )}
+                    
+                    {exhibitor.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {exhibitor.description}
+                      </p>
                     )}
                     
                     {exhibitor.country && (
