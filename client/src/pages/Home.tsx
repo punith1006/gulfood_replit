@@ -1,5 +1,4 @@
 import Hero from "@/components/Hero";
-import CompanyAnalyzer from "@/components/CompanyAnalyzer";
 import FeatureGrid from "@/components/FeatureGrid";
 import ExhibitorDirectory from "@/components/ExhibitorDirectory";
 import VenueNavigation from "@/components/VenueNavigation";
@@ -10,7 +9,6 @@ export default function Home() {
     <div>
       <Hero />
       <EmailContactBanner />
-      <CompanyAnalyzer />
       <div id="exhibitors-directory">
         <ExhibitorDirectory />
       </div>
