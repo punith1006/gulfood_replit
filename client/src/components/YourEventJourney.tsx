@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -92,85 +91,74 @@ export default function YourEventJourney() {
             <span className="text-sm font-medium">AI-Powered Personalization</span>
           </div>
           <h2 className="text-4xl font-bold mb-4">Your Event Journey</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
             Discover which exhibitors at Gulfood 2026 are most relevant to your business.
-            Enter your organization and role for instant AI-powered recommendations.
           </p>
+
+          {/* Inline Form */}
+          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+            <div className="flex flex-wrap items-center justify-center gap-3 p-6 bg-card/80 backdrop-blur-sm rounded-2xl border shadow-lg">
+              <span className="text-lg font-medium whitespace-nowrap">I work at</span>
+              
+              <Input
+                type="text"
+                placeholder="e.g. Balfour Beatty"
+                value={organization}
+                onChange={(e) => setOrganization(e.target.value)}
+                required
+                className="max-w-[280px] min-h-[50px] text-base bg-background"
+                data-testid="input-organization"
+              />
+
+              <span className="text-lg font-medium whitespace-nowrap">as a</span>
+
+              <Select value={role} onValueChange={setRole} required>
+                <SelectTrigger 
+                  className="max-w-[240px] min-h-[50px] text-base bg-background"
+                  data-testid="select-role"
+                >
+                  <SelectValue placeholder="e.g. Director" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
+                  <SelectItem value="Product Manager">Product Manager</SelectItem>
+                  <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
+                  <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                  <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                  <SelectItem value="Director">Director</SelectItem>
+                  <SelectItem value="Distributor">Distributor</SelectItem>
+                  <SelectItem value="Buyer">Buyer</SelectItem>
+                  <SelectItem value="Business Development">Business Development</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button 
+                type="submit" 
+                size="lg"
+                disabled={generatePreview.isPending || !organization || !role}
+                className="min-h-[50px] px-6 bg-primary hover:bg-primary/90 font-semibold text-base gap-2"
+                data-testid="button-generate-preview"
+              >
+                {generatePreview.isPending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    Why should I attend?
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
 
-        {!preview ? (
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-primary" />
-                Get Your Personalized Preview
-              </CardTitle>
-              <CardDescription>
-                See your relevance score and top 5 matched exhibitors instantly
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="organization">Organization Name or Website</Label>
-                  <Input
-                    id="organization"
-                    type="text"
-                    placeholder="e.g., Al Rawabi or alrawabi.ae"
-                    value={organization}
-                    onChange={(e) => setOrganization(e.target.value)}
-                    required
-                    data-testid="input-organization"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Enter your company name or website URL
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="role">Your Role</Label>
-                  <Select value={role} onValueChange={setRole} required>
-                    <SelectTrigger id="role" data-testid="select-role">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
-                      <SelectItem value="Product Manager">Product Manager</SelectItem>
-                      <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
-                      <SelectItem value="Sales Manager">Sales Manager</SelectItem>
-                      <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
-                      <SelectItem value="Distributor">Distributor</SelectItem>
-                      <SelectItem value="Buyer">Buyer</SelectItem>
-                      <SelectItem value="Business Development">Business Development</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  size="lg"
-                  disabled={generatePreview.isPending || !organization || !role}
-                  data-testid="button-generate-preview"
-                >
-                  {generatePreview.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Analyzing Your Profile...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Get My Preview
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="max-w-4xl mx-auto space-y-6">
+        {/* Results Display */}
+        {preview && (
+          <div className="max-w-4xl mx-auto space-y-6 mt-12">
             {/* Relevance Score Card */}
             <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardContent className="pt-6">
