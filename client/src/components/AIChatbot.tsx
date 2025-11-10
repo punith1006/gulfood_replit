@@ -389,13 +389,12 @@ function RightNowContent() {
 
 export default function AIChatbot() {
   const [, setLocation] = useLocation();
-  const { isOpen, openChatbot, closeChatbot, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary, language, setLanguage } = useChatbot();
+  const { isOpen, openChatbot, closeChatbot, activeTab, setActiveTab, setJourneyPlan: setGlobalJourneyPlan, setItinerary: setGlobalItinerary, language, setLanguage } = useChatbot();
   const { userRole, setUserRole, hasRegistered, setHasRegistered } = useRole();
   const { toast } = useToast();
   const [sessionId, setSessionId] = useState(() => sessionManager.createNewSessionId());
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [mainTab, setMainTab] = useState("chat"); // Main 4-tab navigation
   const scrollRef = useRef<HTMLDivElement>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showContactSales, setShowContactSales] = useState(false);
@@ -550,7 +549,7 @@ export default function AIChatbot() {
   
   // Pre-fill organization and role from session lead when Journey tab opens
   useEffect(() => {
-    if (mainTab === 'journey' && !journeyPlan) {
+    if (activeTab === 'journey' && !journeyPlan) {
       const leadInfo = sessionManager.getLeadInfo();
       if (leadInfo.email && leadInfo.name) {
         // Fetch lead details to get organization and role
@@ -568,7 +567,7 @@ export default function AIChatbot() {
           .catch(err => console.error('Error fetching lead details:', err));
       }
     }
-  }, [mainTab, journeyPlan]);
+  }, [activeTab, journeyPlan]);
   
   // Fetch announcements and sessions for notification badge
   const { data: announcements } = useQuery<any[]>({
@@ -653,7 +652,7 @@ export default function AIChatbot() {
       // Reset all state to initial values
       setMessages([]);
       setInput("");
-      setMainTab("chat");
+      setActiveTab("chat");
       setShowContactSales(false);
       setShowLeadCapture(false);
       setShowInlineLeadForm(false);
@@ -769,14 +768,14 @@ export default function AIChatbot() {
 
   // Stop highlighting Journey tab when user clicks on it
   useEffect(() => {
-    if (mainTab === "journey") {
+    if (activeTab === "journey") {
       setHighlightJourneyTab(false);
     }
-  }, [mainTab]);
+  }, [activeTab]);
 
   // Mark all items as read when switching to Radar tab (with role-based filtering)
   useEffect(() => {
-    if (mainTab === "radar" && announcements && sessions) {
+    if (activeTab === "radar" && announcements && sessions) {
       // Map role to capitalized format for targetAudience matching
       const roleAudienceMap: Record<string, string> = {
         'visitor': 'Visitor',
@@ -809,7 +808,7 @@ export default function AIChatbot() {
         sessions: allSessionIds
       });
     }
-  }, [mainTab, announcements, sessions, userRole]);
+  }, [activeTab, announcements, sessions, userRole]);
 
   // Use a ref to track the latest value of hasInteractedWithInitialLeadCapture
   const hasInteractedRef = useRef(hasInteractedWithInitialLeadCapture);
@@ -1534,9 +1533,9 @@ export default function AIChatbot() {
       <div className="border-b border-border bg-muted/30">
         <div className="flex items-center">
           <button
-            onClick={() => setMainTab("chat")}
+            onClick={() => setActiveTab("chat")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
-              mainTab === "chat"
+              activeTab === "chat"
                 ? "text-orange-700 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
@@ -1544,14 +1543,14 @@ export default function AIChatbot() {
           >
             <MessageSquare className="w-4 h-4" />
             <span>Chat</span>
-            {mainTab === "chat" && (
+            {activeTab === "chat" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-700" />
             )}
           </button>
           <button
-            onClick={() => setMainTab("journey")}
+            onClick={() => setActiveTab("journey")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
-              mainTab === "journey"
+              activeTab === "journey"
                 ? "text-green-600 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             } ${highlightJourneyTab ? "journey-pulse" : ""}`}
@@ -1559,14 +1558,14 @@ export default function AIChatbot() {
           >
             <Globe className="w-4 h-4" />
             <span>Journey</span>
-            {mainTab === "journey" && (
+            {activeTab === "journey" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" />
             )}
           </button>
           <button
-            onClick={() => setMainTab("referral")}
+            onClick={() => setActiveTab("referral")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
-              mainTab === "referral"
+              activeTab === "referral"
                 ? "text-blue-600 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
@@ -1574,14 +1573,14 @@ export default function AIChatbot() {
           >
             <UserPlus className="w-4 h-4" />
             <span>Referral</span>
-            {mainTab === "referral" && (
+            {activeTab === "referral" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
             )}
           </button>
           <button
-            onClick={() => setMainTab("radar")}
+            onClick={() => setActiveTab("radar")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
-              mainTab === "radar"
+              activeTab === "radar"
                 ? "text-red-600 bg-background"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
@@ -1594,7 +1593,7 @@ export default function AIChatbot() {
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}
-            {mainTab === "radar" && (
+            {activeTab === "radar" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600" />
             )}
           </button>
@@ -1602,7 +1601,7 @@ export default function AIChatbot() {
       </div>
 
       {/* Chat Tab Content */}
-      {mainTab === "chat" && (
+      {activeTab === "chat" && (
         <>
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
@@ -2264,7 +2263,7 @@ export default function AIChatbot() {
       )}
 
       {/* Journey Tab Content */}
-      {mainTab === "journey" && (
+      {activeTab === "journey" && (
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-2xl mx-auto space-y-3">
             {!journeyPlan && !exhibitorAssessment ? (
@@ -3574,7 +3573,7 @@ export default function AIChatbot() {
       )}
 
       {/* Referral Tab Content */}
-      {mainTab === "referral" && (
+      {activeTab === "referral" && (
         <ScrollArea className="flex-1 p-6">
           <ReferralShareCard 
             sessionId={sessionId}
@@ -3585,7 +3584,7 @@ export default function AIChatbot() {
       )}
 
       {/* Radar Tab Content */}
-      {mainTab === "radar" && (
+      {activeTab === "radar" && (
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="p-4 border-b border-border">
             <h3 className="text-base font-semibold flex items-center gap-2">

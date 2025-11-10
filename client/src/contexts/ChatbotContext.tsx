@@ -1,12 +1,16 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
 export type Language = 'English' | 'Hindi' | 'Arabic';
+export type ChatbotTab = 'chat' | 'journey' | 'referral' | 'radar';
 
 interface ChatbotContextType {
   isOpen: boolean;
   openChatbot: () => void;
   closeChatbot: () => void;
   toggleChatbot: () => void;
+  activeTab: ChatbotTab;
+  setActiveTab: (tab: ChatbotTab) => void;
+  openChatbotWithTab: (tab: ChatbotTab) => void;
   journeyPlan: any | null;
   setJourneyPlan: (plan: any | null) => void;
   itinerary: any | null;
@@ -19,6 +23,7 @@ const ChatbotContext = createContext<ChatbotContextType | undefined>(undefined);
 
 export function ChatbotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ChatbotTab>('chat');
   const [journeyPlanState, setJourneyPlanState] = useState<any | null>(() => {
     try {
       const stored = localStorage.getItem('gulfood_journey_plan');
@@ -52,6 +57,10 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   const openChatbot = () => setIsOpen(true);
   const closeChatbot = () => setIsOpen(false);
   const toggleChatbot = () => setIsOpen(prev => !prev);
+  const openChatbotWithTab = (tab: ChatbotTab) => {
+    setActiveTab(tab);
+    setIsOpen(true);
+  };
 
   const setJourneyPlan = (plan: any | null) => {
     setJourneyPlanState(plan);
@@ -77,7 +86,7 @@ export function ChatbotProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ChatbotContext.Provider value={{ isOpen, openChatbot, closeChatbot, toggleChatbot, journeyPlan: journeyPlanState, setJourneyPlan, itinerary: itineraryState, setItinerary, language: languageState, setLanguage }}>
+    <ChatbotContext.Provider value={{ isOpen, openChatbot, closeChatbot, toggleChatbot, activeTab, setActiveTab, openChatbotWithTab, journeyPlan: journeyPlanState, setJourneyPlan, itinerary: itineraryState, setItinerary, language: languageState, setLanguage }}>
       {children}
     </ChatbotContext.Provider>
   );
