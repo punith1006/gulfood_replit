@@ -93,70 +93,68 @@ export default function YourEventJourney() {
 
         {!preview ? (
           <div className="max-w-4xl mx-auto">
-            <Card className="shadow-lg border-border/40">
-              <CardContent className="p-8 md:p-12">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="flex flex-wrap items-center justify-center gap-4 text-lg">
-                    <span className="font-medium text-foreground">I work at</span>
-                    
-                    <Input
-                      type="text"
-                      placeholder="e.g. Balfour Beatty"
-                      value={organization}
-                      onChange={(e) => setOrganization(e.target.value)}
-                      required
-                      className="max-w-[280px] text-base border-border/60 bg-background focus-visible:border-primary"
-                      data-testid="input-organization"
-                    />
+            <div className="p-8 md:p-12 bg-card rounded-xl shadow-lg">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="flex flex-wrap items-center justify-center gap-4 text-lg">
+                  <span className="font-medium text-foreground">I work at</span>
+                  
+                  <Input
+                    type="text"
+                    placeholder="e.g. Balfour Beatty"
+                    value={organization}
+                    onChange={(e) => setOrganization(e.target.value)}
+                    required
+                    className="max-w-[280px] text-base border-border/60 bg-background focus-visible:border-primary"
+                    data-testid="input-organization"
+                  />
 
-                    <span className="font-medium text-foreground">as a</span>
+                  <span className="font-medium text-foreground">as a</span>
 
-                    <Select value={role} onValueChange={setRole} required>
-                      <SelectTrigger 
-                        className="max-w-[220px] text-base border-border/60 bg-background focus:border-primary"
-                        data-testid="select-role"
-                      >
-                        <SelectValue placeholder="e.g. Director" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
-                        <SelectItem value="Product Manager">Product Manager</SelectItem>
-                        <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
-                        <SelectItem value="Sales Manager">Sales Manager</SelectItem>
-                        <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
-                        <SelectItem value="Director">Director</SelectItem>
-                        <SelectItem value="Distributor">Distributor</SelectItem>
-                        <SelectItem value="Buyer">Buyer</SelectItem>
-                        <SelectItem value="Business Development">Business Development</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex justify-center pt-2">
-                    <Button 
-                      type="submit" 
-                      size="lg"
-                      disabled={generatePreview.isPending || !organization || !role}
-                      className="bg-[#F7C948] text-gray-900 font-semibold gap-2 shadow-md border-[#F7C948]"
-                      data-testid="button-generate-preview"
+                  <Select value={role} onValueChange={setRole} required>
+                    <SelectTrigger 
+                      className="max-w-[220px] text-base border-border/60 bg-background focus:border-primary"
+                      data-testid="select-role"
                     >
-                      {generatePreview.isPending ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-5 h-5" />
-                          Why should I attend?
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+                      <SelectValue placeholder="e.g. Director" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
+                      <SelectItem value="Product Manager">Product Manager</SelectItem>
+                      <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
+                      <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                      <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                      <SelectItem value="Director">Director</SelectItem>
+                      <SelectItem value="Distributor">Distributor</SelectItem>
+                      <SelectItem value="Buyer">Buyer</SelectItem>
+                      <SelectItem value="Business Development">Business Development</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex justify-center pt-2">
+                  <Button 
+                    type="submit" 
+                    size="lg"
+                    disabled={generatePreview.isPending || !organization || !role}
+                    className="bg-[#F7C948] text-gray-900 font-semibold gap-2 shadow-md border-[#F7C948]"
+                    data-testid="button-generate-preview"
+                  >
+                    {generatePreview.isPending ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        Why should I attend?
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         ) : (
           <div className="max-w-5xl mx-auto space-y-6">
