@@ -83,98 +83,102 @@ export default function YourEventJourney() {
   };
 
   return (
-    <section className="py-16 px-4 bg-gradient-to-b from-background to-muted/20">
+    <section className="py-20 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
-            <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">AI-Powered Personalization</span>
-          </div>
-          <h2 className="text-4xl font-bold mb-4">Your Event Journey</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-3">
             Discover which exhibitors at Gulfood 2026 are most relevant to your business.
-          </p>
-
-          {/* Inline Form */}
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="flex flex-wrap items-center justify-center gap-3 p-6 bg-card/80 backdrop-blur-sm rounded-2xl border shadow-lg">
-              <span className="text-lg font-medium whitespace-nowrap">I work at</span>
-              
-              <Input
-                type="text"
-                placeholder="e.g. Balfour Beatty"
-                value={organization}
-                onChange={(e) => setOrganization(e.target.value)}
-                required
-                className="max-w-[280px] min-h-[50px] text-base bg-background"
-                data-testid="input-organization"
-              />
-
-              <span className="text-lg font-medium whitespace-nowrap">as a</span>
-
-              <Select value={role} onValueChange={setRole} required>
-                <SelectTrigger 
-                  className="max-w-[240px] min-h-[50px] text-base bg-background"
-                  data-testid="select-role"
-                >
-                  <SelectValue placeholder="e.g. Director" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
-                  <SelectItem value="Product Manager">Product Manager</SelectItem>
-                  <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
-                  <SelectItem value="Sales Manager">Sales Manager</SelectItem>
-                  <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
-                  <SelectItem value="Director">Director</SelectItem>
-                  <SelectItem value="Distributor">Distributor</SelectItem>
-                  <SelectItem value="Buyer">Buyer</SelectItem>
-                  <SelectItem value="Business Development">Business Development</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button 
-                type="submit" 
-                size="lg"
-                disabled={generatePreview.isPending || !organization || !role}
-                className="min-h-[50px] px-6 bg-primary hover:bg-primary/90 font-semibold text-base gap-2"
-                data-testid="button-generate-preview"
-              >
-                {generatePreview.isPending ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    Why should I attend?
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
+          </h2>
         </div>
 
-        {/* Results Display */}
-        {preview && (
-          <div className="max-w-4xl mx-auto space-y-6 mt-12">
+        {!preview ? (
+          <div className="max-w-4xl mx-auto">
+            <Card className="shadow-lg border-border/40">
+              <CardContent className="p-8 md:p-12">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="flex flex-wrap items-center justify-center gap-4 text-lg">
+                    <span className="font-medium text-foreground">I work at</span>
+                    
+                    <Input
+                      type="text"
+                      placeholder="e.g. Balfour Beatty"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                      required
+                      className="max-w-[280px] text-base border-border/60 bg-background focus-visible:border-primary"
+                      data-testid="input-organization"
+                    />
+
+                    <span className="font-medium text-foreground">as a</span>
+
+                    <Select value={role} onValueChange={setRole} required>
+                      <SelectTrigger 
+                        className="max-w-[220px] text-base border-border/60 bg-background focus:border-primary"
+                        data-testid="select-role"
+                      >
+                        <SelectValue placeholder="e.g. Director" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CEO / Founder">CEO / Founder</SelectItem>
+                        <SelectItem value="Product Manager">Product Manager</SelectItem>
+                        <SelectItem value="Procurement Manager">Procurement Manager</SelectItem>
+                        <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                        <SelectItem value="Marketing Manager">Marketing Manager</SelectItem>
+                        <SelectItem value="Director">Director</SelectItem>
+                        <SelectItem value="Distributor">Distributor</SelectItem>
+                        <SelectItem value="Buyer">Buyer</SelectItem>
+                        <SelectItem value="Business Development">Business Development</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex justify-center pt-2">
+                    <Button 
+                      type="submit" 
+                      size="lg"
+                      disabled={generatePreview.isPending || !organization || !role}
+                      className="bg-[#F7C948] text-gray-900 font-semibold gap-2 shadow-md border-[#F7C948]"
+                      data-testid="button-generate-preview"
+                    >
+                      {generatePreview.isPending ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          Why should I attend?
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <div className="max-w-5xl mx-auto space-y-6">
             {/* Relevance Score Card */}
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-1">Your Relevance Score</h3>
-                    <p className="text-sm text-muted-foreground">
+            <Card className="shadow-md border-border/40">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold mb-2">Your Relevance Score</h3>
+                    <p className="text-muted-foreground">
                       How well Gulfood 2026 matches your business needs
                     </p>
                   </div>
                   <div className="text-center">
-                    <div className="text-5xl font-bold text-primary mb-1">
+                    <div className="text-6xl font-bold text-primary mb-2">
                       {preview.relevanceScore}
-                      <span className="text-2xl text-muted-foreground">/100</span>
+                      <span className="text-3xl text-muted-foreground">/100</span>
                     </div>
-                    <Badge variant={preview.relevanceScore >= 80 ? "default" : "secondary"}>
+                    <Badge 
+                      variant={preview.relevanceScore >= 80 ? "default" : "secondary"}
+                      className="text-sm px-4 py-1"
+                    >
                       {preview.relevanceScore >= 80 ? "Excellent Match" : "Good Match"}
                     </Badge>
                   </div>
@@ -183,23 +187,27 @@ export default function YourEventJourney() {
             </Card>
 
             {/* Overview Card */}
-            <Card>
+            <Card className="shadow-md border-border/40">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-xl">
                   <TrendingUp className="w-5 h-5 text-primary" />
                   Personalized Overview
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground leading-relaxed">{preview.overview}</p>
+                <p className="text-muted-foreground leading-relaxed text-base">
+                  {preview.overview}
+                </p>
               </CardContent>
             </Card>
 
             {/* Top Matched Exhibitors */}
             {preview.matchedExhibitors.length > 0 && (
-              <Card>
+              <Card className="shadow-md border-border/40">
                 <CardHeader>
-                  <CardTitle>Top {preview.matchedExhibitors.length} Matched Exhibitors</CardTitle>
+                  <CardTitle className="text-xl">
+                    Top {preview.matchedExhibitors.length} Matched Exhibitors
+                  </CardTitle>
                   <CardDescription>
                     Exhibitors most relevant to your business profile
                   </CardDescription>
@@ -209,17 +217,14 @@ export default function YourEventJourney() {
                     {preview.matchedExhibitors.map((exhibitor, index) => (
                       <div
                         key={exhibitor.id}
-                        className={cn(
-                          "flex items-center gap-4 p-4 rounded-lg border bg-card",
-                          "hover-elevate active-elevate-2 transition-all"
-                        )}
+                        className="flex flex-wrap items-center gap-4 p-5 rounded-lg border border-border/40 bg-background hover-elevate active-elevate-2 transition-all"
                         data-testid={`exhibitor-${exhibitor.id}`}
                       >
-                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold">
+                        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-lg">
                           {index + 1}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold mb-1">{exhibitor.name}</h4>
+                          <h4 className="font-semibold text-base mb-1">{exhibitor.name}</h4>
                           <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                             <span>{exhibitor.sector}</span>
                             <span>•</span>
@@ -236,17 +241,17 @@ export default function YourEventJourney() {
             )}
 
             {/* CTA to Full Journey */}
-            <Card className="border-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent">
-              <CardContent className="pt-6 pb-6">
-                <div className="text-center space-y-4">
+            <Card className="shadow-md border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardContent className="p-8">
+                <div className="text-center space-y-5">
                   <div>
-                    <h3 className="text-xl font-bold mb-2">Want the Complete Experience?</h3>
-                    <p className="text-muted-foreground">
+                    <h3 className="text-2xl font-bold mb-3">Want the Complete Experience?</h3>
+                    <p className="text-muted-foreground text-base max-w-2xl mx-auto">
                       Create your full personalized itinerary with day-by-day schedules, 
                       venue navigation, and all matched exhibitors & sessions.
                     </p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                     <Button 
                       size="lg" 
                       onClick={handleOpenFullJourney}
