@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Search, Globe, MapPin, Filter, X } from "lucide-react";
+import { Building2, Search, Globe, MapPin, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import type { Exhibitor } from "@shared/schema";
 import {
   Select,
@@ -20,6 +20,19 @@ export default function Exhibitors() {
   const [selectedSector, setSelectedSector] = useState<string>("all");
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
   const [selectedVenue, setSelectedVenue] = useState<string>("all");
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
+
+  const toggleDescription = (exhibitorId: number) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(exhibitorId)) {
+        newSet.delete(exhibitorId);
+      } else {
+        newSet.add(exhibitorId);
+      }
+      return newSet;
+    });
+  };
 
   const { data: exhibitors = [], isLoading } = useQuery<Exhibitor[]>({
     queryKey: ["/api/exhibitors"],
@@ -198,16 +211,18 @@ export default function Exhibitors() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredExhibitors.map((exhibitor, index) => {
               const colorClass = cardColors[index % cardColors.length];
+              const isExpanded = expandedDescriptions.has(exhibitor.id);
+              const hasLongDescription = exhibitor.description && exhibitor.description.length > 100;
               
               return (
                 <Card 
                   key={exhibitor.id} 
-                  className={`hover-elevate cursor-pointer transition-all duration-300 bg-gradient-to-br ${colorClass} border-2 hover:border-primary/50`}
+                  className={`hover-elevate transition-all duration-300 bg-gradient-to-br ${colorClass} border-2 hover:border-primary/50`}
                   data-testid={`card-exhibitor-${exhibitor.id}`}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="text-lg font-bold line-clamp-2 flex-1">
+                      <CardTitle className="text-lg font-bold line-clamp-2 flex-1 text-foreground">
                         {exhibitor.name}
                       </CardTitle>
                       <div className="w-10 h-10 rounded-full bg-white/50 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
@@ -223,20 +238,43 @@ export default function Exhibitors() {
                     )}
                     
                     {exhibitor.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {exhibitor.description}
-                      </p>
+                      <div className="space-y-1">
+                        <p className={`text-sm text-foreground ${isExpanded ? '' : 'line-clamp-2'}`}>
+                          {exhibitor.description}
+                        </p>
+                        {hasLongDescription && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleDescription(exhibitor.id);
+                            }}
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp className="w-3 h-3" />
+                                Show less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-3 h-3" />
+                                Read more
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     )}
                     
                     {exhibitor.country && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-foreground">
                         <Globe className="w-4 h-4" />
                         <span>{exhibitor.country}</span>
                       </div>
                     )}
                     
                     {(exhibitor.venue || exhibitor.hall || exhibitor.stand) && (
-                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-start gap-2 text-sm text-foreground">
                         <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         <span className="line-clamp-2">
                           {[exhibitor.venue, exhibitor.hall, exhibitor.stand].filter(Boolean).join(" • ")}
