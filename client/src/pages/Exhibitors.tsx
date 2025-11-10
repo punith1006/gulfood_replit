@@ -30,18 +30,20 @@ export default function Exhibitors() {
   const countries = Array.from(new Set(exhibitors.map(e => e.country).filter(Boolean))).sort();
   const venues = Array.from(new Set(exhibitors.map(e => e.venue).filter(Boolean))).sort();
 
-  // Filter exhibitors
-  const filteredExhibitors = exhibitors.filter(exhibitor => {
-    const matchesSearch = !searchTerm || 
-      exhibitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exhibitor.country?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSector = selectedSector === "all" || exhibitor.sector === selectedSector;
-    const matchesCountry = selectedCountry === "all" || exhibitor.country === selectedCountry;
-    const matchesVenue = selectedVenue === "all" || exhibitor.venue === selectedVenue;
+  // Filter and sort exhibitors alphabetically
+  const filteredExhibitors = exhibitors
+    .filter(exhibitor => {
+      const matchesSearch = !searchTerm || 
+        exhibitor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        exhibitor.country?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesSector = selectedSector === "all" || exhibitor.sector === selectedSector;
+      const matchesCountry = selectedCountry === "all" || exhibitor.country === selectedCountry;
+      const matchesVenue = selectedVenue === "all" || exhibitor.venue === selectedVenue;
 
-    return matchesSearch && matchesSector && matchesCountry && matchesVenue;
-  });
+      return matchesSearch && matchesSector && matchesCountry && matchesVenue;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const clearFilters = () => {
     setSearchTerm("");
