@@ -97,27 +97,38 @@ export default function EmailContactBanner() {
             </div>
           </div>
 
-          <div className="bg-muted/20 rounded-lg p-4">
-            <h4 className="font-medium mb-2 flex items-center gap-2">
-              <MessageCircle className="w-4 h-4" />
-              What can our AI assistant help with?
+          <div className="bg-muted/20 rounded-lg p-5">
+            <h4 className="font-semibold mb-4 text-base">
+              Send an email, get answers in minutes - even at 3 AM:
             </h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5">1</Badge>
-                <span>Find specific exhibitors, booth locations, and company information</span>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-start gap-3">
+                <span className="text-primary mt-0.5">•</span>
+                <div>
+                  <span className="font-semibold text-foreground">Exhibitor lookups</span>
+                  <span className="text-muted-foreground"> - Company locations, booth numbers, product categories delivered to your inbox</span>
+                </div>
               </li>
-              <li className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5">2</Badge>
-                <span>Event schedule, venues (DEC & DWTC), parking, and logistics</span>
+              <li className="flex items-start gap-3">
+                <span className="text-primary mt-0.5">•</span>
+                <div>
+                  <span className="font-semibold text-foreground">Event logistics</span>
+                  <span className="text-muted-foreground"> - Schedules, venues, parking, directions - all the details you need</span>
+                </div>
               </li>
-              <li className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5">3</Badge>
-                <span>Meeting requests and appointment booking</span>
+              <li className="flex items-start gap-3">
+                <span className="text-primary mt-0.5">•</span>
+                <div>
+                  <span className="font-semibold text-foreground">Meeting requests</span>
+                  <span className="text-muted-foreground"> - Email us who you want to meet, we'll arrange it automatically</span>
+                </div>
               </li>
-              <li className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5">4</Badge>
-                <span>General inquiries about Gulfood 2026 (complex questions escalated to human staff)</span>
+              <li className="flex items-start gap-3">
+                <span className="text-primary mt-0.5">•</span>
+                <div>
+                  <span className="font-semibold text-foreground">Quick answers</span>
+                  <span className="text-muted-foreground"> - Badge issues, food options, wifi codes - no question too small</span>
+                </div>
               </li>
             </ul>
           </div>
