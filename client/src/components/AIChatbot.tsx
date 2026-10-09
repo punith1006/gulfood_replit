@@ -859,24 +859,20 @@ export default function AIChatbot() {
     }
   }, [userRole, isOpen]);
   
-  // Initialize conversation with external backend when chatbot opens
+  // Initialize conversation: try external backend, fall back to local sessionId
   useEffect(() => {
     if (isOpen && !conversationId) {
       createConversation()
         .then((uuid) => {
           setConversationId(uuid);
-          console.log('Conversation created:', uuid);
+          console.log('External conversation created:', uuid);
         })
         .catch((error) => {
-          console.error('Failed to create conversation:', error);
-          toast({
-            title: "Connection Error",
-            description: "Failed to initialize chat. Please refresh and try again.",
-            variant: "destructive",
-          });
+          console.warn('External chat backend unreachable, using built-in Faris AI engine:', error);
+          setConversationId(sessionId);
         });
     }
-  }, [isOpen, conversationId, toast]);
+  }, [isOpen, conversationId, sessionId]);
   
   // Trigger widgets when user sends 3rd message
   useEffect(() => {
@@ -897,14 +893,50 @@ export default function AIChatbot() {
     }
   }, [userMessageCount, userRole, hasTriggeredLeadCapture, hasTriggeredRegistrationShare]);
 
-  // Streaming chat function using external backend
-  const handleStreamingChat = (message: string) => {
-    if (!conversationId) {
-      toast({
-        title: "Not Ready",
-        description: "Chat is still initializing. Please wait a moment.",
-        variant: "destructive",
+  // Fallback to internal Faris AI endpoint (/api/chat)
+  const sendLocalChatMessage = async (message: string) => {
+    setIsStreaming(true);
+    setStreamingResponse('');
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          message,
+          userRole: userRole ? (userRole.toLowerCase() === 'visitor' ? 'Visitor' : 'Exhibitor') : 'Visitor'
+        })
       });
+      const data = await response.json();
+      if (data.message) {
+        const newMessage = {
+          role: "assistant" as const,
+          content: data.message
+        };
+        setMessages(prev => {
+          const updatedMessages = [...prev, newMessage];
+          saveConversationToDatabase(updatedMessages);
+          return updatedMessages;
+        });
+      } else {
+        throw new Error(data.error || "No response");
+      }
+    } catch (err) {
+      console.error("Local chat error:", err);
+      setMessages(prev => [...prev, {
+        role: "assistant",
+        content: "I'm sorry, I'm having trouble processing that right now. Please try again."
+      }]);
+    } finally {
+      setIsStreaming(false);
+      setStreamingResponse('');
+    }
+  };
+
+  // Streaming chat function using external backend with automatic local fallback
+  const handleStreamingChat = (message: string) => {
+    if (!conversationId || conversationId === sessionId) {
+      sendLocalChatMessage(message);
       return;
     }
     
@@ -927,23 +959,15 @@ export default function AIChatbot() {
         };
         setMessages(prev => {
           const updatedMessages = [...prev, newMessage];
-          
-          // Save conversation to database for analytics
           saveConversationToDatabase(updatedMessages);
-          
           return updatedMessages;
         });
         setStreamingResponse('');
         setIsStreaming(false);
       },
       (error: Error) => {
-        console.error("Streaming chat error:", error);
-        setMessages(prev => [...prev, {
-          role: "assistant",
-          content: "I'm sorry, I'm having trouble processing that right now. Please try again."
-        }]);
-        setStreamingResponse('');
-        setIsStreaming(false);
+        console.warn("External stream failed, falling back to local chat:", error);
+        sendLocalChatMessage(message);
       }
     );
     
