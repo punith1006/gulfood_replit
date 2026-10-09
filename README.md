@@ -10,6 +10,7 @@ Navigating mega-exhibitions like **Gulfood 2026** poses severe logistical challe
 * **Live Operational Telemetry:** Real-time organizer dashboards tracking search queries, sector heatmaps, and exhibitor lead capture as they happen.
 
 <img width="602" height="400" alt="gulfood-banner" src="https://github.com/user-attachments/assets/6b0519c4-aefb-49ef-b3bf-44fd9522eb34" />
+
 ## Design & Architecture
 
 ## Features & Capabilities
